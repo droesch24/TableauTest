@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Variance Extension</title>
+  <script src="https://cdn.jsdelivr.net/npm/tableau.extensions.api@1.10.0/lib/tableau.extensions.1.latest.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; background: #fff; color: #222; overflow-x: hidden; }
+    #app { width: 100%; }
+    #loading { padding: 20px; color: #666; font-size: 13px; }
+    #error-msg { padding: 12px 16px; background: #fef2f2; color: #b91c1c; font-size: 12px; border-left: 3px solid #ef4444; margin: 8px; border-radius: 4px; display: none; }
+
+    .ext-title { font-size: 13px; font-weight: 600; color: #1a1a1a; padding: 10px 8px 8px; border-bottom: 0.5px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+    .ext-title button { font-size: 11px; padding: 3px 10px; background: #f4f4f4; border: 0.5px solid #ccc; border-radius: 4px; cursor: pointer; color: #444; }
+    .ext-title button:hover { background: #e8e8e8; }
+
+    .ext-header { display: grid; font-size: 11px; font-weight: 600; color: #555; border-bottom: 1.5px solid #bbb; padding: 5px 0 5px 8px; gap: 0; background: #f9f9f9; }
+    .ext-header span { text-align: right; padding-right: 10px; }
+    .ext-header span:first-child { text-align: left; padding-right: 0; }
+    .ext-header .col-bar { text-align: center; padding-right: 0; }
+
+    .row { display: grid; align-items: center; min-height: 26px; padding-left: 8px; border-bottom: 0.5px solid #ebebeb; }
+    .row:nth-child(odd) { background: #fff; }
+    .row:nth-child(even) { background: #f7f8fa; }
+    .row:hover { background: #dce8f5; }
+    .row .name { font-size: 11.5px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; }
+    .row .num { text-align: right; font-size: 11.5px; font-variant-numeric: tabular-nums; padding-right: 10px; color: #222; }
+    .row .num.neg { color: #c0392b; }
+    .row .num.pos { color: #1a7c4a; }
+
+    .bar-cell { position: relative; height: 26px; display: flex; align-items: center; }
+    .bar-axis { position: absolute; left: 50%; top: 4px; bottom: 4px; width: 1px; background: #ccc; }
+    .bar-pos { position: absolute; left: 50%; height: 12px; background: #5b8db8; border-radius: 0 2px 2px 0; }
+    .bar-neg { position: absolute; height: 12px; background: #b8c8d8; border-radius: 2px 0 0 2px; right: 50%; }
+
+    .total-row { display: grid; align-items: center; font-weight: 600; font-size: 12px; border-top: 1.5px solid #bbb; padding: 5px 0 5px 8px; background: #f2f2f2; }
+    .total-row .num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 10px; }
+    .total-row .num.neg { color: #c0392b; }
+    .total-row .num.pos { color: #1a7c4a; }
+    .total-row .bar-cell { position: relative; height: 26px; display: flex; align-items: center; }
+
+    #config-panel { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+    #config-panel.open { display: flex; }
+    .config-box { background: #fff; border-radius: 8px; padding: 20px; width: 340px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .config-box h3 { font-size: 14px; margin-bottom: 14px; color: #1a1a1a; }
+    .config-row { margin-bottom: 10px; }
+    .config-row label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; }
+    .config-row select { width: 100%; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+    .config-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+    .config-actions button { padding: 6px 16px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid #ccc; }
+    .config-actions .btn-primary { background: #5b8db8; color: #fff; border-color: #5b8db8; }
+    .config-actions .btn-primary:hover { background: #4a7ba5; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="loading">Connecting to Tableau data source…</div>
+  <div id="error-msg"></div>
+
+  <div id="viz" style="display:none;">
+    <div class="ext-title">
+      Budget vs Actual — Variance
+      <button onclick="openConfig()">⚙ Configure</button>
+    </div>
+    <div class="ext-header" id="header"></div>
+    <div id="rows-container"></div>
+    <div class="total-row" id="total-row"></div>
+  </div>
+
+  <div id="config-panel">
+    <div class="config-box">
+      <h3>Configure Columns</h3>
+      <div class="config-row"><label>Name / Label column</label><select id="cfg-name"></select></div>
+      <div class="config-row"><label>Actual column</label><select id="cfg-actual"></select></div>
+      <div class="config-row"><label>Budget column</label><select id="cfg-budget"></select></div>
+      <div class="config-actions">
+        <button onclick="closeConfig()">Cancel</button>
+        <button class="btn-primary" onclick="applyConfig()">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let worksheetData = [];
+let columns = [];
+let cfg = { name: null, actual: null, budget: null };
+
+function fmt(n) {
+  const abs = Math.abs(Math.round(n));
+  return (n < 0 ? '-$' : '$') + abs.toLocaleString();
+}
+function fmtPct(v) {
+  return (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+}
+
+function render(data, namCol, actCol, budCol) {
+  const variances = data.map(d => (d[actCol] || 0) - (d[budCol] || 0));
+  const maxAbs = Math.max(...variances.map(v => Math.abs(v)), 1);
+  const BAR_MAX = 52;
+
+  const colWidth = `${BAR_MAX * 2 + 20}px`;
+  const gridTpl = `1fr 90px 90px ${colWidth} 72px`;
+
+  document.getElementById('header').style.gridTemplateColumns = gridTpl;
+  document.getElementById('header').innerHTML = `
+    <span></span>
+    <span>Actual</span>
+    <span>Budget</span>
+    <span class="col-bar">$ Var</span>
+    <span>% Var</span>
+  `;
+
+  const container = document.getElementById('rows-container');
+  container.innerHTML = '';
+  let totalActual = 0, totalBudget = 0;
+
+  data.forEach(d => {
+    const actual = d[actCol] || 0;
+    const budget = d[budCol] || 0;
+    totalActual += actual; totalBudget += budget;
+    const vr = actual - budget;
+    const pct = budget !== 0 ? (vr / budget) * 100 : 0;
+    const barW = Math.abs(vr) / maxAbs * BAR_MAX;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.gridTemplateColumns = gridTpl;
+    const barHtml = vr >= 0
+      ? `<div class="bar-pos" style="width:${barW}px;"></div>`
+      : `<div class="bar-neg" style="width:${barW}px;"></div>`;
+    row.innerHTML = `
+      <span class="name" title="${d[namCol]}">${d[namCol]}</span>
+      <span class="num">${fmt(actual)}</span>
+      <span class="num">${fmt(budget)}</span>
+      <div class="bar-cell">
+        <div class="bar-axis"></div>${barHtml}
+      </div>
+      <span class="num ${vr > 0 ? 'neg' : vr < 0 ? 'pos' : ''}">${fmtPct(pct)}</span>
+    `;
+    container.appendChild(row);
+  });
+
+  const tv = totalActual - totalBudget;
+  const tp = totalBudget !== 0 ? (tv / totalBudget) * 100 : 0;
+  const tBarW = Math.abs(tv) / maxAbs * BAR_MAX;
+  const tr = document.getElementById('total-row');
+  tr.style.gridTemplateColumns = gridTpl;
+  tr.innerHTML = `
+    <span style="font-size:12px;">Total</span>
+    <span class="num">${fmt(totalActual)}</span>
+    <span class="num">${fmt(totalBudget)}</span>
+    <div class="bar-cell" style="position:relative;height:26px;display:flex;align-items:center;">
+      <div class="bar-axis" style="position:absolute;left:50%;top:4px;bottom:4px;width:1px;background:#ccc;"></div>
+      ${tv >= 0
+        ? `<div class="bar-pos" style="width:${tBarW}px;"></div>`
+        : `<div class="bar-neg" style="width:${tBarW}px;"></div>`}
+    </div>
+    <span class="num ${tv > 0 ? 'neg' : tv < 0 ? 'pos' : ''}">${fmtPct(tp)}</span>
+  `;
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('viz').style.display = 'block';
+}
+
+function openConfig() {
+  const sels = ['cfg-name', 'cfg-actual', 'cfg-budget'];
+  sels.forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = columns.map(c => `<option value="${c}">${c}</option>`).join('');
+  });
+  if (cfg.name)   document.getElementById('cfg-name').value   = cfg.name;
+  if (cfg.actual) document.getElementById('cfg-actual').value = cfg.actual;
+  if (cfg.budget) document.getElementById('cfg-budget').value = cfg.budget;
+  document.getElementById('config-panel').classList.add('open');
+}
+function closeConfig() {
+  document.getElementById('config-panel').classList.remove('open');
+}
+function applyConfig() {
+  cfg.name   = document.getElementById('cfg-name').value;
+  cfg.actual = document.getElementById('cfg-actual').value;
+  cfg.budget = document.getElementById('cfg-budget').value;
+  tableau.extensions.settings.set('cfg', JSON.stringify(cfg));
+  tableau.extensions.settings.saveAsync().then(() => {
+    closeConfig();
+    render(worksheetData, cfg.name, cfg.actual, cfg.budget);
+  });
+}
+
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+tableau.extensions.initializeAsync({ 'configure': openConfig }).then(() => {
+  const savedCfg = tableau.extensions.settings.get('cfg');
+  if (savedCfg) { try { cfg = JSON.parse(savedCfg); } catch(e) {} }
+
+  const dash = tableau.extensions.dashboardContent.dashboard;
+  const ws = dash.worksheets[0];
+  if (!ws) { showError('No worksheet found on this dashboard.'); return; }
+
+  ws.getSummaryDataAsync().then(data => {
+    columns = data.columns.map(c => c.fieldName);
+    worksheetData = data.data.map(row => {
+      const obj = {};
+      data.columns.forEach((col, i) => {
+        const v = row[i].value;
+        obj[col.fieldName] = (typeof v === 'string' && !isNaN(v.replace(/[$,%]/g,'')))
+          ? parseFloat(v.replace(/[$,%]/g,'')) : v;
+      });
+      return obj;
+    });
+
+    if (!cfg.name || !cfg.actual || !cfg.budget) {
+      openConfig();
+    } else {
+      render(worksheetData, cfg.name, cfg.actual, cfg.budget);
+    }
+
+    ws.addEventListener(tableau.TableauEventType.SummaryDataChanged, () => {
+      ws.getSummaryDataAsync().then(d => {
+        worksheetData = d.data.map(row => {
+          const obj = {};
+          d.columns.forEach((col, i) => {
+            const v = row[i].value;
+            obj[col.fieldName] = (typeof v === 'string' && !isNaN(v.replace(/[$,%]/g,'')))
+              ? parseFloat(v.replace(/[$,%]/g,'')) : v;
+          });
+          return obj;
+        });
+        render(worksheetData, cfg.name, cfg.actual, cfg.budget);
+      });
+    });
+  }).catch(e => showError('Could not load worksheet data: ' + e.message));
+}).catch(e => showError('Tableau Extensions API failed to initialize: ' + e.message));
+</script>
+</body>
+</html>
