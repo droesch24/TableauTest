@@ -8,39 +8,33 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; background: #fff; color: #222; }
+    #log { padding: 8px; font-size: 11px; font-family: monospace; background: #f5f5f5; border-bottom: 1px solid #ddd; max-height: 160px; overflow-y: auto; }
+    .log-line { padding: 1px 0; border-bottom: 0.5px solid #eee; }
+    .log-ok { color: #1a7c4a; } .log-err { color: #c0392b; } .log-info { color: #2255aa; }
     #loading { padding: 20px; color: #666; font-size: 13px; }
-    #error-msg { padding: 12px 16px; background: #fef2f2; color: #b91c1c; font-size: 12px; border-left: 3px solid #ef4444; margin: 8px; border-radius: 4px; display: none; white-space: pre-wrap; }
 
     .ext-title { font-size: 13px; font-weight: 600; color: #1a1a1a; padding: 10px 8px 8px; border-bottom: 0.5px solid #ddd; }
     .ext-header { display: grid; font-size: 11px; font-weight: 600; color: #555; border-bottom: 1.5px solid #bbb; padding: 5px 0 5px 8px; background: #f9f9f9; }
     .ext-header span { text-align: right; padding-right: 10px; }
     .ext-header span:first-child { text-align: left; padding-right: 0; }
     .ext-header .col-bar { text-align: center; padding-right: 0; }
-
     .row { display: grid; align-items: center; min-height: 26px; padding-left: 8px; border-bottom: 0.5px solid #ebebeb; }
-    .row:nth-child(odd) { background: #fff; }
-    .row:nth-child(even) { background: #f7f8fa; }
-    .row:hover { background: #dce8f5; }
-    .row .name { font-size: 11.5px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; }
-    .row .num { text-align: right; font-size: 11.5px; font-variant-numeric: tabular-nums; padding-right: 10px; color: #222; }
-    .row .num.neg { color: #c0392b; }
-    .row .num.pos { color: #1a7c4a; }
-
+    .row:nth-child(odd) { background: #fff; } .row:nth-child(even) { background: #f7f8fa; }
+    .row .name { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; }
+    .row .num { text-align: right; font-size: 11.5px; font-variant-numeric: tabular-nums; padding-right: 10px; }
+    .num.neg { color: #c0392b; } .num.pos { color: #1a7c4a; }
     .bar-cell { position: relative; height: 26px; display: flex; align-items: center; }
     .bar-axis { position: absolute; left: 50%; top: 4px; bottom: 4px; width: 1px; background: #ccc; }
     .bar-pos { position: absolute; left: 50%; height: 12px; background: #5b8db8; border-radius: 0 2px 2px 0; }
     .bar-neg { position: absolute; height: 12px; background: #b8c8d8; border-radius: 2px 0 0 2px; right: 50%; }
-
     .total-row { display: grid; align-items: center; font-weight: 600; font-size: 12px; border-top: 1.5px solid #bbb; padding: 5px 0 5px 8px; background: #f2f2f2; }
     .total-row .num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 10px; }
-    .total-row .num.neg { color: #c0392b; }
-    .total-row .num.pos { color: #1a7c4a; }
   </style>
 </head>
 <body>
+<div id="log"></div>
 <div id="app">
   <div id="loading">Connecting to Tableau data…</div>
-  <div id="error-msg"></div>
   <div id="viz" style="display:none;">
     <div class="ext-title">Budget vs Actual — Variance</div>
     <div class="ext-header" id="header"></div>
@@ -50,20 +44,31 @@
 </div>
 
 <script>
+function log(msg, type) {
+  const d = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + (type || 'log-info');
+  line.textContent = new Date().toISOString().substr(11,8) + ' ' + msg;
+  d.appendChild(line);
+  d.scrollTop = d.scrollHeight;
+  console.log(msg);
+}
+
 function fmt(n) {
-  const abs = Math.abs(Math.round(n));
-  return (n < 0 ? '-$' : '$') + abs.toLocaleString();
+  return (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString();
 }
 function fmtPct(v) {
   return (v > 0 ? '+' : '') + v.toFixed(1) + '%';
 }
+function toNum(v) {
+  if (typeof v === 'number') return v;
+  if (!v || v === '%null%') return 0;
+  const n = parseFloat(String(v).replace(/[$,%\s]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
 
 function render(rows) {
-  if (!rows || rows.length === 0) {
-    showError('No data returned. Make sure Cost Center, Actual and Budget fields are on the Marks card.');
-    return;
-  }
-
+  log('Rendering ' + rows.length + ' rows', 'log-ok');
   const variances = rows.map(r => r.actual - r.budget);
   const maxAbs = Math.max(...variances.map(v => Math.abs(v)), 1);
   const BAR_MAX = 52;
@@ -76,11 +81,10 @@ function render(rows) {
 
   const container = document.getElementById('rows-container');
   container.innerHTML = '';
-  let totalActual = 0, totalBudget = 0;
+  let tA = 0, tB = 0;
 
   rows.forEach(function(r) {
-    totalActual += r.actual;
-    totalBudget += r.budget;
+    tA += r.actual; tB += r.budget;
     const vr = r.actual - r.budget;
     const pct = r.budget !== 0 ? (vr / r.budget) * 100 : 0;
     const barW = Math.abs(vr) / maxAbs * BAR_MAX;
@@ -92,28 +96,23 @@ function render(rows) {
       '<span class="num">' + fmt(r.actual) + '</span>' +
       '<span class="num">' + fmt(r.budget) + '</span>' +
       '<div class="bar-cell"><div class="bar-axis"></div>' +
-        (vr >= 0
-          ? '<div class="bar-pos" style="width:' + barW + 'px;"></div>'
-          : '<div class="bar-neg" style="width:' + barW + 'px;"></div>') +
+        (vr >= 0 ? '<div class="bar-pos" style="width:' + barW + 'px;"></div>'
+                 : '<div class="bar-neg" style="width:' + barW + 'px;"></div>') +
       '</div>' +
       '<span class="num ' + (vr > 0 ? 'neg' : vr < 0 ? 'pos' : '') + '">' + fmtPct(pct) + '</span>';
     container.appendChild(row);
   });
 
-  const tv = totalActual - totalBudget;
-  const tp = totalBudget !== 0 ? (tv / totalBudget) * 100 : 0;
+  const tv = tA - tB, tp = tB !== 0 ? (tv / tB) * 100 : 0;
   const tBarW = Math.abs(tv) / maxAbs * BAR_MAX;
   const tr = document.getElementById('total-row');
   tr.style.gridTemplateColumns = gridTpl;
   tr.innerHTML =
-    '<span>Total</span>' +
-    '<span class="num">' + fmt(totalActual) + '</span>' +
-    '<span class="num">' + fmt(totalBudget) + '</span>' +
+    '<span>Total</span><span class="num">' + fmt(tA) + '</span><span class="num">' + fmt(tB) + '</span>' +
     '<div class="bar-cell" style="position:relative;height:26px;display:flex;align-items:center;">' +
       '<div class="bar-axis" style="position:absolute;left:50%;top:4px;bottom:4px;width:1px;background:#ccc;"></div>' +
-      (tv >= 0
-        ? '<div class="bar-pos" style="width:' + tBarW + 'px;"></div>'
-        : '<div class="bar-neg" style="width:' + tBarW + 'px;"></div>') +
+      (tv >= 0 ? '<div class="bar-pos" style="width:' + tBarW + 'px;"></div>'
+               : '<div class="bar-neg" style="width:' + tBarW + 'px;"></div>') +
     '</div>' +
     '<span class="num ' + (tv > 0 ? 'neg' : tv < 0 ? 'pos' : '') + '">' + fmtPct(tp) + '</span>';
 
@@ -121,65 +120,100 @@ function render(rows) {
   document.getElementById('viz').style.display = 'block';
 }
 
-function showError(msg) {
-  document.getElementById('loading').style.display = 'none';
-  const el = document.getElementById('error-msg');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-function toNumber(v) {
-  if (typeof v === 'number') return v;
-  if (v === null || v === undefined || v === '%null%') return 0;
-  const s = String(v).replace(/[$,%\s]/g, '');
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
-}
-
 function loadData(worksheet) {
+  log('Calling getSummaryDataAsync...', 'log-info');
   worksheet.getSummaryDataAsync({ ignoreSelection: true }).then(function(sumData) {
-    const cols = sumData.columns;
-    const colIndex = {};
-    cols.forEach(function(c, i) { colIndex[c.fieldName] = i; });
+    const cols = sumData.columns.map(function(c) { return c.fieldName; });
+    log('Columns: ' + JSON.stringify(cols), 'log-ok');
+    log('Row count: ' + sumData.data.length, 'log-ok');
 
-    // Find columns by encoding id or field name fallback
-    const nameIdx   = colIndex['Cost Center Level 1'] !== undefined ? colIndex['Cost Center Level 1']
-                    : colIndex['detail'] !== undefined ? colIndex['detail']
-                    : 0;
-    const actualIdx = colIndex['SUM(Actual)'] !== undefined ? colIndex['SUM(Actual)']
-                    : colIndex['Actual'] !== undefined ? colIndex['Actual']
-                    : colIndex['actual'] !== undefined ? colIndex['actual']
-                    : 1;
-    const budgetIdx = colIndex['SUM(Budget)'] !== undefined ? colIndex['SUM(Budget)']
-                    : colIndex['Budget'] !== undefined ? colIndex['Budget']
-                    : colIndex['budget'] !== undefined ? colIndex['budget']
-                    : 2;
+    if (sumData.data.length === 0) {
+      log('No data rows returned', 'log-err');
+      document.getElementById('loading').textContent = 'No data. Add fields to the Marks card.';
+      return;
+    }
+
+    // Log first row raw values for debugging
+    const firstRow = sumData.data[0];
+    firstRow.forEach(function(cell, i) {
+      log('  col[' + i + '] ' + cols[i] + ' = ' + JSON.stringify(cell.value) + ' / ' + cell.formattedValue, 'log-info');
+    });
+
+    // Auto-detect columns
+    function findCol(keywords) {
+      for (var k = 0; k < keywords.length; k++) {
+        for (var i = 0; i < cols.length; i++) {
+          if (cols[i].toLowerCase().indexOf(keywords[k].toLowerCase()) !== -1) return i;
+        }
+      }
+      return -1;
+    }
+
+    const nameIdx   = findCol(['cost center', 'detail', 'name', 'label', 'department', 'center']);
+    const actualIdx = findCol(['actual']);
+    const budgetIdx = findCol(['budget']);
+
+    log('Mapped: name=' + nameIdx + '(' + cols[nameIdx] + ') actual=' + actualIdx + '(' + cols[actualIdx] + ') budget=' + budgetIdx + '(' + cols[budgetIdx] + ')', 'log-ok');
+
+    if (nameIdx < 0 || actualIdx < 0 || budgetIdx < 0) {
+      log('Could not map columns. Found: ' + cols.join(', '), 'log-err');
+      document.getElementById('loading').textContent = 'Could not map columns. Found: ' + cols.join(', ');
+      return;
+    }
 
     const rows = sumData.data.map(function(row) {
       return {
         name:   String(row[nameIdx].formattedValue || row[nameIdx].value),
-        actual: toNumber(row[actualIdx].value),
-        budget: toNumber(row[budgetIdx].value)
+        actual: toNum(row[actualIdx].value),
+        budget: toNum(row[budgetIdx].value)
       };
     });
 
     render(rows);
   }).catch(function(e) {
-    showError('getSummaryDataAsync failed:\n' + e.message);
+    log('getSummaryDataAsync error: ' + e.message, 'log-err');
+    document.getElementById('loading').textContent = 'Error: ' + e.message;
   });
 }
 
+log('Script loaded, waiting for Tableau init...', 'log-info');
+
 tableau.extensions.initializeAsync().then(function() {
-  const vizInterface = tableau.extensions.vizExtensionInterface;
-  const worksheet = vizInterface.worksheet;
+  log('initializeAsync resolved', 'log-ok');
+
+  var vizInterface = tableau.extensions.vizExtensionInterface;
+  log('vizExtensionInterface: ' + (vizInterface ? 'exists' : 'UNDEFINED'), vizInterface ? 'log-ok' : 'log-err');
+
+  if (!vizInterface) {
+    log('Trying dashboardContent fallback...', 'log-info');
+    try {
+      var ws = tableau.extensions.dashboardContent.dashboard.worksheets[0];
+      log('Fallback worksheet: ' + ws.name, 'log-ok');
+      loadData(ws);
+    } catch(e) {
+      log('Fallback failed: ' + e.message, 'log-err');
+    }
+    return;
+  }
+
+  var worksheet = vizInterface.worksheet;
+  log('worksheet: ' + (worksheet ? worksheet.name : 'UNDEFINED'), worksheet ? 'log-ok' : 'log-err');
+
+  if (!worksheet) {
+    log('worksheet is undefined on vizExtensionInterface', 'log-err');
+    return;
+  }
 
   loadData(worksheet);
 
   worksheet.addEventListener(tableau.TableauEventType.SummaryDataChanged, function() {
+    log('SummaryDataChanged fired', 'log-info');
     loadData(worksheet);
   });
+
 }).catch(function(e) {
-  showError('Tableau init failed:\n' + e.message);
+  log('initializeAsync failed: ' + e.message, 'log-err');
+  document.getElementById('loading').textContent = 'Init failed: ' + e.message;
 });
 </script>
 </body>
