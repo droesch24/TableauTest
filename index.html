@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Budget Variance Extension</title>
+  <title>Budget Variance Viz Extension</title>
   <script src="https://cdn.jsdelivr.net/npm/tableau.extensions.api@1.10.0/lib/tableau.extensions.1.latest.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; background: #fff; color: #222; overflow-x: hidden; }
-    #app { width: 100%; }
     #loading { padding: 20px; color: #666; font-size: 13px; }
     #error-msg { padding: 12px 16px; background: #fef2f2; color: #b91c1c; font-size: 12px; border-left: 3px solid #ef4444; margin: 8px; border-radius: 4px; display: none; }
 
@@ -16,7 +15,7 @@
     .ext-title button { font-size: 11px; padding: 3px 10px; background: #f4f4f4; border: 0.5px solid #ccc; border-radius: 4px; cursor: pointer; color: #444; }
     .ext-title button:hover { background: #e8e8e8; }
 
-    .ext-header { display: grid; font-size: 11px; font-weight: 600; color: #555; border-bottom: 1.5px solid #bbb; padding: 5px 0 5px 8px; gap: 0; background: #f9f9f9; }
+    .ext-header { display: grid; font-size: 11px; font-weight: 600; color: #555; border-bottom: 1.5px solid #bbb; padding: 5px 0 5px 8px; background: #f9f9f9; }
     .ext-header span { text-align: right; padding-right: 10px; }
     .ext-header span:first-child { text-align: left; padding-right: 0; }
     .ext-header .col-bar { text-align: center; padding-right: 0; }
@@ -56,7 +55,7 @@
 </head>
 <body>
 <div id="app">
-  <div id="loading">Connecting to Tableau data source…</div>
+  <div id="loading">Connecting to Tableau data…</div>
   <div id="error-msg"></div>
 
   <div id="viz" style="display:none;">
@@ -84,7 +83,7 @@
 </div>
 
 <script>
-let worksheetData = [];
+let tableauData = [];
 let columns = [];
 let cfg = { name: null, actual: null, budget: null };
 
@@ -100,18 +99,13 @@ function render(data, namCol, actCol, budCol) {
   const variances = data.map(d => (d[actCol] || 0) - (d[budCol] || 0));
   const maxAbs = Math.max(...variances.map(v => Math.abs(v)), 1);
   const BAR_MAX = 52;
-
   const colWidth = `${BAR_MAX * 2 + 20}px`;
   const gridTpl = `1fr 90px 90px ${colWidth} 72px`;
 
   document.getElementById('header').style.gridTemplateColumns = gridTpl;
   document.getElementById('header').innerHTML = `
-    <span></span>
-    <span>Actual</span>
-    <span>Budget</span>
-    <span class="col-bar">$ Var</span>
-    <span>% Var</span>
-  `;
+    <span></span><span>Actual</span><span>Budget</span>
+    <span class="col-bar">$ Var</span><span>% Var</span>`;
 
   const container = document.getElementById('rows-container');
   container.innerHTML = '';
@@ -124,22 +118,20 @@ function render(data, namCol, actCol, budCol) {
     const vr = actual - budget;
     const pct = budget !== 0 ? (vr / budget) * 100 : 0;
     const barW = Math.abs(vr) / maxAbs * BAR_MAX;
-
     const row = document.createElement('div');
     row.className = 'row';
     row.style.gridTemplateColumns = gridTpl;
-    const barHtml = vr >= 0
-      ? `<div class="bar-pos" style="width:${barW}px;"></div>`
-      : `<div class="bar-neg" style="width:${barW}px;"></div>`;
     row.innerHTML = `
       <span class="name" title="${d[namCol]}">${d[namCol]}</span>
       <span class="num">${fmt(actual)}</span>
       <span class="num">${fmt(budget)}</span>
       <div class="bar-cell">
-        <div class="bar-axis"></div>${barHtml}
+        <div class="bar-axis"></div>
+        ${vr >= 0
+          ? `<div class="bar-pos" style="width:${barW}px;"></div>`
+          : `<div class="bar-neg" style="width:${barW}px;"></div>`}
       </div>
-      <span class="num ${vr > 0 ? 'neg' : vr < 0 ? 'pos' : ''}">${fmtPct(pct)}</span>
-    `;
+      <span class="num ${vr > 0 ? 'neg' : vr < 0 ? 'pos' : ''}">${fmtPct(pct)}</span>`;
     container.appendChild(row);
   });
 
@@ -149,7 +141,7 @@ function render(data, namCol, actCol, budCol) {
   const tr = document.getElementById('total-row');
   tr.style.gridTemplateColumns = gridTpl;
   tr.innerHTML = `
-    <span style="font-size:12px;">Total</span>
+    <span>Total</span>
     <span class="num">${fmt(totalActual)}</span>
     <span class="num">${fmt(totalBudget)}</span>
     <div class="bar-cell" style="position:relative;height:26px;display:flex;align-items:center;">
@@ -158,18 +150,15 @@ function render(data, namCol, actCol, budCol) {
         ? `<div class="bar-pos" style="width:${tBarW}px;"></div>`
         : `<div class="bar-neg" style="width:${tBarW}px;"></div>`}
     </div>
-    <span class="num ${tv > 0 ? 'neg' : tv < 0 ? 'pos' : ''}">${fmtPct(tp)}</span>
-  `;
+    <span class="num ${tv > 0 ? 'neg' : tv < 0 ? 'pos' : ''}">${fmtPct(tp)}</span>`;
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('viz').style.display = 'block';
 }
 
 function openConfig() {
-  const sels = ['cfg-name', 'cfg-actual', 'cfg-budget'];
-  sels.forEach(id => {
-    const el = document.getElementById(id);
-    el.innerHTML = columns.map(c => `<option value="${c}">${c}</option>`).join('');
+  ['cfg-name','cfg-actual','cfg-budget'].forEach(id => {
+    document.getElementById(id).innerHTML = columns.map(c => `<option value="${c}">${c}</option>`).join('');
   });
   if (cfg.name)   document.getElementById('cfg-name').value   = cfg.name;
   if (cfg.actual) document.getElementById('cfg-actual').value = cfg.actual;
@@ -183,11 +172,12 @@ function applyConfig() {
   cfg.name   = document.getElementById('cfg-name').value;
   cfg.actual = document.getElementById('cfg-actual').value;
   cfg.budget = document.getElementById('cfg-budget').value;
-  tableau.extensions.settings.set('cfg', JSON.stringify(cfg));
-  tableau.extensions.settings.saveAsync().then(() => {
-    closeConfig();
-    render(worksheetData, cfg.name, cfg.actual, cfg.budget);
-  });
+  try {
+    tableau.extensions.settings.set('cfg', JSON.stringify(cfg));
+    tableau.extensions.settings.saveAsync();
+  } catch(e) {}
+  closeConfig();
+  render(tableauData, cfg.name, cfg.actual, cfg.budget);
 }
 
 function showError(msg) {
@@ -197,48 +187,53 @@ function showError(msg) {
   el.style.display = 'block';
 }
 
-tableau.extensions.initializeAsync({ 'configure': openConfig }).then(() => {
-  const savedCfg = tableau.extensions.settings.get('cfg');
-  if (savedCfg) { try { cfg = JSON.parse(savedCfg); } catch(e) {} }
+function parseValue(v) {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    const cleaned = v.replace(/[$,%\s]/g, '');
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? v : n;
+  }
+  return v;
+}
 
-  const dash = tableau.extensions.dashboardContent.dashboard;
-  const ws = dash.worksheets[0];
-  if (!ws) { showError('No worksheet found on this dashboard.'); return; }
-
-  ws.getSummaryDataAsync().then(data => {
-    columns = data.columns.map(c => c.fieldName);
-    worksheetData = data.data.map(row => {
-      const obj = {};
-      data.columns.forEach((col, i) => {
-        const v = row[i].value;
-        obj[col.fieldName] = (typeof v === 'string' && !isNaN(v.replace(/[$,%]/g,'')))
-          ? parseFloat(v.replace(/[$,%]/g,'')) : v;
-      });
-      return obj;
-    });
-
-    if (!cfg.name || !cfg.actual || !cfg.budget) {
-      openConfig();
-    } else {
-      render(worksheetData, cfg.name, cfg.actual, cfg.budget);
+function loadData(vizExt) {
+  vizExt.getDataSourcesAsync().then(dataSources => {
+    if (!dataSources || dataSources.length === 0) {
+      showError('No data sources found.'); return;
     }
-
-    ws.addEventListener(tableau.TableauEventType.SummaryDataChanged, () => {
-      ws.getSummaryDataAsync().then(d => {
-        worksheetData = d.data.map(row => {
+    const ds = dataSources[0];
+    ds.getLogicalTablesAsync().then(tables => {
+      const table = tables[0];
+      ds.getLogicalTableDataAsync(table.id).then(data => {
+        columns = data.columns.map(c => c.fieldName);
+        tableauData = data.data.map(row => {
           const obj = {};
-          d.columns.forEach((col, i) => {
-            const v = row[i].value;
-            obj[col.fieldName] = (typeof v === 'string' && !isNaN(v.replace(/[$,%]/g,'')))
-              ? parseFloat(v.replace(/[$,%]/g,'')) : v;
+          data.columns.forEach((col, i) => {
+            obj[col.fieldName] = parseValue(row[i].value);
           });
           return obj;
         });
-        render(worksheetData, cfg.name, cfg.actual, cfg.budget);
-      });
-    });
-  }).catch(e => showError('Could not load worksheet data: ' + e.message));
-}).catch(e => showError('Tableau Extensions API failed to initialize: ' + e.message));
+        const savedCfg = tableau.extensions.settings.get('cfg');
+        if (savedCfg) { try { cfg = JSON.parse(savedCfg); } catch(e) {} }
+        if (!cfg.name || !cfg.actual || !cfg.budget) {
+          openConfig();
+        } else {
+          render(tableauData, cfg.name, cfg.actual, cfg.budget);
+        }
+      }).catch(e => showError('Could not load table data: ' + e.message));
+    }).catch(e => showError('Could not load tables: ' + e.message));
+  }).catch(e => showError('Could not load data sources: ' + e.message));
+}
+
+tableau.extensions.initializeAsync().then(() => {
+  const vizExt = tableau.extensions.vizExtensionInterface;
+  loadData(vizExt);
+
+  vizExt.addEventListener(tableau.TableauEventType.SummaryDataChanged, () => {
+    loadData(vizExt);
+  });
+}).catch(e => showError('Init failed: ' + e.message));
 </script>
 </body>
 </html>
