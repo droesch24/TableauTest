@@ -618,6 +618,8 @@ async function loadData(ws) {
     dbg('getSummaryDataAsync...');
     var sd=await ws.getSummaryDataAsync({ignoreSelection:true});
     dbg('got ' + sd.data.length + ' rows, ' + sd.columns.length + ' cols');
+    dbg('cols: ' + sd.columns.map(function(c){return c.fieldName;}).join(' | '));
+    if(sd.data.length) dbg('row0: n=' + JSON.stringify(sd.data[0][0].formattedValue) + ' a=' + JSON.stringify(sd.data[0][1].value) + ' b=' + JSON.stringify(sd.data[0][2].value));
     var cols=sd.columns.map(function(c){ return c.fieldName; });
     if (!sd.data.length){ document.getElementById('status').textContent='No data — add fields to the Marks card.'; return; }
 
