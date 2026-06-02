@@ -4,217 +4,803 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Budget Variance Viz Extension</title>
-  <script src="https://cdn.jsdelivr.net/npm/tableau.extensions.api@1.10.0/lib/tableau.extensions.1.latest.js"></script>
+  <script src="tableau.extensions.1.latest.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; background: #fff; color: #222; }
-    #log { padding: 8px; font-size: 11px; font-family: monospace; background: #f5f5f5; border-bottom: 1px solid #ddd; max-height: 160px; overflow-y: auto; }
-    .log-line { padding: 1px 0; border-bottom: 0.5px solid #eee; }
-    .log-ok { color: #1a7c4a; } .log-err { color: #c0392b; } .log-info { color: #2255aa; }
-    #loading { padding: 20px; color: #666; font-size: 13px; }
+    :root {
+      --bg: #ffffff; --bg2: #f7f8fa; --bg3: #f0f0ec;
+      --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.20);
+      --text: #1a1a1a; --text2: #6b6b68; --text3: #9b9b98;
+      --blue-bg: #e8f0fb; --blue-text: #1a56db;
+      --amber-bg: #fff4e0; --amber-text: #92500a;
+      --red: #e24b4a; --radius: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 12px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+    #status { padding: 20px; color: #666; font-size: 13px; }
 
-    .ext-title { font-size: 13px; font-weight: 600; color: #1a1a1a; padding: 10px 8px 8px; border-bottom: 0.5px solid #ddd; }
-    .ext-header { display: grid; font-size: 11px; font-weight: 600; color: #555; border-bottom: 1.5px solid #bbb; padding: 5px 0 5px 8px; background: #f9f9f9; }
-    .ext-header span { text-align: right; padding-right: 10px; }
-    .ext-header span:first-child { text-align: left; padding-right: 0; }
-    .ext-header .col-bar { text-align: center; padding-right: 0; }
-    .row { display: grid; align-items: center; min-height: 26px; padding-left: 8px; border-bottom: 0.5px solid #ebebeb; }
-    .row:nth-child(odd) { background: #fff; } .row:nth-child(even) { background: #f7f8fa; }
-    .row .name { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; }
-    .row .num { text-align: right; font-size: 11.5px; font-variant-numeric: tabular-nums; padding-right: 10px; }
-    .num.neg { color: #c0392b; } .num.pos { color: #1a7c4a; }
+    /* ── Toolbar ── */
+    #toolbar { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-bottom: 0.5px solid var(--border); background: var(--bg2); flex-shrink: 0; flex-wrap: wrap; }
+    #toolbar label { font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 5px; }
+    #toolbar input[type=color] { width: 28px; height: 22px; border: 0.5px solid #ccc; border-radius: 3px; padding: 1px; cursor: pointer; background: none; }
+    .sep { width: 1px; height: 18px; background: var(--border-strong); }
+    .toolbar-right { font-size: 11px; color: var(--text3); margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .toolbar-right strong { color: var(--text2); }
+
+    /* ── Buttons ── */
+    .btn { font-size: 11px; padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.12s; }
+    .btn:hover { background: var(--bg2); }
+    .btn.primary { background: var(--blue-bg); color: var(--blue-text); border-color: #b3caf5; }
+    .btn.primary:hover { background: #d4e4fc; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Table ── */
+    .table-wrap { flex: 1; overflow: auto; }
+    #viz { display: none; flex-direction: column; height: 100%; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    thead tr { background: var(--bg2); border-bottom: 1.5px solid #bbb; position: sticky; top: 0; z-index: 2; }
+    th { font-size: 11px; font-weight: 600; color: var(--text2); padding: 5px 10px 5px 0; text-align: right; position: relative; overflow: hidden; white-space: nowrap; }
+    th:first-child { text-align: left; padding-left: 8px; }
+    th.col-bar { text-align: center; padding-right: 0; }
+    th.col-comment { text-align: center; padding: 0; }
+    .resize-handle { position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; background: transparent; }
+    .resize-handle:hover, .resize-handle.dragging { background: #5b8db8; }
+    tbody tr:nth-child(odd) { background: var(--bg); }
+    tbody tr:nth-child(even) { background: var(--bg2); }
+    tbody tr:hover { background: #dce8f5; }
+    td { padding: 4px 10px 4px 0; font-size: 11.5px; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-bottom: 0.5px solid #ebebeb; }
+    td:first-child { text-align: left; padding-left: 8px; }
+    td.col-bar { padding: 0; }
+    td.col-comment { text-align: center; padding: 0; width: 44px; }
+    .neg { color: #c0392b; } .pos { color: #1a7c4a; }
     .bar-cell { position: relative; height: 26px; display: flex; align-items: center; }
     .bar-axis { position: absolute; left: 50%; top: 4px; bottom: 4px; width: 1px; background: #ccc; }
-    .bar-pos { position: absolute; left: 50%; height: 12px; background: #5b8db8; border-radius: 0 2px 2px 0; }
-    .bar-neg { position: absolute; height: 12px; background: #b8c8d8; border-radius: 2px 0 0 2px; right: 50%; }
-    .total-row { display: grid; align-items: center; font-weight: 600; font-size: 12px; border-top: 1.5px solid #bbb; padding: 5px 0 5px 8px; background: #f2f2f2; }
-    .total-row .num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 10px; }
+
+    .bar-label { font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; padding: 0 3px; line-height: 1; position: absolute; top: 50%; transform: translateY(-50%); }
+    .bar-label-pos { left: calc(50% + var(--bw, 0px) + 2px); }
+    .bar-label-neg { right: calc(50% + var(--bw, 0px) + 2px); }
+    .bar-pos { position: absolute; left: 50%; height: 12px; border-radius: 0 2px 2px 0; }
+    .bar-neg { position: absolute; height: 12px; border-radius: 2px 0 0 2px; right: 50%; }
+    tfoot tr { background: var(--bg3); border-top: 1.5px solid #bbb; font-weight: 600; }
+    tfoot td { padding: 5px 10px 5px 0; font-size: 12px; border-bottom: none; }
+    tfoot td:first-child { padding-left: 8px; }
+
+    /* ── Comment button ── */
+    .comment-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 3px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px; transition: color 0.12s, background 0.12s; }
+    .comment-btn:hover { color: var(--text2); background: var(--bg2); }
+    .comment-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .comment-count { font-size: 10px; background: var(--red); color: #fff; border-radius: 8px; padding: 1px 4px; line-height: 1.4; font-weight: 600; }
+
+    /* ── Sidebar ── */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.18); z-index: 50; display: none; }
+    .overlay.open { display: block; }
+    .sidebar { position: fixed; top: 0; right: -380px; width: 340px; height: 100%; background: var(--bg); border-left: 1px solid var(--border); z-index: 51; display: flex; flex-direction: column; transition: right 0.22s ease; }
+    .sidebar.open { right: 0; }
+    .sidebar-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+    .sidebar-title { font-weight: 600; font-size: 13px; }
+    .sidebar-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .close-btn { background: none; border: none; cursor: pointer; color: var(--text2); font-size: 18px; line-height: 1; padding: 2px; }
+    .close-btn:hover { color: var(--text); }
+    .comments-list { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .comment-item { padding: 9px 11px; background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border); }
+    .comment-item.pending { background: var(--amber-bg); border-color: #fbbf24; }
+    .comment-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .comment-author { font-size: 11px; font-weight: 600; }
+    .comment-tag { font-size: 9px; padding: 1px 5px; border-radius: 6px; background: var(--amber-bg); color: var(--amber-text); font-weight: 500; }
+    .comment-time { font-size: 10px; color: var(--text3); }
+    .comment-body { font-size: 12px; color: var(--text); line-height: 1.5; }
+    .comment-delete { background: none; border: none; cursor: pointer; color: var(--text3); padding: 2px 4px; border-radius: 4px; font-size: 11px; transition: color 0.12s, background 0.12s; margin-left: 4px; }
+    .comment-delete:hover { color: var(--red); background: #fef2f2; }
+    .no-comments { text-align: center; padding: 2rem; color: var(--text3); font-size: 12px; }
+    .push-bar { padding: 8px 14px; border-top: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .push-status { flex: 1; font-size: 11px; color: var(--text2); }
+    .push-status.pending { color: var(--amber-text); font-weight: 500; }
+    .input-area { padding: 10px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .input-row { display: flex; gap: 7px; align-items: flex-end; }
+    textarea.comment-input { flex: 1; font-size: 12px; padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg); color: var(--text); font-family: var(--font); resize: none; min-height: 56px; outline: none; }
+    textarea.comment-input:focus { border-color: #6b9df7; }
+
+    /* ── Config Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: var(--bg); border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); display: flex; flex-direction: column; gap: 14px; }
+    .modal-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .modal-sub { font-size: 12px; color: var(--text2); margin-top: -8px; line-height: 1.5; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.04em; }
+    .field input { font-size: 13px; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-family: var(--font); color: var(--text); background: var(--bg); outline: none; }
+    .field input:focus { border-color: #6b9df7; }
+    .field .hint { font-size: 10px; color: var(--text3); line-height: 1.4; }
+    .modal-divider { border: none; border-top: 1px solid var(--border); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+    /* ── Color Rules in Settings ── */
+    .rules-list { display: flex; flex-direction: column; gap: 10px; }
+
+    /* One full rule block */
+    .rule-block { border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 8px 10px; background: var(--bg2); display: flex; flex-direction: column; gap: 6px; }
+    .rule-block-header { display: flex; align-items: center; justify-content: space-between; }
+    .rule-block-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; }
+    .rule-block-footer { display: flex; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid var(--border); margin-top: 2px; }
+    .rule-block-footer span { font-size: 11px; color: var(--text2); }
+
+    /* Condition rows inside a rule */
+    .condition-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .condition-connector { font-size: 10px; font-weight: 700; color: var(--blue-text); background: var(--blue-bg); border: 1px solid #b3caf5; border-radius: 4px; padding: 2px 6px; cursor: pointer; flex-shrink: 0; user-select: none; }
+    .condition-connector:hover { background: #d4e4fc; }
+
+    /* Shared input styles */
+    .rule-block select, .rule-block input[type=text] {
+      font-size: 11.5px; padding: 4px 6px; border: 1px solid var(--border-strong);
+      border-radius: var(--radius); font-family: var(--font); color: var(--text);
+      background: var(--bg); outline: none; min-width: 0;
+    }
+    .rule-block select { cursor: pointer; }
+    .cond-field { width: 75px; }
+    .cond-op    { width: 52px; }
+    .cond-val   { width: 65px; }
+    .cond-remove { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 13px; padding: 0 2px; flex-shrink: 0; }
+    .cond-remove:hover { color: var(--red); }
+
+    .rule-color-pick { width: 30px; height: 24px; padding: 1px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; flex-shrink: 0; }
+    .rule-arrow { font-size: 13px; color: var(--text2); flex-shrink: 0; }
+    .rule-remove-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 13px; padding: 0; }
+    .rule-remove-btn:hover { color: var(--red); }
+
+    .add-cond-btn { font-size: 10px; color: var(--blue-text); background: none; border: none; cursor: pointer; padding: 1px 0; display: inline-flex; align-items: center; gap: 3px; }
+    .add-cond-btn:hover { text-decoration: underline; }
+    .add-rule-btn { font-size: 11px; color: var(--blue-text); background: none; border: none; cursor: pointer; padding: 2px 0; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
+    .add-rule-btn:hover { text-decoration: underline; }
+    .default-color-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); margin-top: 4px; }
+    .default-color-row input[type=color] { width: 30px; height: 24px; padding: 1px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-<div id="log"></div>
-<div id="app">
-  <div id="loading">Connecting to Tableau data…</div>
-  <div id="viz" style="display:none;">
-    <div class="ext-title">Budget vs Actual — Variance</div>
-    <div class="ext-header" id="header"></div>
-    <div id="rows-container"></div>
-    <div class="total-row" id="total-row"></div>
+  <div id="status">Connecting to Tableau data…</div>
+
+  <div id="viz">
+    <div id="toolbar">
+      <div class="toolbar-right">
+        <span id="toolbar-user-label" style="display:none">
+          👤 <strong id="toolbar-user">—</strong>
+        </span>
+        <button class="btn" onclick="openConfig(false)">⚙ Settings</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead><tr id="header-row"></tr></thead>
+        <tbody id="rows-container"></tbody>
+        <tfoot><tr id="total-row"></tr></tfoot>
+      </table>
+    </div>
   </div>
-</div>
+
+  <!-- Comment Sidebar -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div>
+        <div class="sidebar-title">Comments</div>
+        <div class="sidebar-sub" id="sidebarSub">—</div>
+      </div>
+      <button class="close-btn" onclick="closeSidebar()">✕</button>
+    </div>
+    <div class="comments-list" id="commentsList"></div>
+    <div class="push-bar">
+      <span class="push-status" id="pushStatus">All saved</span>
+      <button class="btn primary" id="pushBtn" onclick="pushComment()" disabled>
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 11V3M4 7l4-4 4 4"/><path d="M2 13h12"/></svg>
+        Push
+      </button>
+    </div>
+    <div class="input-area">
+      <div class="input-row">
+        <textarea class="comment-input" id="commentInput" placeholder="Add a comment… (Enter to send, Shift+Enter for newline)" rows="2"></textarea>
+        <button class="btn primary" onclick="stageComment()" style="height:36px;padding:0 11px">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2L2 7l5 3 3 5 4-13z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Modal — name + source_id only -->
+  <div class="modal-overlay hidden" id="configModal">
+    <div class="modal">
+      <div class="modal-title">⚙ Settings</div>
+      <p class="modal-sub">Saved in the workbook — persists every time it opens.</p>
+      <hr class="modal-divider"/>
+
+      <div class="field">
+        <label>Dashboard Name</label>
+        <input type="text" id="cfg-source-id" placeholder="e.g. Budget Variance Q2 2026" autocomplete="off"/>
+        <span class="hint">Unique name for this workbook. Groups comments in SharePoint. Set once — changing it will lose comment history.</span>
+      </div>
+
+
+      <hr class="modal-divider"/>
+      <div class="modal-section-title" style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;">Color Rules</div>
+      <p style="font-size:11px;color:var(--text3);margin-top:-6px;line-height:1.5;">Rules are evaluated top to bottom — first match wins. Applies to bar and % Var text.</p>
+      <div class="rules-list" id="rules-list"></div>
+      <button class="add-rule-btn" onclick="addRule()">＋ Add Rule</button>
+      <div class="default-color-row" style="margin-top:4px;">
+        <span>Default (no match)</span>
+        <input type="color" id="default-color" value="#5b8db8" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" id="cfg-cancel-btn" onclick="closeConfig()">Cancel</button>
+        <button class="btn primary" onclick="saveConfig()">Save</button>
+      </div>
+    </div>
+  </div>
 
 <script>
-function log(msg, type) {
-  const d = document.getElementById('log');
-  const line = document.createElement('div');
-  line.className = 'log-line ' + (type || 'log-info');
-  line.textContent = new Date().toISOString().substr(11,8) + ' ' + msg;
-  d.appendChild(line);
-  d.scrollTop = d.scrollHeight;
-  console.log(msg);
+// ================================================================
+// POWER AUTOMATE URLS — set by admin, not editable by users
+// Replace these with your actual Flow HTTP trigger URLs
+// ================================================================
+var PA_POST_URL   = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b28332ca3555446396db1e3979b307f2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2OCWHZ9t8hU1z2ptmiSTzdlI2qcJz2Urb6L8fE4Dfwc';
+var PA_GET_URL    = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/87f4223d13bc49f9ba5cfb602cf5b417/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pHi1nTkH3aiLc04w8H_ecOOgbto3cV5gOFwm8RWwBOk';
+var PA_DELETE_URL = 'REPLACE_WITH_DELETE_FLOW_URL';
+var PA_API_KEY    = 'growmark_comments_writeback';
+// ================================================================
+
+// Standard headers for all PA calls
+function paHeaders() {
+  return { 'Content-Type': 'application/json', 'x-api-key': PA_API_KEY };
 }
 
-function fmt(n) {
-  return (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString();
+
+// ── Color Rules Engine ───────────────────────────────────────────
+// A "rule" = { conditions: [{field,op,val}], logic: 'AND'|'OR', color }
+// Rules evaluated top-to-bottom; first match wins.
+
+var DEFAULT_RULES = [
+  { conditions: [{ field:'pct', op:'>', val:'0' }],    logic:'AND', color:'#c0392b' },
+  { conditions: [{ field:'pct', op:'<=', val:'-5' }],  logic:'AND', color:'#1a7c4a' },
+];
+
+function makeFieldSelect(selField) {
+  return '<select class="cond-field">' +
+    ['pct','var'].map(function(f) {
+      return '<option value="'+f+'"'+(selField===f?' selected':'')+'>'+
+        (f==='pct'?'% Var':'$ Var')+'</option>';
+    }).join('') + '</select>';
 }
-function fmtPct(v) {
-  return (v > 0 ? '+' : '') + v.toFixed(1) + '%';
-}
-function toNum(v) {
-  if (typeof v === 'number') return v;
-  if (!v || v === '%null%') return 0;
-  const n = parseFloat(String(v).replace(/[$,%\s]/g, ''));
-  return isNaN(n) ? 0 : n;
+function makeOpSelect(selOp) {
+  return '<select class="cond-op">' +
+    ['>','<','>=','<=','='].map(function(op) {
+      return '<option value="'+op+'"'+(selOp===op?' selected':'')+'>'+op+'</option>';
+    }).join('') + '</select>';
 }
 
-function render(rows) {
-  log('Rendering ' + rows.length + ' rows', 'log-ok');
-  const variances = rows.map(r => r.actual - r.budget);
-  const maxAbs = Math.max(...variances.map(v => Math.abs(v)), 1);
-  const BAR_MAX = 52;
-  const colWidth = (BAR_MAX * 2 + 20) + 'px';
-  const gridTpl = '1fr 90px 90px ' + colWidth + ' 72px';
+function addConditionToBlock(block, cond, isFirst, logic) {
+  cond = cond || { field:'pct', op:'>', val:'0' };
+  logic = logic || 'AND';
+  var row = document.createElement('div');
+  row.className = 'condition-row';
+  var connectorHtml = isFirst ? '' :
+    '<span class="condition-connector" onclick="toggleLogic(this,event)">'+logic+'</span>';
+  row.innerHTML = connectorHtml +
+    makeFieldSelect(cond.field) +
+    makeOpSelect(cond.op) +
+    '<input type="text" class="cond-val" value="'+cond.val+'" placeholder="0"/>' +
+    '<button class="cond-remove" onclick="removeCondition(this)" title="Remove condition">✕</button>';
+  block.querySelector('.conditions-wrap').appendChild(row);
+}
 
-  document.getElementById('header').style.gridTemplateColumns = gridTpl;
-  document.getElementById('header').innerHTML =
-    '<span></span><span>Actual</span><span>Budget</span><span class="col-bar">$ Var</span><span>% Var</span>';
 
-  const container = document.getElementById('rows-container');
-  container.innerHTML = '';
-  let tA = 0, tB = 0;
+function addCondToParent(btn) {
+  addConditionToBlock(btn.closest('.rule-block'), null, false, 'AND');
+}
 
-  rows.forEach(function(r) {
-    tA += r.actual; tB += r.budget;
-    const vr = r.actual - r.budget;
-    const pct = r.budget !== 0 ? (vr / r.budget) * 100 : 0;
-    const barW = Math.abs(vr) / maxAbs * BAR_MAX;
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.style.gridTemplateColumns = gridTpl;
-    row.innerHTML =
-      '<span class="name" title="' + r.name + '">' + r.name + '</span>' +
-      '<span class="num">' + fmt(r.actual) + '</span>' +
-      '<span class="num">' + fmt(r.budget) + '</span>' +
-      '<div class="bar-cell"><div class="bar-axis"></div>' +
-        (vr >= 0 ? '<div class="bar-pos" style="width:' + barW + 'px;"></div>'
-                 : '<div class="bar-neg" style="width:' + barW + 'px;"></div>') +
-      '</div>' +
-      '<span class="num ' + (vr > 0 ? 'neg' : vr < 0 ? 'pos' : '') + '">' + fmtPct(pct) + '</span>';
-    container.appendChild(row);
-  });
+function toggleLogic(el, e) {
+  e.stopPropagation();
+  el.textContent = el.textContent.trim() === 'AND' ? 'OR' : 'AND';
+}
 
-  const tv = tA - tB, tp = tB !== 0 ? (tv / tB) * 100 : 0;
-  const tBarW = Math.abs(tv) / maxAbs * BAR_MAX;
-  const tr = document.getElementById('total-row');
-  tr.style.gridTemplateColumns = gridTpl;
-  tr.innerHTML =
-    '<span>Total</span><span class="num">' + fmt(tA) + '</span><span class="num">' + fmt(tB) + '</span>' +
-    '<div class="bar-cell" style="position:relative;height:26px;display:flex;align-items:center;">' +
-      '<div class="bar-axis" style="position:absolute;left:50%;top:4px;bottom:4px;width:1px;background:#ccc;"></div>' +
-      (tv >= 0 ? '<div class="bar-pos" style="width:' + tBarW + 'px;"></div>'
-               : '<div class="bar-neg" style="width:' + tBarW + 'px;"></div>') +
+function removeCondition(btn) {
+  var row = btn.closest('.condition-row');
+  var wrap = row.closest('.conditions-wrap');
+  if (wrap.querySelectorAll('.condition-row').length === 1) return; // keep at least one
+  // If removing non-first row, just remove it
+  // If removing first row, strip connector from next row
+  var rows = wrap.querySelectorAll('.condition-row');
+  var idx = Array.from(rows).indexOf(row);
+  if (idx === 0 && rows.length > 1) {
+    var nextConnector = rows[1].querySelector('.condition-connector');
+    if (nextConnector) nextConnector.remove();
+  }
+  row.remove();
+}
+
+function addRule(rule) {
+  rule = rule || { conditions:[{field:'pct',op:'>',val:'0'}], logic:'AND', color:'#c0392b' };
+  var list = document.getElementById('rules-list');
+  var ruleNum = list.children.length + 1;
+
+  var block = document.createElement('div');
+  block.className = 'rule-block';
+  block.innerHTML =
+    '<div class="rule-block-header">' +
+      '<span class="rule-block-label">Rule '+ruleNum+'</span>' +
+      '<button class="rule-remove-btn" onclick="removeRule(this)" title="Remove rule">✕ Remove</button>' +
     '</div>' +
-    '<span class="num ' + (tv > 0 ? 'neg' : tv < 0 ? 'pos' : '') + '">' + fmtPct(tp) + '</span>';
+    '<div class="conditions-wrap"></div>' +
+    '<div style="margin-top:2px;">' +
+      '<button class="add-cond-btn" onclick="addCondToParent(this)">＋ Add condition</button>' +
+    '</div>' +
+    '<div class="rule-block-footer">' +
+      '<span>→ Color:</span>' +
+      '<input type="color" class="rule-color-pick" value="'+(rule.color||'#c0392b')+'"/>' +
+    '</div>';
 
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('viz').style.display = 'block';
-}
+  list.appendChild(block);
 
-function loadData(worksheet) {
-  log('Calling getSummaryDataAsync...', 'log-info');
-  worksheet.getSummaryDataAsync({ ignoreSelection: true }).then(function(sumData) {
-    const cols = sumData.columns.map(function(c) { return c.fieldName; });
-    log('Columns: ' + JSON.stringify(cols), 'log-ok');
-    log('Row count: ' + sumData.data.length, 'log-ok');
-
-    if (sumData.data.length === 0) {
-      log('No data rows returned', 'log-err');
-      document.getElementById('loading').textContent = 'No data. Add fields to the Marks card.';
-      return;
-    }
-
-    // Log first row raw values for debugging
-    const firstRow = sumData.data[0];
-    firstRow.forEach(function(cell, i) {
-      log('  col[' + i + '] ' + cols[i] + ' = ' + JSON.stringify(cell.value) + ' / ' + cell.formattedValue, 'log-info');
-    });
-
-    // Auto-detect columns
-    function findCol(keywords) {
-      for (var k = 0; k < keywords.length; k++) {
-        for (var i = 0; i < cols.length; i++) {
-          if (cols[i].toLowerCase().indexOf(keywords[k].toLowerCase()) !== -1) return i;
-        }
-      }
-      return -1;
-    }
-
-    const nameIdx   = findCol(['cost center', 'detail', 'name', 'label', 'department', 'center']);
-    const actualIdx = findCol(['actual']);
-    const budgetIdx = findCol(['budget']);
-
-    log('Mapped: name=' + nameIdx + '(' + cols[nameIdx] + ') actual=' + actualIdx + '(' + cols[actualIdx] + ') budget=' + budgetIdx + '(' + cols[budgetIdx] + ')', 'log-ok');
-
-    if (nameIdx < 0 || actualIdx < 0 || budgetIdx < 0) {
-      log('Could not map columns. Found: ' + cols.join(', '), 'log-err');
-      document.getElementById('loading').textContent = 'Could not map columns. Found: ' + cols.join(', ');
-      return;
-    }
-
-    const rows = sumData.data.map(function(row) {
-      return {
-        name:   String(row[nameIdx].formattedValue || row[nameIdx].value),
-        actual: toNum(row[actualIdx].value),
-        budget: toNum(row[budgetIdx].value)
-      };
-    });
-
-    render(rows);
-  }).catch(function(e) {
-    log('getSummaryDataAsync error: ' + e.message, 'log-err');
-    document.getElementById('loading').textContent = 'Error: ' + e.message;
+  var conditions = rule.conditions && rule.conditions.length ? rule.conditions : [{field:'pct',op:'>',val:'0'}];
+  var logic = rule.logic || 'AND';
+  conditions.forEach(function(cond, i) {
+    addConditionToBlock(block, cond, i===0, logic);
   });
 }
 
-log('Script loaded, waiting for Tableau init...', 'log-info');
+function removeRule(btn) {
+  btn.closest('.rule-block').remove();
+  // Renumber
+  document.getElementById('rules-list').querySelectorAll('.rule-block-label').forEach(function(el,i){
+    el.textContent = 'Rule '+(i+1);
+  });
+}
 
-tableau.extensions.initializeAsync().then(function() {
-  log('initializeAsync resolved', 'log-ok');
+function getRulesFromUI() {
+  var blocks = document.getElementById('rules-list').querySelectorAll('.rule-block');
+  var rules = [];
+  blocks.forEach(function(block) {
+    var conditions = [];
+    var logic = 'AND';
+    block.querySelectorAll('.condition-row').forEach(function(row, i) {
+      var connector = row.querySelector('.condition-connector');
+      if (connector) logic = connector.textContent.trim();
+      conditions.push({
+        field: row.querySelector('.cond-field').value,
+        op:    row.querySelector('.cond-op').value,
+        val:   row.querySelector('.cond-val').value.trim()
+      });
+    });
+    rules.push({
+      conditions: conditions,
+      logic:      logic,
+      color:      block.querySelector('.rule-color-pick').value
+    });
+  });
+  return rules;
+}
 
-  var vizInterface = tableau.extensions.vizExtensionInterface;
-  log('vizExtensionInterface: ' + (vizInterface ? 'exists' : 'UNDEFINED'), vizInterface ? 'log-ok' : 'log-err');
+function loadRulesToUI(rules, defaultColor) {
+  var list = document.getElementById('rules-list');
+  list.innerHTML = '';
+  (rules && rules.length ? rules : DEFAULT_RULES).forEach(function(r) { addRule(r); });
+  document.getElementById('default-color').value = defaultColor || '#5b8db8';
+}
 
-  if (!vizInterface) {
-    log('Trying dashboardContent fallback...', 'log-info');
-    try {
-      var ws = tableau.extensions.dashboardContent.dashboard.worksheets[0];
-      log('Fallback worksheet: ' + ws.name, 'log-ok');
-      loadData(ws);
-    } catch(e) {
-      log('Fallback failed: ' + e.message, 'log-err');
+function evalCondition(cond, varDollar, varPct) {
+  var test = cond.field === 'pct' ? varPct : varDollar;
+  var val  = parseFloat(cond.val);
+  if (isNaN(val)) return false;
+  if (cond.op === '>')  return test >  val;
+  if (cond.op === '<')  return test <  val;
+  if (cond.op === '>=') return test >= val;
+  if (cond.op === '<=') return test <= val;
+  if (cond.op === '=')  return test === val;
+  return false;
+}
+
+function evaluateColor(varDollar, varPct) {
+  for (var i = 0; i < CFG.colorRules.length; i++) {
+    var rule = CFG.colorRules[i];
+    var conds = rule.conditions || [];
+    if (!conds.length) continue;
+    var results = conds.map(function(c) { return evalCondition(c, varDollar, varPct); });
+    var match = rule.logic === 'OR'
+      ? results.some(function(r) { return r; })
+      : results.every(function(r) { return r; });
+    if (match) return rule.color;
+  }
+  return CFG.defaultColor || '#5b8db8';
+}
+
+// ── Config state ──────────────────────────────────────────────────
+var CFG = { sourceId: '', colorRules: [], defaultColor: '#5b8db8' };
+var CURRENT_USER = ''; // auto-populated from Tableau environment
+var configIsFirstRun = false;
+
+function openConfig(isFirstRun) {
+  configIsFirstRun = !!isFirstRun;
+  document.getElementById('cfg-source-id').value = CFG.sourceId;
+  loadRulesToUI(CFG.colorRules, CFG.defaultColor);
+  document.getElementById('cfg-cancel-btn').style.display = isFirstRun ? 'none' : '';
+  // Lock source_id after first save to prevent accidental changes
+  var sourceInput = document.getElementById('cfg-source-id');
+  if (!isFirstRun && CFG.sourceId) {
+    sourceInput.disabled = true;
+    sourceInput.title = 'Dashboard name is locked after first save to preserve comment history.';
+  } else {
+    sourceInput.disabled = false;
+    sourceInput.title = '';
+  }
+  document.getElementById('configModal').classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('cfg-source-id').focus(); }, 100);
+}
+
+function closeConfig() {
+  document.getElementById('configModal').classList.add('hidden');
+}
+
+function saveConfig() {
+  var sourceId = document.getElementById('cfg-source-id').value.trim() || CFG.sourceId;
+  if (!sourceId) { alert('Please enter a dashboard name.'); document.getElementById('cfg-source-id').focus(); return; }
+
+  CFG.sourceId    = sourceId;
+  CFG.colorRules  = getRulesFromUI();
+  CFG.defaultColor = document.getElementById('default-color').value;
+
+  try {
+    tableau.extensions.settings.set('cfg_source_id',    CFG.sourceId);
+    tableau.extensions.settings.set('cfg_color_rules', JSON.stringify(CFG.colorRules));
+    tableau.extensions.settings.set('cfg_default_color', CFG.defaultColor);
+    tableau.extensions.settings.saveAsync();
+  } catch(e) { console.warn('Could not save settings:', e); }
+
+  updateToolbarUser();
+  closeConfig();
+
+  if (configIsFirstRun) {
+    var ws = getWorksheet();
+    if (ws) loadData(ws);
+  } else {
+    loadCommentsFromAPI().then(function(){ render(lastRows); });
+  }
+}
+
+function loadConfig() {
+  try {
+    var s = tableau.extensions.settings.getAll();
+    CFG.sourceId     = s.cfg_source_id     || '';
+    CFG.defaultColor = s.cfg_default_color || '#5b8db8';
+    try { CFG.colorRules = JSON.parse(s.cfg_color_rules||'[]'); } catch(_) { CFG.colorRules = []; }
+    if (!CFG.colorRules.length) CFG.colorRules = DEFAULT_RULES;
+  } catch(e) {}
+}
+
+function updateToolbarUser() {
+  var lbl = document.getElementById('toolbar-user-label');
+  var usr = document.getElementById('toolbar-user');
+  if (CURRENT_USER) {
+    usr.textContent = CURRENT_USER;
+    lbl.style.display = 'flex';
+  }
+}
+
+// Colors now controlled by Color Rules in Settings
+
+// ── Table state ───────────────────────────────────────────────────
+var colWidths = { name:200, actual:110, budget:110, bar:140, pct:72, comment:44 };
+var colKeys   = ['name','actual','budget','bar','pct','comment'];
+var lastRows  = [];
+var comments  = {};
+var pendingComment = null;
+var activeRowId = null;
+
+// ── Helpers ───────────────────────────────────────────────────────
+function fmt(n) { if(n===null||isNaN(n))return'—'; return(n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString(); }
+function fmtP(v) { if(isNaN(v))return'—'; return(v>0?'+':'')+v.toFixed(1)+'%'; }
+function toN(v) { if(typeof v==='number')return v; if(!v||v==='%null%')return 0; var n=parseFloat(String(v).replace(/[$,%\s]/g,'')); return isNaN(n)?0:n; }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s||'').replace(/'/g,"\\'"); }
+
+// ── Column resizing ───────────────────────────────────────────────
+function applyWidths() {
+  document.getElementById('tbl').querySelectorAll('tr').forEach(function(row){
+    var cells=row.children;
+    if(cells.length!==colKeys.length)return;
+    colKeys.forEach(function(key,i){cells[i].style.width=cells[i].style.minWidth=cells[i].style.maxWidth=colWidths[key]+'px';});
+  });
+  renderBars();
+}
+function renderBars() {
+  var BM=Math.max(20,(colWidths.bar/2)-10);
+  document.querySelectorAll('.bar-pos,.bar-neg').forEach(function(el){
+    var w = parseFloat(el.dataset.pct||0)*BM;
+    el.style.width = w+'px';
+    // Set CSS var on parent bar-cell so label knows tip position
+    var cell = el.closest('.bar-cell');
+    if (cell) cell.style.setProperty('--bw', w+'px');
+  });
+}
+function addResizeListener(handle,key) {
+  handle.addEventListener('mousedown',function(e){
+    e.preventDefault(); handle.classList.add('dragging');
+    var startX=e.clientX, startW=colWidths[key];
+    function onMove(e){colWidths[key]=Math.max(40,startW+(e.clientX-startX));applyWidths();}
+    function onUp(){handle.classList.remove('dragging');document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+    document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
+  });
+}
+
+// ── Build header ──────────────────────────────────────────────────
+function buildHeader() {
+  var defs=[
+    {key:'name',   label:'',           cls:''},
+    {key:'actual', label:'Actual',     cls:''},
+    {key:'budget', label:'Budget',     cls:''},
+    {key:'bar',    label:'$ Variance', cls:'col-bar'},
+    {key:'pct',    label:'% Var',      cls:''},
+    {key:'comment',label:'💬',         cls:'col-comment'},
+  ];
+  var hdr=document.getElementById('header-row'); hdr.innerHTML='';
+  defs.forEach(function(col){
+    var th=document.createElement('th'); th.className=col.cls;
+    th.style.width=colWidths[col.key]+'px'; th.textContent=col.label;
+    if(col.key!=='pct'&&col.key!=='comment'){
+      var h=document.createElement('div'); h.className='resize-handle';
+      th.appendChild(h); addResizeListener(h,col.key);
     }
-    return;
-  }
+    hdr.appendChild(th);
+  });
+}
 
-  var worksheet = vizInterface.worksheet;
-  log('worksheet: ' + (worksheet ? worksheet.name : 'UNDEFINED'), worksheet ? 'log-ok' : 'log-err');
+// ── Render table ──────────────────────────────────────────────────
+function render(rows) {
+  rows=rows.filter(function(r){return r.n&&r.n.trim()!=='';});
+  lastRows=rows;
+  var vrs=rows.map(function(r){return r.a-r.b;});
+  var mx=Math.max.apply(null,vrs.map(function(v){return Math.abs(v);}));
+  if(mx===0)mx=1;
+  buildHeader();
+  var c=document.getElementById('rows-container'); c.innerHTML='';
+  var tA=0,tB=0;
 
-  if (!worksheet) {
-    log('worksheet is undefined on vizExtensionInterface', 'log-err');
-    return;
-  }
-
-  loadData(worksheet);
-
-  worksheet.addEventListener(tableau.TableauEventType.SummaryDataChanged, function() {
-    log('SummaryDataChanged fired', 'log-info');
-    loadData(worksheet);
+  rows.forEach(function(r){
+    tA+=r.a; tB+=r.b;
+    var vr=r.a-r.b, pct=r.b?(vr/r.b*100):0, bp=Math.abs(vr)/mx;
+    var rowId=r.n;
+    var count=(comments[rowId]||[]).length+(pendingComment&&pendingComment.rowId===rowId?1:0);
+    var tr=document.createElement('tr');
+    var rowColor = evaluateColor(vr, pct);
+    var barLabel = fmt(vr);
+    var barHtml=vr>=0
+      ?'<div class="bar-pos" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-pos" style="color:'+rowColor+'">'+barLabel+'</span>'
+      :'<div class="bar-neg" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-neg" style="color:'+rowColor+'">'+barLabel+'</span>';
+    var pctStyle='color:'+rowColor+';';
+    var commentBtn='<button class="comment-btn" onclick="openSidebar(\''+escAttr(rowId)+'\',\''+escAttr(r.n)+'\')" aria-label="Comments">'+
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3z"/></svg>'+
+      (count?'<span class="comment-count">'+count+'</span>':'')+
+      '</button>';
+    var cells=[
+      {cls:'',           html:'<span title="'+escHtml(r.n)+'">'+escHtml(r.n)+'</span>'},
+      {cls:'',           html:fmt(r.a)},
+      {cls:'',           html:fmt(r.b)},
+      {cls:'col-bar',    html:'<div class="bar-cell"><div class="bar-axis"></div>'+barHtml+'</div>'},
+      {cls:vr>0?'neg':vr<0?'pos':'', html:'<span style="'+pctStyle+'">'+fmtP(pct)+'</span>'},
+      {cls:'col-comment',html:commentBtn},
+    ];
+    cells.forEach(function(cell,i){
+      var td=document.createElement('td'); td.className=cell.cls;
+      td.style.width=colWidths[colKeys[i]]+'px'; td.innerHTML=cell.html;
+      tr.appendChild(td);
+    });
+    c.appendChild(tr);
   });
 
-}).catch(function(e) {
-  log('initializeAsync failed: ' + e.message, 'log-err');
-  document.getElementById('loading').textContent = 'Init failed: ' + e.message;
+  // Totals row
+  var tv=tA-tB, tp=tB?(tv/tB*100):0, tbp=Math.abs(tv)/mx;
+  var tfr=document.getElementById('total-row'); tfr.innerHTML='';
+  var totalColor = evaluateColor(tv, tp);
+  var tbarLabel = fmt(tv);
+  var tbarHtml=tv>=0
+    ?'<div class="bar-pos" data-pct="'+tbp+'" style="width:0;background:'+totalColor+'"></div><span class="bar-label bar-label-pos" style="color:'+totalColor+'">'+tbarLabel+'</span>'
+    :'<div class="bar-neg" data-pct="'+tbp+'" style="width:0;background:'+totalColor+'"></div><span class="bar-label bar-label-neg" style="color:'+totalColor+'">'+tbarLabel+'</span>';
+  var tpStyle='color:'+totalColor+';';
+  [{cls:'',html:'Total'},{cls:'',html:fmt(tA)},{cls:'',html:fmt(tB)},
+   {cls:'col-bar',html:'<div class="bar-cell"><div class="bar-axis"></div>'+tbarHtml+'</div>'},
+   {cls:tv>0?'neg':tv<0?'pos':'',html:'<span style="'+tpStyle+'">'+fmtP(tp)+'</span>'},
+   {cls:'col-comment',html:''}
+  ].forEach(function(cell,i){
+    var td=document.createElement('td'); td.className=cell.cls;
+    td.style.width=colWidths[colKeys[i]]+'px'; td.innerHTML=cell.html;
+    tfr.appendChild(td);
+  });
+
+  document.getElementById('status').style.display='none';
+  document.getElementById('viz').style.display='flex';
+  renderBars();
+}
+
+// ── Comments — Power Automate ─────────────────────────────────────
+async function loadCommentsFromAPI() {
+  if (!CFG.sourceId || PA_GET_URL.indexOf('REPLACE') === 0) return;
+  try {
+    var res=await fetch(PA_GET_URL, {
+      method: 'POST',
+      headers: paHeaders(),
+      body: JSON.stringify({source_id: CFG.sourceId})
+    });
+    if(!res.ok) throw new Error('GET flow returned '+res.status);
+    var data=await res.json();
+    comments={};
+    data.forEach(function(c){
+      if(!comments[c.row_id])comments[c.row_id]=[];
+      comments[c.row_id].push({
+        id:      c.id,
+        author:  c.author,
+        text:    c.comment_text,
+        time:    new Date(c.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+      });
+    });
+  } catch(e){ console.warn('Could not load comments:',e.message); }
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────
+function openSidebar(rowId,label) {
+  activeRowId=rowId;
+  document.getElementById('sidebarSub').textContent=label;
+  renderSidebarComments();
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(function(){document.getElementById('commentInput').focus();},220);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  activeRowId=null;
+}
+function renderSidebarComments() {
+  var list=document.getElementById('commentsList');
+  var saved=comments[activeRowId]||[];
+  var showPending=pendingComment&&pendingComment.rowId===activeRowId;
+  var all=saved.concat(showPending?[Object.assign({},pendingComment,{_pending:true})]:[]);
+  if(!all.length){
+    list.innerHTML='<div class="no-comments">No comments yet</div>';
+  } else {
+    list.innerHTML=all.map(function(c){
+      return '<div class="comment-item'+(c._pending?' pending':'')+'">'+
+        '<div class="comment-meta">'+
+          '<span class="comment-author">'+escHtml(c.author)+(c._pending?' <span class="comment-tag">not pushed</span>':'')+' </span>'+
+          '<span style="display:flex;align-items:center;gap:4px">'+
+            '<span class="comment-time">'+c.time+'</span>'+
+            (!c._pending?'<button class="comment-delete" onclick="deleteComment(\''+c.id+'\',\''+escAttr(activeRowId)+'\')" title="Delete">✕</button>':'')+
+          '</span>'+
+        '</div>'+
+        '<div class="comment-body">'+escHtml(c.text)+'</div>'+
+      '</div>';
+    }).join('');
+    list.scrollTop=list.scrollHeight;
+  }
+  var hasPending=pendingComment&&pendingComment.rowId===activeRowId;
+  document.getElementById('pushBtn').disabled=!hasPending;
+  document.getElementById('pushStatus').textContent=hasPending?'1 comment pending push':'All saved';
+  document.getElementById('pushStatus').className='push-status'+(hasPending?' pending':'');
+}
+
+// ── Write-back ────────────────────────────────────────────────────
+function stageComment() {
+  var inp=document.getElementById('commentInput');
+  var text=inp.value.trim();
+  if(!text||activeRowId===null)return;
+  var now=new Date();
+  pendingComment={rowId:activeRowId,author:CURRENT_USER||'Unknown',text:text,time:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
+  inp.value='';
+  renderSidebarComments();
+  render(lastRows);
+}
+
+async function pushComment() {
+  if(!pendingComment)return;
+  var rowId=pendingComment.rowId, author=pendingComment.author, text=pendingComment.text;
+  try {
+    var res=await fetch(PA_POST_URL,{
+      method:'POST',
+      headers:paHeaders(),
+      body:JSON.stringify({
+        source_id:   CFG.sourceId,
+        row_id:      rowId,
+        author:      author,
+        comment_text:text,
+        created_at:  new Date().toISOString()
+      })
+    });
+    if(!res.ok) throw new Error('Push failed ('+res.status+')');
+    var created={}; try{created=await res.json();}catch(_){}
+    if(!comments[rowId])comments[rowId]=[];
+    comments[rowId].push({id:created.id||String(Date.now()),author:author,text:text,time:pendingComment.time});
+    pendingComment=null;
+    renderSidebarComments();
+    render(lastRows);
+  } catch(e){ alert('Could not push comment:\n'+e.message); }
+}
+
+async function deleteComment(id,rowId) {
+  if(!confirm('Delete this comment?'))return;
+  try {
+    var res=await fetch(PA_DELETE_URL,{
+      method:'POST',
+      headers:paHeaders(),
+      body:JSON.stringify({id:id,source_id:CFG.sourceId})
+    });
+    if(!res.ok) throw new Error('Delete failed ('+res.status+')');
+    if(comments[rowId])comments[rowId]=comments[rowId].filter(function(c){return String(c.id)!==String(id);});
+    renderSidebarComments(); render(lastRows);
+  } catch(e){ alert('Could not delete comment:\n'+e.message); }
+}
+
+document.getElementById('commentInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();stageComment();}
 });
+
+// ── Data loading ──────────────────────────────────────────────────
+function findCol(cols,keywords) {
+  for(var k=0;k<keywords.length;k++)
+    for(var i=0;i<cols.length;i++)
+      if(cols[i].toLowerCase().indexOf(keywords[k].toLowerCase())!==-1)return i;
+  return 0;
+}
+function getWorksheet() {
+  try { return tableau.extensions.worksheetContent&&tableau.extensions.worksheetContent.worksheet; } catch(_){ return null; }
+}
+async function loadData(ws) {
+  try {
+    var sd=await ws.getSummaryDataAsync({ignoreSelection:true});
+    var cols=sd.columns.map(function(c){return c.fieldName;});
+    if(!sd.data.length){document.getElementById('status').textContent='No data — add fields to the Marks card.';return;}
+    var ni=findCol(cols,['cost center','detail','name','label','dept','group']);
+    var ai=findCol(cols,['actual']);
+    var bi=findCol(cols,['budget']);
+    var rows=sd.data.map(function(row){
+      return{n:String(row[ni].formattedValue||row[ni].value||''),a:toN(row[ai].value),b:toN(row[bi].value)};
+    });
+    await loadCommentsFromAPI();
+    render(rows);
+    updateToolbarUser();
+  } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+(async function(){
+  try {
+    await tableau.extensions.initializeAsync();
+    loadConfig();
+
+    // Auto-populate user from Tableau environment
+    try {
+      var env = tableau.extensions.environment;
+      if (env && env.uniqueUserId) {
+        // uniqueUserId on Cloud is login name (email or username)
+        // Strip domain if present to get a clean display name
+        var uid = env.uniqueUserId;
+        // Format: "domain/username" on Desktop, "username" or email on Cloud
+        if (uid.indexOf('/') !== -1) uid = uid.split('/').pop();
+        CURRENT_USER = uid;
+      }
+    } catch(e) { console.warn('Could not get uniqueUserId:', e); }
+    updateToolbarUser();
+
+    var ws=getWorksheet();
+    if(!ws){ document.getElementById('status').textContent='worksheetContent not available.'; return; }
+
+    if(!CFG.sourceId){
+      // First run — show viz shell then prompt for settings
+      document.getElementById('status').style.display='none';
+      document.getElementById('viz').style.display='flex';
+      buildHeader();
+      openConfig(true);
+    } else {
+      await loadData(ws);
+    }
+
+    ws.addEventListener(tableau.TableauEventType.SummaryDataChanged,function(){loadData(ws);});
+  } catch(e){ document.getElementById('status').textContent='Init failed: '+e.message; }
+})();
 </script>
 </body>
 </html>
