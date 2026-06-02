@@ -218,7 +218,7 @@
       </div>
 
 
-      <hr class="modal-divider"/>
+<hr class="modal-divider"/>
       <div class="modal-section-title" style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;">Color Rules</div>
       <p style="font-size:11px;color:var(--text3);margin-top:-6px;line-height:1.5;">Rules are evaluated top to bottom — first match wins. Applies to bar and % Var text.</p>
       <div class="rules-list" id="rules-list"></div>
@@ -240,10 +240,10 @@
 // POWER AUTOMATE URLS — set by admin, not editable by users
 // Replace these with your actual Flow HTTP trigger URLs
 // ================================================================
-var PA_POST_URL   = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b28332ca3555446396db1e3979b307f2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2OCWHZ9t8hU1z2ptmiSTzdlI2qcJz2Urb6L8fE4Dfwc';
-var PA_GET_URL    = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/87f4223d13bc49f9ba5cfb602cf5b417/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pHi1nTkH3aiLc04w8H_ecOOgbto3cV5gOFwm8RWwBOk';
+var PA_POST_URL   = 'REPLACE_WITH_POST_FLOW_URL';
+var PA_GET_URL    = 'REPLACE_WITH_GET_FLOW_URL';
 var PA_DELETE_URL = 'REPLACE_WITH_DELETE_FLOW_URL';
-var PA_API_KEY    = 'growmark_comments_writeback';
+var PA_API_KEY    = 'REPLACE_WITH_YOUR_SECRET_KEY';
 // ================================================================
 
 // Standard headers for all PA calls
@@ -756,6 +756,17 @@ async function loadData(ws) {
     var ni=findCol(cols,['cost center','detail','name','label','dept','group']);
     var ai=findCol(cols,['actual']);
     var bi=findCol(cols,['budget']);
+    var ui=findCol(cols,['username','user name','user']);
+
+    // Read username from first data row (same for all rows — current user)
+    if (sd.data.length && ui >= 0) {
+      var uVal = sd.data[0][ui].formattedValue || sd.data[0][ui].value || '';
+      if (uVal && uVal !== '%null%') {
+        CURRENT_USER = String(uVal);
+        updateToolbarUser();
+      }
+    }
+
     var rows=sd.data.map(function(row){
       return{n:String(row[ni].formattedValue||row[ni].value||''),a:toN(row[ai].value),b:toN(row[bi].value)};
     });
@@ -771,18 +782,7 @@ async function loadData(ws) {
     await tableau.extensions.initializeAsync();
     loadConfig();
 
-    // Auto-populate user from Tableau environment
-    try {
-      var env = tableau.extensions.environment;
-      if (env && env.uniqueUserId) {
-        // uniqueUserId on Cloud is login name (email or username)
-        // Strip domain if present to get a clean display name
-        var uid = env.uniqueUserId;
-        // Format: "domain/username" on Desktop, "username" or email on Cloud
-        if (uid.indexOf('/') !== -1) uid = uid.split('/').pop();
-        CURRENT_USER = uid;
-      }
-    } catch(e) { console.warn('Could not get uniqueUserId:', e); }
+    // Username will be populated from the USERNAME() encoding tile in loadData
     updateToolbarUser();
 
     var ws=getWorksheet();
