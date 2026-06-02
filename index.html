@@ -243,12 +243,11 @@
 var PA_POST_URL   = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b28332ca3555446396db1e3979b307f2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2OCWHZ9t8hU1z2ptmiSTzdlI2qcJz2Urb6L8fE4Dfwc';
 var PA_GET_URL    = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/87f4223d13bc49f9ba5cfb602cf5b417/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pHi1nTkH3aiLc04w8H_ecOOgbto3cV5gOFwm8RWwBOk';
 var PA_DELETE_URL = 'REPLACE_WITH_DELETE_FLOW_URL';
-var PA_API_KEY    = 'growmark_comments_writeback';
 // ================================================================
 
 // Standard headers for all PA calls
 function paHeaders() {
-  return { 'Content-Type': 'application/json', 'x-api-key': PA_API_KEY };
+  return { 'Content-Type': 'application/json', 'x-api-key': CFG.apiKey };
 }
 
 
@@ -411,12 +410,13 @@ function evaluateColor(varDollar, varPct) {
 }
 
 // ── Config state ──────────────────────────────────────────────────
-var CFG = { sourceId: '', colorRules: [], defaultColor: '#5b8db8' };
+var CFG = { sourceId: '', apiKey: '', colorRules: [], defaultColor: '#5b8db8' };
 var CURRENT_USER = ''; // auto-populated from Tableau environment
 var configIsFirstRun = false;
 
 function openConfig(isFirstRun) {
   configIsFirstRun = !!isFirstRun;
+  document.getElementById('cfg-apikey').value    = CFG.apiKey || '';
   document.getElementById('cfg-source-id').value = CFG.sourceId;
   loadRulesToUI(CFG.colorRules, CFG.defaultColor);
   document.getElementById('cfg-cancel-btn').style.display = isFirstRun ? 'none' : '';
@@ -441,11 +441,13 @@ function saveConfig() {
   var sourceId = document.getElementById('cfg-source-id').value.trim() || CFG.sourceId;
   if (!sourceId) { alert('Please enter a dashboard name.'); document.getElementById('cfg-source-id').focus(); return; }
 
+  CFG.apiKey      = document.getElementById('cfg-apikey').value.trim();
   CFG.sourceId    = sourceId;
   CFG.colorRules  = getRulesFromUI();
   CFG.defaultColor = document.getElementById('default-color').value;
 
   try {
+    tableau.extensions.settings.set('cfg_api_key',      CFG.apiKey);
     tableau.extensions.settings.set('cfg_source_id',    CFG.sourceId);
     tableau.extensions.settings.set('cfg_color_rules', JSON.stringify(CFG.colorRules));
     tableau.extensions.settings.set('cfg_default_color', CFG.defaultColor);
@@ -466,6 +468,7 @@ function saveConfig() {
 function loadConfig() {
   try {
     var s = tableau.extensions.settings.getAll();
+    CFG.apiKey       = s.cfg_api_key       || '';
     CFG.sourceId     = s.cfg_source_id     || '';
     CFG.defaultColor = s.cfg_default_color || '#5b8db8';
     try { CFG.colorRules = JSON.parse(s.cfg_color_rules||'[]'); } catch(_) { CFG.colorRules = []; }
@@ -620,14 +623,17 @@ function render(rows) {
 // ── Comments — Power Automate ─────────────────────────────────────
 async function loadCommentsFromAPI() {
   if (!CFG.sourceId || PA_GET_URL.indexOf('REPLACE') === 0) return;
+  console.log('[PA] GET comments for source_id:', CFG.sourceId);
   try {
     var res=await fetch(PA_GET_URL, {
       method: 'POST',
       headers: paHeaders(),
       body: JSON.stringify({source_id: CFG.sourceId})
     });
+    console.log('[PA] GET response status:', res.status);
     if(!res.ok) throw new Error('GET flow returned '+res.status);
     var data=await res.json();
+    console.log('[PA] GET data:', data);
     comments={};
     data.forEach(function(c){
       if(!comments[c.row_id])comments[c.row_id]=[];
@@ -638,7 +644,7 @@ async function loadCommentsFromAPI() {
         time:    new Date(c.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
       });
     });
-  } catch(e){ console.warn('Could not load comments:',e.message); }
+  } catch(e){ console.error('[PA] GET error:', e.message, e); }
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────
@@ -698,6 +704,7 @@ function stageComment() {
 async function pushComment() {
   if(!pendingComment)return;
   var rowId=pendingComment.rowId, author=pendingComment.author, text=pendingComment.text;
+  if(!CFG.apiKey){ alert('No API key set. Click ⚙ Settings to add it.'); return; }
   try {
     var res=await fetch(PA_POST_URL,{
       method:'POST',
