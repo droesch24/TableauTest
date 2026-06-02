@@ -768,7 +768,7 @@ async function loadData(ws) {
     }
     // Find name column - explicitly skip the username column
     var ni = -1;
-    var nameKeywords = ['cost center','detail','label','dept','group','description','name'];
+    var nameKeywords = ['cost center','calculation','detail','label','dept','group','description','name'];
     for (var k=0; k<nameKeywords.length && ni===-1; k++)
       for (var ci=0; ci<cols.length; ci++)
         if (ci !== ui && cols[ci].toLowerCase().indexOf(nameKeywords[k]) !== -1) { ni=ci; break; }
