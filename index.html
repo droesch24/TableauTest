@@ -127,7 +127,6 @@
 </head>
 <body>
   <div id="status">Connecting to Tableau data…</div>
-  <div id="debug" style="padding:8px;font-size:10px;font-family:monospace;color:#555;background:#f5f5f5;border-bottom:1px solid #ddd;max-height:120px;overflow-y:auto;"></div>
   <div id="viz">
     <div id="toolbar">
       <div class="toolbar-right">
@@ -213,13 +212,6 @@ var PA_GET_URL    = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.p
 var PA_DELETE_URL = 'REPLACE_WITH_DELETE_FLOW_URL';
 var PA_API_KEY    = ''; // Set via ⚙ Settings in Tableau
 // ================================================================
-
-function dbg(msg) {
-  var d = document.getElementById('debug');
-  d.innerHTML += '<div>' + new Date().toTimeString().substr(0,8) + ' ' + msg + '</div>';
-  d.scrollTop = d.scrollHeight;
-  console.log(msg);
-}
 
 function paHeaders() {
   return { 'Content-Type': 'application/json', 'x-api-key': CFG.apiKey };
@@ -616,12 +608,8 @@ function getWorksheet() {
 }
 async function loadData(ws) {
   try {
-    dbg('getSummaryDataAsync...');
     var sd=await ws.getSummaryDataAsync({ignoreSelection:true});
-    dbg('got ' + sd.data.length + ' rows, ' + sd.columns.length + ' cols');
-    dbg('cols: ' + sd.columns.map(function(c){return c.fieldName;}).join(' | '));
-    if(sd.data.length) dbg('row0: n=' + JSON.stringify(sd.data[0][0].formattedValue) + ' a=' + JSON.stringify(sd.data[0][1] ? sd.data[0][1].value : 'N/A') + ' b=' + JSON.stringify(sd.data[0][2] ? sd.data[0][2].value : 'N/A'));
-    if(sd.columns.length < 3){ dbg('Not enough columns — skipping render'); return; }
+    if(sd.columns.length < 3){ return; } // need at least Detail, Actual, Budget
     var cols=sd.columns.map(function(c){ return c.fieldName; });
     if (!sd.data.length){ document.getElementById('status').textContent='No data — add fields to the Marks card.'; return; }
 
@@ -659,14 +647,10 @@ async function loadData(ws) {
 // ── Init ──────────────────────────────────────────────────────────
 (async function(){
   try {
-    dbg('initializeAsync starting...');
     await tableau.extensions.initializeAsync();
-    dbg('initializeAsync OK');
     loadConfig();
-    dbg('loadConfig done — sourceId:' + CFG.sourceId + ' apiKey:' + (CFG.apiKey?'SET':'EMPTY'));
     updateToolbarUser();
     var ws=getWorksheet();
-    dbg('worksheet: ' + (ws ? ws.name : 'NULL'));
     if (!ws){ document.getElementById('status').textContent='worksheetContent not available.'; return; }
     if (!CFG.sourceId){
       document.getElementById('status').style.display='none';
