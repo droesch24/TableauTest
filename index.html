@@ -476,6 +476,7 @@ function render(rows) {
       '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3z"/></svg>'+
       (count?'<span class="comment-count">'+count+'</span>':'')+
       '</button>';
+    var tr=document.createElement('tr');
     var cells=[
       {cls:'',           html:'<span title="'+escHtml(r.n)+'">'+escHtml(r.n)+'</span>'},
       {cls:'',           html:fmt(r.a)},
@@ -619,7 +620,8 @@ async function loadData(ws) {
     var sd=await ws.getSummaryDataAsync({ignoreSelection:true});
     dbg('got ' + sd.data.length + ' rows, ' + sd.columns.length + ' cols');
     dbg('cols: ' + sd.columns.map(function(c){return c.fieldName;}).join(' | '));
-    if(sd.data.length) dbg('row0: n=' + JSON.stringify(sd.data[0][0].formattedValue) + ' a=' + JSON.stringify(sd.data[0][1].value) + ' b=' + JSON.stringify(sd.data[0][2].value));
+    if(sd.data.length) dbg('row0: n=' + JSON.stringify(sd.data[0][0].formattedValue) + ' a=' + JSON.stringify(sd.data[0][1] ? sd.data[0][1].value : 'N/A') + ' b=' + JSON.stringify(sd.data[0][2] ? sd.data[0][2].value : 'N/A'));
+    if(sd.columns.length < 3){ dbg('Not enough columns — skipping render'); return; }
     var cols=sd.columns.map(function(c){ return c.fieldName; });
     if (!sd.data.length){ document.getElementById('status').textContent='No data — add fields to the Marks card.'; return; }
 
