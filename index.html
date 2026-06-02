@@ -753,10 +753,22 @@ async function loadData(ws) {
     var sd=await ws.getSummaryDataAsync({ignoreSelection:true});
     var cols=sd.columns.map(function(c){return c.fieldName;});
     if(!sd.data.length){document.getElementById('status').textContent='No data — add fields to the Marks card.';return;}
-    var ni=findCol(cols,['cost center','detail','name','label','dept','group']);
+    // Find username column first so we can exclude it from name detection
+    var ui = -1;
+    for (var ci=0; ci<cols.length; ci++) {
+      if (cols[ci].toLowerCase().indexOf('username') !== -1 ||
+          cols[ci].toLowerCase() === 'user') { ui = ci; break; }
+    }
+    // Find name column - explicitly skip the username column
+    var ni = -1;
+    var nameKeywords = ['cost center','detail','label','dept','group','description','name'];
+    for (var k=0; k<nameKeywords.length && ni===-1; k++)
+      for (var ci=0; ci<cols.length; ci++)
+        if (ci !== ui && cols[ci].toLowerCase().indexOf(nameKeywords[k]) !== -1) { ni=ci; break; }
+    if (ni === -1) ni = (ui === 0 ? 1 : 0); // fallback
+
     var ai=findCol(cols,['actual']);
     var bi=findCol(cols,['budget']);
-    var ui=findCol(cols,['username','user name','user']);
 
     // Read username from first data row (same for all rows — current user)
     if (sd.data.length && ui >= 0) {
