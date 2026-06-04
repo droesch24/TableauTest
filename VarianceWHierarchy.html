@@ -736,9 +736,17 @@ async function loadData(ws) {
       return result;
     }
 
-    var hierRows = buildTree(sd.data, 0);
+    // TEMP: flat render to confirm all 3 dims appear
+    var flatRows = sd.data.map(function(row) {
+      var parts = dimCols.map(function(i) { return getVal(row, i); }).filter(Boolean);
+      return {
+        n: parts.join(' | '),
+        a: ai >= 0 ? toN(row[ai].value) : 0,
+        b: bi >= 0 ? toN(row[bi].value) : 0
+      };
+    }).filter(function(r){ return r.n; });
     await loadCommentsFromAPI();
-    renderHier(hierRows);
+    render(flatRows);
     updateToolbarUser();
   } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
 }
