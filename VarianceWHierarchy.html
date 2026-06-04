@@ -756,6 +756,7 @@ async function loadData(ws) {
     updateToolbarUser();
     var ws=getWorksheet();
     if (!ws){ document.getElementById('status').textContent='worksheetContent not available.'; return; }
+    document.getElementById('status').textContent='Got ws, sourceId='+CFG.sourceId;
     if (!CFG.sourceId){
       document.getElementById('status').style.display='none';
       document.getElementById('viz').style.display='flex';
@@ -765,7 +766,7 @@ async function loadData(ws) {
       await loadData(ws);
     }
     ws.addEventListener(tableau.TableauEventType.SummaryDataChanged,function(){ loadData(ws); });
-  } catch(e){ document.getElementById('status').textContent='Init failed: '+e.message; }
+  } catch(e){ document.getElementById('status').textContent='Init failed: '+e.message+' '+e.stack; }
 })();
 </script>
 </body>
