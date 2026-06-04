@@ -665,8 +665,11 @@ function renderHier(rows) {
 }
 
 async function loadData(ws) {
+  document.getElementById('status').textContent='loadData called...';
   try {
+    document.getElementById('status').textContent='calling getSummaryDataAsync...';
     var sd = await ws.getSummaryDataAsync({ignoreSelection:true});
+    document.getElementById('status').textContent='got '+sd.data.length+' rows';
     var cols = sd.columns.map(function(c){ return c.fieldName; });
     if (!sd.data.length){ document.getElementById('status').textContent='No data — add fields to the Marks card.'; return; }
     if (sd.columns.length < 3){ return; }
