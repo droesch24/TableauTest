@@ -684,8 +684,8 @@ function renderHier(rows) {
       ? '<div class="bar-pos" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-pos" style="color:'+rowColor+'">'+barLabel+'</span>'
       : '<div class="bar-neg" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-neg" style="color:'+rowColor+'">'+barLabel+'</span>';
     var pctStyle = 'color:' + rowColor + ';' + (isBold ? 'font-weight:600;' : '');
-    var commentCount = (comments[r.n]||[]).length + (pendingComment&&pendingComment.rowId===r.n?1:0);
-    var commentBtn = isLeaf ? makeCommentBtn(r.n, r.n, commentCount) : '';
+    var commentCount = (comments[r.path]||[]).length + (pendingComment&&pendingComment.rowId===r.path?1:0);
+    var commentBtn = isLeaf ? makeCommentBtn(r.path, r.n, commentCount) : '';
     var tr = document.createElement('tr');
     tr.dataset.path = r.path;
     tr.dataset.level = r.level;
