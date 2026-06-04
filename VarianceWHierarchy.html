@@ -671,7 +671,7 @@ function renderHier(rows) {
     var isLeaf = (r.level === numLevels - 1);
     var isBold = !isLeaf;
     var indent = 8 + (r.level * 16);
-    var prefix = (isBold && r.level > 0) ? '^ ' : '';
+    var prefix = '';
     var nameStyle = 'padding-left:' + indent + 'px;' + (isBold ? 'font-weight:600;' : '');
     var chevron = isBold ? '<span class="row-chevron" style="margin-right:4px;font-size:9px;color:var(--text3);">' + (collapsedPaths[r.path] ? '\u25b6' : '\u25bc') + '</span>' : '';
     var barHtml = vr >= 0
