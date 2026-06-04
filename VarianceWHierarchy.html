@@ -682,9 +682,13 @@ function renderHier(rows) {
     var tr = document.createElement('tr');
     tr.dataset.path = r.path;
     tr.dataset.level = r.level;
-    if (isBold) tr.classList.add('row-bold');
+    if (isBold) {
+      tr.classList.add('row-bold');
+      tr.style.cursor = 'pointer';
+      (function(path){ tr.addEventListener('click', function(){ toggleRow(path); }); })(r.path);
+    }
     var cells = [
-      {cls:'col-name', html:'<span style="'+nameStyle+'" title="'+escHtml(r.n)+'"' + (isBold ? ' onclick="toggleRow(\'' + escAttr(r.path) + '\')"' : '') + '>' + chevron + escHtml(prefix+r.n)+'</span>'},
+      {cls:'col-name', html:'<span style="'+nameStyle+'" title="'+escHtml(r.n)+'">' + chevron + escHtml(prefix+r.n)+'</span>'},
       {cls:'',         html:'<span style="'+(isBold?'font-weight:600;':'')+'">'+fmt(r.a)+'</span>'},
       {cls:'',         html:'<span style="'+(isBold?'font-weight:600;':'')+'">'+fmt(r.b)+'</span>'},
       {cls:'col-bar',  html:'<div class="bar-cell"><div class="bar-axis"></div>'+barHtml+'</div>'},
