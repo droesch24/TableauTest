@@ -395,6 +395,7 @@ var lastRows  = [];
 var comments  = {};
 var pendingComment = null;
 var activeRowId = null;
+var collapsedPaths = {}; // paths that are collapsed
 
 function fmt(n) { if(n===null||isNaN(n))return'—'; return(n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString(); }
 function fmtP(v) { if(isNaN(v))return'—'; return(v>0?'+':'')+v.toFixed(1)+'%'; }
@@ -612,6 +613,37 @@ function getWorksheet() {
 }
 // ── Render hierarchy ─────────────────────────────────────────────
 
+
+function toggleRow(path) {
+  if (collapsedPaths[path]) {
+    delete collapsedPaths[path];
+  } else {
+    collapsedPaths[path] = true;
+  }
+  applyCollapse();
+}
+
+function applyCollapse() {
+  var rows = document.getElementById('rows-container').querySelectorAll('tr');
+  rows.forEach(function(tr) {
+    var rowPath = tr.dataset.path || '';
+    var rowLevel = parseInt(tr.dataset.level || '0', 10);
+    var hidden = false;
+    // Check if any ancestor path is collapsed
+    var parts = rowPath.split('|');
+    for (var i = 1; i <= parts.length - 1; i++) {
+      var ancestorPath = parts.slice(0, i).join('|');
+      if (collapsedPaths[ancestorPath]) { hidden = true; break; }
+    }
+    tr.style.display = hidden ? 'none' : '';
+    // Update chevron
+    if (!hidden) {
+      var chevron = tr.querySelector('.row-chevron');
+      if (chevron) chevron.textContent = collapsedPaths[rowPath] ? '▶' : '▼';
+    }
+  });
+}
+
 function makeCommentBtn(rowId, label, count) {
   var btn = document.createElement('button');
   btn.className = 'comment-btn';
@@ -648,9 +680,11 @@ function renderHier(rows) {
     var commentCount = (comments[r.n]||[]).length + (pendingComment&&pendingComment.rowId===r.n?1:0);
     var commentBtn = isLeaf ? makeCommentBtn(r.n, r.n, commentCount) : '';
     var tr = document.createElement('tr');
+    tr.dataset.path = r.path;
+    tr.dataset.level = r.level;
     if (isBold) tr.classList.add('row-bold');
     var cells = [
-      {cls:'col-name', html:'<span style="'+nameStyle+'" title="'+escHtml(r.n)+'">'+escHtml(prefix+r.n)+'</span>'},
+      {cls:'col-name', html:'<span style="'+nameStyle+'" title="'+escHtml(r.n)+'"' + (isBold ? ' onclick="toggleRow(\'' + escAttr(r.path) + '\')"' : '') + '>' + chevron + escHtml(prefix+r.n)+'</span>'},
       {cls:'',         html:'<span style="'+(isBold?'font-weight:600;':'')+'">'+fmt(r.a)+'</span>'},
       {cls:'',         html:'<span style="'+(isBold?'font-weight:600;':'')+'">'+fmt(r.b)+'</span>'},
       {cls:'col-bar',  html:'<div class="bar-cell"><div class="bar-axis"></div>'+barHtml+'</div>'},
@@ -719,8 +753,9 @@ async function loadData(ws) {
     }
 
     // Build N-level hierarchy tree recursively
-    function buildTree(data, levelIdx) {
+    function buildTree(data, levelIdx, parentPath) {
       if (levelIdx >= numLevels) return [];
+      parentPath = parentPath || '';
       var colIdx = dimCols[levelIdx];
       var isLeaf = (levelIdx === numLevels - 1);
       var map = {}, order = [];
@@ -735,17 +770,22 @@ async function loadData(ws) {
       var result = [];
       order.forEach(function(key) {
         var node = map[key];
-        result.push({ level:levelIdx, n:key, a:node.a, b:node.b });
+        var path = parentPath ? parentPath + '|' + key : key;
+        result.push({ level:levelIdx, n:key, path:path, a:node.a, b:node.b });
         if (!isLeaf) {
-          buildTree(node.rows, levelIdx + 1).forEach(function(r) { result.push(r); });
+          buildTree(node.rows, levelIdx + 1, path).forEach(function(r) { result.push(r); });
         }
       });
       return result;
     }
 
+    // Reset collapsed state and collapse all top-level rows by default
+    collapsedPaths = {};
     var hierRows = buildTree(sd.data, 0);
+    hierRows.forEach(function(r) { if (r.level === 0) collapsedPaths[r.path] = true; });
     await loadCommentsFromAPI();
     renderHier(hierRows);
+    applyCollapse();
     updateToolbarUser();
   } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
 }
