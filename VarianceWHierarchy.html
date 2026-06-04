@@ -673,6 +673,7 @@ function renderHier(rows) {
     var indent = 8 + (r.level * 16);
     var prefix = (isBold && r.level > 0) ? '^ ' : '';
     var nameStyle = 'padding-left:' + indent + 'px;' + (isBold ? 'font-weight:600;' : '');
+    var chevron = isBold ? '<span class="row-chevron" style="margin-right:4px;font-size:9px;color:var(--text3);">' + (collapsedPaths[r.path] ? '\u25b6' : '\u25bc') + '</span>' : '';
     var barHtml = vr >= 0
       ? '<div class="bar-pos" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-pos" style="color:'+rowColor+'">'+barLabel+'</span>'
       : '<div class="bar-neg" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-neg" style="color:'+rowColor+'">'+barLabel+'</span>';
