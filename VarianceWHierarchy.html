@@ -745,7 +745,7 @@ async function loadData(ws) {
     await loadCommentsFromAPI();
     renderHier(flatRows);
     updateToolbarUser();
-  } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
+  } catch(e){ document.getElementById('status').textContent='Error: '+e.message+' | stack: '+e.stack; }
 }
 
 // ── Init ──────────────────────────────────────────────────────────
