@@ -208,8 +208,8 @@
 // ================================================================
 // POWER AUTOMATE URLS — set by admin, not editable by users
 // ================================================================
-var PA_POST_URL   = 'REPLACE_WITH_POST_FLOW_URL';
-var PA_GET_URL    = 'REPLACE_WITH_GET_FLOW_URL';
+var PA_POST_URL   = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b28332ca3555446396db1e3979b307f2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2OCWHZ9t8hU1z2ptmiSTzdlI2qcJz2Urb6L8fE4Dfwc';
+var PA_GET_URL    = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/87f4223d13bc49f9ba5cfb602cf5b417/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pHi1nTkH3aiLc04w8H_ecOOgbto3cV5gOFwm8RWwBOk';
 var PA_DELETE_URL = 'REPLACE_WITH_DELETE_FLOW_URL';
 var PA_API_KEY    = '';
 // ================================================================
@@ -665,11 +665,8 @@ function renderHier(rows) {
 }
 
 async function loadData(ws) {
-  document.getElementById('status').textContent='loadData called...';
   try {
-    document.getElementById('status').textContent='calling getSummaryDataAsync...';
     var sd = await ws.getSummaryDataAsync({ignoreSelection:true});
-    document.getElementById('status').textContent='got '+sd.data.length+' rows';
     var cols = sd.columns.map(function(c){ return c.fieldName; });
     if (!sd.data.length){ document.getElementById('status').textContent='No data — add fields to the Marks card.'; return; }
     if (sd.columns.length < 3){ return; }
@@ -739,16 +736,11 @@ async function loadData(ws) {
       return result;
     }
 
-    // TEMP: flat render — show all dim values joined so we can confirm all 3 come through
-    numLevels = 1;
-    var flatRows = sd.data.map(function(row) {
-      var parts = dimCols.map(function(i) { return getVal(row, i); }).filter(Boolean);
-      return { level:0, n:parts.join(' | '), a:ai>=0?toN(row[ai].value):0, b:bi>=0?toN(row[bi].value):0 };
-    }).filter(function(r){ return r.n; });
+    var hierRows = buildTree(sd.data, 0);
     await loadCommentsFromAPI();
-    renderHier(flatRows);
+    renderHier(hierRows);
     updateToolbarUser();
-  } catch(e){ document.getElementById('status').textContent='Error: '+e.message+' | stack: '+e.stack; }
+  } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
 }
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -759,7 +751,6 @@ async function loadData(ws) {
     updateToolbarUser();
     var ws=getWorksheet();
     if (!ws){ document.getElementById('status').textContent='worksheetContent not available.'; return; }
-    document.getElementById('status').textContent='Got ws, sourceId='+CFG.sourceId;
     if (!CFG.sourceId){
       document.getElementById('status').style.display='none';
       document.getElementById('viz').style.display='flex';
@@ -769,7 +760,7 @@ async function loadData(ws) {
       await loadData(ws);
     }
     ws.addEventListener(tableau.TableauEventType.SummaryDataChanged,function(){ loadData(ws); });
-  } catch(e){ document.getElementById('status').textContent='Init failed: '+e.message+' '+e.stack; }
+  } catch(e){ document.getElementById('status').textContent='Init failed: '+e.message; }
 })();
 </script>
 </body>
