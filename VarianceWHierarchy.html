@@ -127,12 +127,12 @@
 
     /* ── Hierarchy Sort ── */
     .hier-sort-list { display: flex; flex-direction: column; gap: 4px; }
-    .hier-sort-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius); cursor: grab; font-size: 12px; }
-    .hier-sort-item:active { cursor: grabbing; }
-    .hier-sort-item.drag-over { border-color: var(--blue-text); background: var(--blue-bg); }
-    .hier-sort-handle { color: var(--text3); font-size: 14px; cursor: grab; }
+    .hier-sort-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 12px; }
     .hier-sort-label { flex: 1; color: var(--text); }
-    .hier-sort-num { font-size: 10px; color: var(--text3); background: var(--bg2); border-radius: 4px; padding: 1px 5px; }
+    .hier-sort-num { font-size: 10px; color: var(--text3); background: var(--bg2); border-radius: 4px; padding: 1px 5px; min-width: 18px; text-align: center; }
+    .hier-sort-btn { background: none; border: 1px solid var(--border-strong); border-radius: 4px; cursor: pointer; color: var(--text2); font-size: 11px; padding: 1px 5px; line-height: 1; }
+    .hier-sort-btn:hover { background: var(--bg2); }
+    .hier-sort-btn:disabled { opacity: 0.3; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -354,51 +354,34 @@ var lastDetectedDimCols = []; // field names detected from data
 function buildHierSortUI(fieldNames) {
   var list = document.getElementById('hier-sort-list');
   list.innerHTML = '';
-  // Use saved order if available and matches current fields
   var order = CFG.hierOrder.length && CFG.hierOrder.every(function(f){ return fieldNames.indexOf(f) >= 0; })
     ? CFG.hierOrder
     : fieldNames.slice();
 
-  order.forEach(function(name, idx) {
-    var item = document.createElement('div');
-    item.className = 'hier-sort-item';
-    item.draggable = true;
-    item.dataset.field = name;
-    item.innerHTML =
-      '<span class="hier-sort-handle">⠿</span>' +
-      '<span class="hier-sort-label">' + escHtml(name) + '</span>' +
-      '<span class="hier-sort-num">' + (idx + 1) + '</span>';
-
-    item.addEventListener('dragstart', function(e) {
-      e.stopPropagation();
-      e.dataTransfer.setData('text/plain', name);
-      item.style.opacity = '0.5';
+  function renderList(ord) {
+    list.innerHTML = '';
+    ord.forEach(function(name, idx) {
+      var item = document.createElement('div');
+      item.className = 'hier-sort-item';
+      item.dataset.field = name;
+      item.innerHTML =
+        '<span class="hier-sort-num">' + (idx + 1) + '</span>' +
+        '<span class="hier-sort-label">' + escHtml(name) + '</span>' +
+        '<button class="hier-sort-btn" title="Move up" ' + (idx === 0 ? 'disabled' : '') + '>▲</button>' +
+        '<button class="hier-sort-btn" title="Move down" ' + (idx === ord.length - 1 ? 'disabled' : '') + '>▼</button>';
+      var btns = item.querySelectorAll('.hier-sort-btn');
+      btns[0].addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (idx > 0) { ord.splice(idx - 1, 0, ord.splice(idx, 1)[0]); renderList(ord); }
+      });
+      btns[1].addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (idx < ord.length - 1) { ord.splice(idx + 1, 0, ord.splice(idx, 1)[0]); renderList(ord); }
+      });
+      list.appendChild(item);
     });
-    item.addEventListener('dragend', function() {
-      item.style.opacity = '';
-      renumberHierItems();
-    });
-    item.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      item.classList.add('drag-over');
-    });
-    item.addEventListener('dragleave', function() {
-      item.classList.remove('drag-over');
-    });
-    item.addEventListener('drop', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      item.classList.remove('drag-over');
-      var draggedName = e.dataTransfer.getData('text/plain');
-      var draggedEl = list.querySelector('[data-field="' + draggedName + '"]');
-      if (draggedEl && draggedEl !== item) {
-        list.insertBefore(draggedEl, item);
-        renumberHierItems();
-      }
-    });
-    list.appendChild(item);
-  });
+  }
+  renderList(order);
 }
 
 function renumberHierItems() {
