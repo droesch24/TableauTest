@@ -610,40 +610,135 @@ function findCol(cols,keywords) {
 function getWorksheet() {
   try { return tableau.extensions.worksheetContent&&tableau.extensions.worksheetContent.worksheet; } catch(_){ return null; }
 }
+// ── Render hierarchy ─────────────────────────────────────────────
+function renderHier(rows) {
+  rows = rows.filter(function(r){ return r.n && r.n.trim() !== ''; });
+  lastRows = rows;
+  var vrs = rows.map(function(r){ return r.a - r.b; });
+  var mx = Math.max.apply(null, vrs.map(function(v){ return Math.abs(v); }));
+  if (mx === 0) mx = 1;
+  buildHeader();
+  var c = document.getElementById('rows-container');
+  c.innerHTML = '';
+  document.getElementById('total-row').innerHTML = '';
+  rows.forEach(function(r) {
+    var vr = r.a - r.b, pct = r.b ? (vr / r.b * 100) : 0, bp = Math.abs(vr) / mx;
+    var rowColor = evaluateColor(vr, pct);
+    var barLabel = fmt(vr);
+    var isLeaf = (r.level === numLevels - 1);
+    var isBold = !isLeaf;
+    var indent = 8 + (r.level * 16);
+    var prefix = (isBold && r.level > 0) ? '^ ' : '';
+    var nameStyle = 'padding-left:' + indent + 'px;' + (isBold ? 'font-weight:600;' : '');
+    var barHtml = vr >= 0
+      ? '<div class="bar-pos" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-pos" style="color:'+rowColor+'">'+barLabel+'</span>'
+      : '<div class="bar-neg" data-pct="'+bp+'" style="width:0;background:'+rowColor+'"></div><span class="bar-label bar-label-neg" style="color:'+rowColor+'">'+barLabel+'</span>';
+    var pctStyle = 'color:' + rowColor + ';' + (isBold ? 'font-weight:600;' : '');
+    var commentBtn = isLeaf
+      ? '<button class="comment-btn" onclick="openSidebar(''+escAttr(r.n)+'',''+escAttr(r.n)+'')" aria-label="Comments">'+
+          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3z"/></svg>'+
+          ((comments[r.n]||[]).length+(pendingComment&&pendingComment.rowId===r.n?1:0)>0?'<span class="comment-count">'+((comments[r.n]||[]).length+(pendingComment&&pendingComment.rowId===r.n?1:0))+'</span>':'')+
+        '</button>'
+      : '';
+    var tr = document.createElement('tr');
+    if (isBold) tr.classList.add('row-bold');
+    var cells = [
+      {cls:'col-name', html:'<span style="'+nameStyle+'" title="'+escHtml(r.n)+'">'+escHtml(prefix+r.n)+'</span>'},
+      {cls:'',         html:'<span style="'+(isBold?'font-weight:600;':'')+'">'+fmt(r.a)+'</span>'},
+      {cls:'',         html:'<span style="'+(isBold?'font-weight:600;':'')+'">'+fmt(r.b)+'</span>'},
+      {cls:'col-bar',  html:'<div class="bar-cell"><div class="bar-axis"></div>'+barHtml+'</div>'},
+      {cls:vr>0?'neg':vr<0?'pos':'', html:'<span style="'+pctStyle+'">'+fmtP(pct)+'</span>'},
+      {cls:'col-comment', html:commentBtn},
+    ];
+    cells.forEach(function(cell, i) {
+      var td = document.createElement('td');
+      td.className = cell.cls;
+      td.style.width = colWidths[colKeys[i]] + 'px';
+      td.innerHTML = cell.html;
+      tr.appendChild(td);
+    });
+    c.appendChild(tr);
+  });
+  document.getElementById('status').style.display = 'none';
+  document.getElementById('viz').style.display = 'flex';
+  renderBars();
+}
+
 async function loadData(ws) {
   try {
-    var sd=await ws.getSummaryDataAsync({ignoreSelection:true});
-    if(sd.columns.length < 3){ return; } // need at least Detail, Actual, Budget
-    var cols=sd.columns.map(function(c){ return c.fieldName; });
+    var sd = await ws.getSummaryDataAsync({ignoreSelection:true});
+    var cols = sd.columns.map(function(c){ return c.fieldName; });
     if (!sd.data.length){ document.getElementById('status').textContent='No data — add fields to the Marks card.'; return; }
+    if (sd.columns.length < 3){ return; }
 
-    // Find username column first so we can exclude it from name detection
-    var ui=-1;
-    for (var ci=0; ci<cols.length; ci++) {
-      if (cols[ci].toLowerCase().indexOf('username')!==-1 || cols[ci].toLowerCase()==='user'){ ui=ci; break; }
-    }
-    // Find name column — skip username column
-    var ni=-1;
-    var nameKeywords=['cost center','calculation','detail','label','dept','group','description','name'];
-    for (var k=0; k<nameKeywords.length&&ni===-1; k++)
-      for (var ci=0; ci<cols.length; ci++)
-        if (ci!==ui && cols[ci].toLowerCase().indexOf(nameKeywords[k])!==-1){ ni=ci; break; }
-    if (ni===-1) ni=(ui===0?1:0);
-
-    var ai=findCol(cols,['actual']);
-    var bi=findCol(cols,['budget']);
-
-    // Read username from first data row
-    if (sd.data.length && ui>=0) {
-      var uVal=sd.data[0][ui].formattedValue||sd.data[0][ui].value||'';
-      if (uVal&&uVal!=='%null%'){ CURRENT_USER=String(uVal); updateToolbarUser(); }
-    }
-
-    var rows=sd.data.map(function(row){
-      return{ n:String(row[ni].formattedValue||row[ni].value||''), a:toN(row[ai].value), b:toN(row[bi].value) };
+    // Split columns into string (dimensions) and numeric (measures)
+    var stringCols = [], numericCols = [];
+    sd.columns.forEach(function(col, i) {
+      if (col.dataType === 'float' || col.dataType === 'integer') numericCols.push(i);
+      else stringCols.push(i);
     });
+
+    // Actual = first numeric, Budget = second numeric
+    var ai = numericCols[0] !== undefined ? numericCols[0] : -1;
+    var bi = numericCols[1] !== undefined ? numericCols[1] : -1;
+
+    // Separate username from dimension cols
+    var ui = -1;
+    var dimCols = stringCols.filter(function(i) {
+      if (cols[i].toLowerCase().indexOf('username') !== -1) { ui = i; return false; }
+      return true;
+    });
+
+    // Sort dimension cols by level number in field name (Level 2 < Level 3 < no number)
+    function levelNum(name) {
+      var m = name.match(/level\s*(\d+)/i);
+      return m ? parseInt(m[1], 10) : 9999;
+    }
+    dimCols.sort(function(a, b) { return levelNum(cols[a]) - levelNum(cols[b]); });
+    numLevels = dimCols.length;
+
+    // Read username
+    if (ui >= 0) {
+      for (var ri = 0; ri < sd.data.length; ri++) {
+        var uVal = sd.data[ri][ui] ? (sd.data[ri][ui].formattedValue || sd.data[ri][ui].value || '') : '';
+        if (uVal && uVal !== '%null%') { CURRENT_USER = String(uVal); updateToolbarUser(); break; }
+      }
+    }
+
+    function getVal(row, i) {
+      if (i < 0 || !row[i]) return '';
+      var v = String(row[i].formattedValue || row[i].value || '').trim();
+      return (v === '%null%' || v === 'Null') ? '' : v;
+    }
+
+    // Build N-level hierarchy tree recursively
+    function buildTree(data, levelIdx) {
+      if (levelIdx >= numLevels) return [];
+      var colIdx = dimCols[levelIdx];
+      var isLeaf = (levelIdx === numLevels - 1);
+      var map = {}, order = [];
+      data.forEach(function(row) {
+        var key = getVal(row, colIdx);
+        if (!key) return;
+        if (!map[key]) { map[key] = { rows:[], a:0, b:0 }; order.push(key); }
+        map[key].rows.push(row);
+        map[key].a += ai >= 0 ? toN(row[ai].value) : 0;
+        map[key].b += bi >= 0 ? toN(row[bi].value) : 0;
+      });
+      var result = [];
+      order.forEach(function(key) {
+        var node = map[key];
+        result.push({ level:levelIdx, n:key, a:node.a, b:node.b });
+        if (!isLeaf) {
+          buildTree(node.rows, levelIdx + 1).forEach(function(r) { result.push(r); });
+        }
+      });
+      return result;
+    }
+
+    var hierRows = buildTree(sd.data, 0);
     await loadCommentsFromAPI();
-    render(rows);
+    renderHier(hierRows);
     updateToolbarUser();
   } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
 }
