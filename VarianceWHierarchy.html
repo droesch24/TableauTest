@@ -435,8 +435,8 @@ function saveConfig() {
   } catch(e) { console.warn('Could not save settings:', e); }
   updateToolbarUser();
   closeConfig();
-  if (configIsFirstRun) { var ws = getWorksheet(); if (ws) loadData(ws); }
-  else { loadCommentsFromAPI().then(function(){ renderHier(lastRows); applyCollapse(); }); }
+  var ws = getWorksheet();
+  if (ws) loadData(ws);
 }
 function loadConfig() {
   try {
