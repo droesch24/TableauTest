@@ -124,6 +124,15 @@
     .add-rule-btn:hover { text-decoration: underline; }
     .default-color-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); margin-top: 4px; }
     .default-color-row input[type=color] { width: 30px; height: 24px; padding: 1px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; }
+
+    /* ── Hierarchy Sort ── */
+    .hier-sort-list { display: flex; flex-direction: column; gap: 4px; }
+    .hier-sort-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius); cursor: grab; font-size: 12px; }
+    .hier-sort-item:active { cursor: grabbing; }
+    .hier-sort-item.drag-over { border-color: var(--blue-text); background: var(--blue-bg); }
+    .hier-sort-handle { color: var(--text3); font-size: 14px; cursor: grab; }
+    .hier-sort-label { flex: 1; color: var(--text); }
+    .hier-sort-num { font-size: 10px; color: var(--text3); background: var(--bg2); border-radius: 4px; padding: 1px 5px; }
   </style>
 </head>
 <body>
@@ -188,6 +197,10 @@
         <input type="text" id="cfg-source-id" placeholder="e.g. Budget Variance Q2 2026" autocomplete="off"/>
         <span class="hint">Unique name for this workbook. Groups comments in SharePoint. Set once — changing it will lose comment history.</span>
       </div>
+      <hr class="modal-divider"/>
+      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;">Hierarchy Order</div>
+      <p style="font-size:11px;color:var(--text3);margin-top:-6px;line-height:1.5;">Drag to reorder — top = highest level. Auto-detected from your Dimensions tile.</p>
+      <div class="hier-sort-list" id="hier-sort-list"></div>
       <hr class="modal-divider"/>
       <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;">Color Rules</div>
       <p style="font-size:11px;color:var(--text3);margin-top:-6px;line-height:1.5;">Rules evaluated top to bottom — first match wins. Applies to bar and % Var text.</p>
@@ -334,14 +347,80 @@ function evaluateColor(varDollar, varPct) {
   return CFG.defaultColor || '#5b8db8';
 }
 
+
+// ── Hierarchy Sort ────────────────────────────────────────────────
+var lastDetectedDimCols = []; // field names detected from data
+
+function buildHierSortUI(fieldNames) {
+  var list = document.getElementById('hier-sort-list');
+  list.innerHTML = '';
+  // Use saved order if available and matches current fields
+  var order = CFG.hierOrder.length && CFG.hierOrder.every(function(f){ return fieldNames.indexOf(f) >= 0; })
+    ? CFG.hierOrder
+    : fieldNames.slice();
+
+  order.forEach(function(name, idx) {
+    var item = document.createElement('div');
+    item.className = 'hier-sort-item';
+    item.draggable = true;
+    item.dataset.field = name;
+    item.innerHTML =
+      '<span class="hier-sort-handle">⠿</span>' +
+      '<span class="hier-sort-label">' + escHtml(name) + '</span>' +
+      '<span class="hier-sort-num">' + (idx + 1) + '</span>';
+
+    item.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', name);
+      item.style.opacity = '0.5';
+    });
+    item.addEventListener('dragend', function() {
+      item.style.opacity = '';
+      renumberHierItems();
+    });
+    item.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', function() {
+      item.classList.remove('drag-over');
+    });
+    item.addEventListener('drop', function(e) {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      var draggedName = e.dataTransfer.getData('text/plain');
+      var draggedEl = list.querySelector('[data-field="' + draggedName + '"]');
+      if (draggedEl && draggedEl !== item) {
+        list.insertBefore(draggedEl, item);
+        renumberHierItems();
+      }
+    });
+    list.appendChild(item);
+  });
+}
+
+function renumberHierItems() {
+  document.getElementById('hier-sort-list').querySelectorAll('.hier-sort-item').forEach(function(el, i) {
+    el.querySelector('.hier-sort-num').textContent = i + 1;
+  });
+}
+
+function getHierOrderFromUI() {
+  var order = [];
+  document.getElementById('hier-sort-list').querySelectorAll('.hier-sort-item').forEach(function(el) {
+    order.push(el.dataset.field);
+  });
+  return order;
+}
+
 // ── Config ────────────────────────────────────────────────────────
-var CFG = { sourceId: '', apiKey: '', colorRules: [], defaultColor: '#5b8db8' };
+var CFG = { sourceId: '', apiKey: '', colorRules: [], defaultColor: '#5b8db8', hierOrder: [] };
 var CURRENT_USER = '';
 var configIsFirstRun = false;
 
 function openConfig(isFirstRun) {
   configIsFirstRun = !!isFirstRun;
   document.getElementById('cfg-apikey').value    = CFG.apiKey || '';
+  if (lastDetectedDimCols.length) buildHierSortUI(lastDetectedDimCols);
   document.getElementById('cfg-source-id').value = CFG.sourceId;
   loadRulesToUI(CFG.colorRules, CFG.defaultColor);
   document.getElementById('cfg-cancel-btn').style.display = isFirstRun ? 'none' : '';
@@ -356,11 +435,13 @@ function saveConfig() {
   var sourceId = document.getElementById('cfg-source-id').value.trim() || CFG.sourceId;
   if (!sourceId) { alert('Please enter a dashboard name.'); return; }
   CFG.apiKey       = document.getElementById('cfg-apikey').value.trim();
+  CFG.hierOrder    = getHierOrderFromUI();
   CFG.sourceId     = sourceId;
   CFG.colorRules   = getRulesFromUI();
   CFG.defaultColor = document.getElementById('default-color').value;
   try {
     tableau.extensions.settings.set('cfg_api_key',       CFG.apiKey);
+    tableau.extensions.settings.set('cfg_hier_order',    JSON.stringify(CFG.hierOrder));
     tableau.extensions.settings.set('cfg_source_id',     CFG.sourceId);
     tableau.extensions.settings.set('cfg_color_rules',   JSON.stringify(CFG.colorRules));
     tableau.extensions.settings.set('cfg_default_color', CFG.defaultColor);
@@ -375,6 +456,7 @@ function loadConfig() {
   try {
     var s = tableau.extensions.settings.getAll();
     CFG.apiKey       = s.cfg_api_key       || '';
+    try { CFG.hierOrder = JSON.parse(s.cfg_hier_order||'[]'); } catch(_) { CFG.hierOrder = []; }
     CFG.sourceId     = s.cfg_source_id     || '';
     CFG.defaultColor = s.cfg_default_color || '#5b8db8';
     try { CFG.colorRules = JSON.parse(s.cfg_color_rules||'[]'); } catch(_) { CFG.colorRules = []; }
@@ -746,7 +828,18 @@ async function loadData(ws) {
       var m = name.match(/level\s*(\d+)/i);
       return m ? parseInt(m[1], 10) : 9999;
     }
-    dimCols.sort(function(a, b) { return levelNum(cols[a]) - levelNum(cols[b]); });
+    // Apply saved hierarchy order if available, otherwise sort by level number
+    var dimFieldNames = dimCols.map(function(i){ return cols[i]; });
+    lastDetectedDimCols = dimFieldNames.slice();
+    if (CFG.hierOrder.length && CFG.hierOrder.every(function(f){ return dimFieldNames.indexOf(f) >= 0; })) {
+      dimCols.sort(function(a, b) {
+        var ai = CFG.hierOrder.indexOf(cols[a]);
+        var bi = CFG.hierOrder.indexOf(cols[b]);
+        return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+      });
+    } else {
+      dimCols.sort(function(a, b) { return levelNum(cols[a]) - levelNum(cols[b]); });
+    }
     numLevels = dimCols.length;
 
     // Read username
