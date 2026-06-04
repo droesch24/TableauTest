@@ -370,6 +370,7 @@ function buildHierSortUI(fieldNames) {
       '<span class="hier-sort-num">' + (idx + 1) + '</span>';
 
     item.addEventListener('dragstart', function(e) {
+      e.stopPropagation();
       e.dataTransfer.setData('text/plain', name);
       item.style.opacity = '0.5';
     });
@@ -379,6 +380,7 @@ function buildHierSortUI(fieldNames) {
     });
     item.addEventListener('dragover', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       item.classList.add('drag-over');
     });
     item.addEventListener('dragleave', function() {
@@ -386,6 +388,7 @@ function buildHierSortUI(fieldNames) {
     });
     item.addEventListener('drop', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       item.classList.remove('drag-over');
       var draggedName = e.dataTransfer.getData('text/plain');
       var draggedEl = list.querySelector('[data-field="' + draggedName + '"]');
