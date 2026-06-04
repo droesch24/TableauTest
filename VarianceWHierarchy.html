@@ -369,7 +369,7 @@ function saveConfig() {
   updateToolbarUser();
   closeConfig();
   if (configIsFirstRun) { var ws = getWorksheet(); if (ws) loadData(ws); }
-  else { loadCommentsFromAPI().then(function(){ renderHier(lastRows); }); }
+  else { loadCommentsFromAPI().then(function(){ renderHier(lastRows); applyCollapse(); }); }
 }
 function loadConfig() {
   try {
@@ -572,7 +572,7 @@ function stageComment() {
   pendingComment={rowId:activeRowId,author:CURRENT_USER||'Unknown',text:text,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
   inp.value='';
   renderSidebarComments();
-  render(lastRows);
+  renderHier(lastRows);
 }
 async function pushComment() {
   if (!pendingComment) return;
@@ -585,7 +585,7 @@ async function pushComment() {
     comments[rowId].push({id:created.id||String(Date.now()),author:author,text:text,time:pendingComment.time});
     pendingComment=null;
     renderSidebarComments();
-    render(lastRows);
+    renderHier(lastRows);
   } catch(e){ alert('Could not push comment:\n'+e.message); }
 }
 async function deleteComment(id,rowId) {
@@ -594,7 +594,7 @@ async function deleteComment(id,rowId) {
     var res=await fetch(PA_DELETE_URL,{ method:'POST', headers:paHeaders(), body:JSON.stringify({id:id,source_id:CFG.sourceId}) });
     if (!res.ok) throw new Error('Delete failed ('+res.status+')');
     if (comments[rowId]) comments[rowId]=comments[rowId].filter(function(c){ return String(c.id)!==String(id); });
-    renderSidebarComments(); render(lastRows);
+    renderSidebarComments(); renderHier(lastRows);
   } catch(e){ alert('Could not delete comment:\n'+e.message); }
 }
 // Event delegation for comment buttons
