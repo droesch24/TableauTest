@@ -648,7 +648,7 @@ function makeCommentBtn(rowId, label, count) {
   var btn = document.createElement('button');
   btn.className = 'comment-btn';
   btn.setAttribute('aria-label', 'Comments');
-  btn.onclick = function() { openSidebar(rowId, label); };
+  btn.onclick = function(e) { e.stopPropagation(); openSidebar(rowId, label); };
   btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3z"/></svg>' +
     (count > 0 ? '<span class="comment-count">' + count + '</span>' : '');
   return btn.outerHTML;
