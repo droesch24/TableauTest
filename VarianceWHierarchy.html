@@ -597,6 +597,15 @@ async function deleteComment(id,rowId) {
     renderSidebarComments(); render(lastRows);
   } catch(e){ alert('Could not delete comment:\n'+e.message); }
 }
+// Event delegation for comment buttons
+document.getElementById('rows-container').addEventListener('click', function(e) {
+  var btn = e.target.closest('.comment-btn');
+  if (btn) {
+    e.stopPropagation();
+    openSidebar(btn.dataset.rowId, btn.dataset.label);
+  }
+});
+
 document.getElementById('commentInput').addEventListener('keydown',function(e){
   if (e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); stageComment(); }
 });
@@ -645,13 +654,10 @@ function applyCollapse() {
 }
 
 function makeCommentBtn(rowId, label, count) {
-  var btn = document.createElement('button');
-  btn.className = 'comment-btn';
-  btn.setAttribute('aria-label', 'Comments');
-  btn.onclick = function(e) { e.stopPropagation(); openSidebar(rowId, label); };
-  btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3z"/></svg>' +
-    (count > 0 ? '<span class="comment-count">' + count + '</span>' : '');
-  return btn.outerHTML;
+  return '<button class="comment-btn" aria-label="Comments" data-row-id="' + escHtml(rowId) + '" data-label="' + escHtml(label) + '">' +
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3z"/></svg>' +
+    (count > 0 ? '<span class="comment-count">' + count + '</span>' : '') +
+    '</button>';
 }
 
 function renderHier(rows) {
