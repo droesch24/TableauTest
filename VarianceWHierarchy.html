@@ -736,17 +736,14 @@ async function loadData(ws) {
       return result;
     }
 
-    // TEMP: flat render to confirm all 3 dims appear
+    // TEMP: flat render — show all dim values joined so we can confirm all 3 come through
+    numLevels = 1;
     var flatRows = sd.data.map(function(row) {
       var parts = dimCols.map(function(i) { return getVal(row, i); }).filter(Boolean);
-      return {
-        n: parts.join(' | '),
-        a: ai >= 0 ? toN(row[ai].value) : 0,
-        b: bi >= 0 ? toN(row[bi].value) : 0
-      };
+      return { level:0, n:parts.join(' | '), a:ai>=0?toN(row[ai].value):0, b:bi>=0?toN(row[bi].value):0 };
     }).filter(function(r){ return r.n; });
     await loadCommentsFromAPI();
-    render(flatRows);
+    renderHier(flatRows);
     updateToolbarUser();
   } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
 }
