@@ -869,10 +869,8 @@ async function loadData(ws) {
       return result;
     }
 
-    // Reset collapsed state and collapse all top-level rows by default
-    collapsedPaths = {};
+    collapsedPaths = {}; // start fully expanded
     var hierRows = buildTree(sd.data, 0);
-    hierRows.forEach(function(r) { if (r.level === 0) collapsedPaths[r.path] = true; });
     await loadCommentsFromAPI();
     renderHier(hierRows);
     applyCollapse();
