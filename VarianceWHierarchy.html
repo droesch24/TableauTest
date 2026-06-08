@@ -748,9 +748,10 @@ function renderHier(rows) {
   document.getElementById('total-row').innerHTML = '';
   rows.forEach(function(r) {
     var vr = r.a - r.b, pct = r.b ? (vr / r.b * 100) : 0, bp = Math.abs(vr) / mx;
-    var rowColor = isLeaf ? evaluateColor(vr, pct) : (CFG.parentColor || '#5b8db8');
+    var isLeafEarly = (r.level === numLevels - 1);
+    var rowColor = isLeafEarly ? evaluateColor(vr, pct) : (CFG.parentColor || '#5b8db8');
     var barLabel = fmt(vr);
-    var isLeaf = (r.level === numLevels - 1);
+    var isLeaf = isLeafEarly;
     var isBold = !isLeaf;
     var indent = 8 + (r.level * 16);
     var prefix = '';
