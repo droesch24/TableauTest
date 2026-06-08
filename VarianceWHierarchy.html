@@ -210,6 +210,10 @@
         <span>Default (no match)</span>
         <input type="color" id="default-color" value="#5b8db8" />
       </div>
+      <div class="default-color-row" style="margin-top:4px;">
+        <span>Parent row color</span>
+        <input type="color" id="parent-color" value="#5b8db8" />
+      </div>
       <div class="modal-actions">
         <button class="btn" id="cfg-cancel-btn" onclick="closeConfig()">Cancel</button>
         <button class="btn primary" onclick="saveConfig()">Save</button>
@@ -399,13 +403,14 @@ function getHierOrderFromUI() {
 }
 
 // ── Config ────────────────────────────────────────────────────────
-var CFG = { sourceId: '', apiKey: '', colorRules: [], defaultColor: '#5b8db8', hierOrder: [] };
+var CFG = { sourceId: '', apiKey: '', colorRules: [], defaultColor: '#5b8db8', hierOrder: [], parentColor: '#5b8db8' };
 var CURRENT_USER = '';
 var configIsFirstRun = false;
 
 function openConfig(isFirstRun) {
   configIsFirstRun = !!isFirstRun;
   document.getElementById('cfg-apikey').value    = CFG.apiKey || '';
+  document.getElementById('parent-color').value  = CFG.parentColor || '#5b8db8';
   if (lastDetectedDimCols.length) buildHierSortUI(lastDetectedDimCols);
   document.getElementById('cfg-source-id').value = CFG.sourceId;
   loadRulesToUI(CFG.colorRules, CFG.defaultColor);
@@ -422,11 +427,13 @@ function saveConfig() {
   if (!sourceId) { alert('Please enter a dashboard name.'); return; }
   CFG.apiKey       = document.getElementById('cfg-apikey').value.trim();
   CFG.hierOrder    = getHierOrderFromUI();
+  CFG.parentColor  = document.getElementById('parent-color').value;
   CFG.sourceId     = sourceId;
   CFG.colorRules   = getRulesFromUI();
   CFG.defaultColor = document.getElementById('default-color').value;
   try {
     tableau.extensions.settings.set('cfg_api_key',       CFG.apiKey);
+    tableau.extensions.settings.set('cfg_parent_color',  CFG.parentColor);
     tableau.extensions.settings.set('cfg_hier_order',    JSON.stringify(CFG.hierOrder));
     tableau.extensions.settings.set('cfg_source_id',     CFG.sourceId);
     tableau.extensions.settings.set('cfg_color_rules',   JSON.stringify(CFG.colorRules));
@@ -443,6 +450,7 @@ function loadConfig() {
     var s = tableau.extensions.settings.getAll();
     CFG.apiKey       = s.cfg_api_key       || '';
     try { CFG.hierOrder = JSON.parse(s.cfg_hier_order||'[]'); } catch(_) { CFG.hierOrder = []; }
+    CFG.parentColor  = s.cfg_parent_color || '#5b8db8';
     CFG.sourceId     = s.cfg_source_id     || '';
     CFG.defaultColor = s.cfg_default_color || '#5b8db8';
     try { CFG.colorRules = JSON.parse(s.cfg_color_rules||'[]'); } catch(_) { CFG.colorRules = []; }
@@ -740,7 +748,7 @@ function renderHier(rows) {
   document.getElementById('total-row').innerHTML = '';
   rows.forEach(function(r) {
     var vr = r.a - r.b, pct = r.b ? (vr / r.b * 100) : 0, bp = Math.abs(vr) / mx;
-    var rowColor = evaluateColor(vr, pct);
+    var rowColor = isLeaf ? evaluateColor(vr, pct) : (CFG.parentColor || '#5b8db8');
     var barLabel = fmt(vr);
     var isLeaf = (r.level === numLevels - 1);
     var isBold = !isLeaf;
