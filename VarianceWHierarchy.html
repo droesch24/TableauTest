@@ -637,7 +637,7 @@ function stageComment() {
   var inp=document.getElementById('commentInput');
   var text=inp.value.trim();
   if (!text||activeRowId===null) return;
-  pendingComment={rowId:activeRowId,author:CURRENT_USER||'Unknown',text:text,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
+  var _now=new Date(); pendingComment={rowId:activeRowId,author:CURRENT_USER||'Unknown',text:text,time:_now.toLocaleDateString([],{month:'short',day:'numeric'})+' '+_now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})};
   inp.value='';
   renderSidebarComments();
   renderHier(lastRows);
