@@ -25,8 +25,8 @@
       --text-sec:   #5a6478;
       --text-dim:   #8c96a8;
       --text-inv:   #ffffff;
-      --mono:       'SF Mono', 'Menlo', 'Consolas', monospace;
-      --sans:       -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      --mono:       'SF Mono','Menlo','Consolas',monospace;
+      --sans:       -apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;
       --radius:     4px;
       --radius-lg:  8px;
     }
@@ -53,24 +53,34 @@
       flex-shrink: 0;
       border-bottom: 2px solid var(--amber);
     }
+    #back-btn {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.55);
+      padding: 4px 6px 4px 2px;
+      border-radius: var(--radius);
+      align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .03em;
+      transition: color .12s;
+    }
+    #back-btn:hover { color: var(--text-inv); }
+    #back-btn svg { width: 14px; height: 14px; }
+    #back-btn.visible { display: flex; }
+    #header-divider { width: 1px; height: 16px; background: rgba(255,255,255,.15); display: none; }
+    #header-divider.visible { display: block; }
     #app-header-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--text-inv);
-      flex: 1;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-inv); flex: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     #count-pill {
-      background: var(--slate-mid);
-      color: var(--amber-dim);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: .06em;
-      padding: 3px 8px;
-      border-radius: 20px;
+      background: var(--slate-mid); color: var(--amber-dim);
+      font-size: 10px; font-weight: 600; letter-spacing: .06em;
+      padding: 3px 8px; border-radius: 20px;
       border: 1px solid var(--slate-soft);
-      display: none;
+      white-space: nowrap; flex-shrink: 0;
     }
 
     /* ── Toast ── */
@@ -86,101 +96,135 @@
     #toast.error   { background: var(--danger); }
     #toast.success { background: var(--success); }
 
-    /* ── Empty state ── */
+    /* ── Empty / loading ── */
     #empty-view {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 10px; padding: 24px; text-align: center;
     }
     #empty-icon {
-      width: 36px; height: 36px;
-      background: var(--slate);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      opacity: .15;
+      width: 36px; height: 36px; background: var(--slate);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center; opacity: .15;
     }
     #empty-icon svg { width: 20px; height: 20px; fill: white; }
-    #empty-msg { font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 210px; }
+    #empty-msg { font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 220px; }
 
-    /* ── Table ── */
-    #table-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+    /* ── Views ── */
+    #list-view   { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+    #detail-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
 
-    #col-heads {
-      display: grid;
-      grid-template-columns: 1fr 1fr 64px;
-      background: var(--slate);
+    /* ── Search bar ── */
+    .search-bar {
+      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
-    #col-heads span {
-      padding: 7px 12px;
-      font-size: 9.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: rgba(255,255,255,.45);
+    .search-wrap {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--stripe);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 9px;
+      transition: border-color .12s;
     }
+    .search-wrap:focus-within { border-color: var(--slate-soft); background: var(--surface); }
+    .search-wrap svg { width: 13px; height: 13px; color: var(--text-dim); flex-shrink: 0; }
+    .search-wrap input {
+      border: none; background: none; outline: none;
+      font-size: 12px; color: var(--text-pri); width: 100%;
+      font-family: var(--sans);
+    }
+    .search-wrap input::placeholder { color: var(--text-dim); }
 
-    #rows-wrap { flex: 1; overflow-y: auto; }
-    #rows-wrap::-webkit-scrollbar { width: 5px; }
-    #rows-wrap::-webkit-scrollbar-track { background: transparent; }
-    #rows-wrap::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+    /* ── Cost center list ── */
+    #cc-scroll { flex: 1; overflow-y: auto; }
+    #cc-scroll::-webkit-scrollbar { width: 5px; }
+    #cc-scroll::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
 
-    .ent-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 64px;
-      align-items: center;
-      min-height: 36px;
+    .cc-item {
+      display: flex; align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: border-left-color .12s, background .12s;
+      gap: 10px;
+    }
+    .cc-item:nth-child(even) { background: var(--stripe); }
+    .cc-item:last-child { border-bottom: none; }
+    .cc-item:hover { border-left-color: var(--amber); background: #fffbf0 !important; }
+    .cc-item-name { flex: 1; font-size: 12px; font-weight: 500; color: var(--text-pri); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cc-item-badge {
+      background: var(--slate); color: var(--amber-dim);
+      font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 12px;
+      flex-shrink: 0;
+    }
+    .cc-item-chevron { color: var(--text-dim); flex-shrink: 0; }
+    .cc-item-chevron svg { width: 13px; height: 13px; display: block; }
+
+    /* ── Detail toolbar ── */
+    #detail-toolbar {
+      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    #add-email-input {
+      flex: 1; padding: 6px 10px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-family: var(--mono);
+      color: var(--text-pri); background: var(--stripe); outline: none;
+      transition: border-color .12s;
+    }
+    #add-email-input:focus { border-color: var(--slate-soft); background: var(--surface); }
+    #add-email-input::placeholder { font-family: var(--sans); color: var(--text-dim); }
+    .add-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: var(--radius);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      border: none; background: var(--slate); color: var(--text-inv);
+      transition: background .12s; white-space: nowrap; flex-shrink: 0;
+    }
+    .add-btn:hover { background: var(--slate-mid); }
+    .add-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .add-btn svg { width: 13px; height: 13px; }
+
+    /* ── Member list ── */
+    #members-scroll { flex: 1; overflow-y: auto; }
+    #members-scroll::-webkit-scrollbar { width: 5px; }
+    #members-scroll::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+
+    .member-row {
+      display: flex; align-items: center;
+      padding: 9px 14px;
       border-bottom: 1px solid var(--border);
       background: var(--surface);
       border-left: 3px solid transparent;
       transition: border-left-color .12s, background .12s;
-      position: relative;
+      gap: 10px;
     }
-    .ent-row:nth-child(even) { background: var(--stripe); }
-    .ent-row:last-child { border-bottom: none; }
-    .ent-row:hover {
-      border-left-color: var(--amber);
-      background: #fffbf0 !important;
+    .member-row:nth-child(even) { background: var(--stripe); }
+    .member-row:last-child { border-bottom: none; }
+    .member-row:hover { border-left-color: var(--amber); background: #fffbf0 !important; }
+    .member-email {
+      flex: 1; font-family: var(--mono); font-size: 11px;
+      color: var(--text-sec); min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .ent-row.editing {
-      border-left-color: var(--slate-soft);
-      background: #f0f4ff !important;
-    }
-
-    /* hide actions until hover */
-    .ent-row .cell-actions { opacity: 0; transition: opacity .12s; }
-    .ent-row:hover .cell-actions,
-    .ent-row.editing .cell-actions { opacity: 1; }
-
-    .cell { padding: 6px 12px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cell-key { font-weight: 500; color: var(--text-pri); font-size: 12px; }
-    .cell-val { font-family: var(--mono); font-size: 11px; color: var(--text-sec); }
-
-    .cell-edit-wrap { padding: 3px 6px; }
-    .cell-edit-wrap input {
-      width: 100%; padding: 5px 8px;
-      border: 1.5px solid var(--slate-soft); border-radius: var(--radius);
-      font-size: 11px; font-family: var(--mono);
-      background: var(--surface); color: var(--text-pri); outline: none;
-      transition: border-color .12s;
-    }
-    .cell-edit-wrap input:focus { border-color: var(--amber); }
-
-    .cell-actions {
-      padding: 0 6px;
-      display: flex; align-items: center; justify-content: flex-end; gap: 2px;
-    }
-    .act-btn {
+    .member-del {
       background: none; border: none; cursor: pointer;
-      padding: 5px; border-radius: var(--radius);
+      padding: 4px; border-radius: var(--radius);
       display: flex; align-items: center; color: var(--text-dim);
-      transition: color .1s, background .1s;
+      opacity: 0; transition: opacity .12s, color .1s, background .1s;
     }
-    .act-btn svg { width: 13px; height: 13px; }
-    .act-btn.edit-btn:hover   { color: var(--slate); background: rgba(26,32,53,.08); }
-    .act-btn.save-btn         { color: var(--success); }
-    .act-btn.save-btn:hover   { background: #ebfbee; }
-    .act-btn.cancel-btn:hover { color: var(--danger); background: var(--danger-lt); }
-    .act-btn.del-btn:hover    { color: var(--danger); background: var(--danger-lt); }
-    .act-btn:disabled         { opacity: .3; cursor: not-allowed; }
+    .member-del svg { width: 13px; height: 13px; }
+    .member-row:hover .member-del { opacity: 1; }
+    .member-del:hover { color: var(--danger); background: var(--danger-lt); }
+    .member-del:disabled { opacity: .3; cursor: not-allowed; }
 
     /* ── Settings overlay ── */
     .overlay {
@@ -196,25 +240,15 @@
       width: 420px; max-width: 92vw; padding: 22px;
       border-top: 3px solid var(--amber);
     }
-    .panel h3 {
-      font-size: 13px; font-weight: 700;
-      letter-spacing: .04em; color: var(--slate);
-      margin-bottom: 3px;
-    }
+    .panel h3 { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--slate); margin-bottom: 3px; }
     .panel .sub { font-size: 11px; color: var(--text-dim); margin-bottom: 18px; }
     .section-head {
-      font-size: 9.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: var(--text-dim);
-      margin: 18px 0 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--text-dim);
+      margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
     }
     .field { margin-bottom: 12px; }
-    .field label {
-      display: block; font-size: 11px; font-weight: 600;
-      color: var(--text-sec); margin-bottom: 5px;
-    }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 5px; }
     .field input {
       width: 100%; padding: 7px 10px;
       border: 1.5px solid var(--border); border-radius: var(--radius);
@@ -227,12 +261,7 @@
     .field .hint { font-size: 10.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
-    .btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 14px; border-radius: var(--radius);
-      font-size: 12px; font-weight: 600; cursor: pointer; border: none;
-      letter-spacing: .02em; transition: background .12s;
-    }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 600; cursor: pointer; border: none; letter-spacing: .02em; transition: background .12s; }
     .btn-primary { background: var(--slate); color: var(--text-inv); }
     .btn-primary:hover { background: var(--slate-mid); }
     .btn-ghost { background: none; border: 1.5px solid var(--border); color: var(--text-sec); }
@@ -242,12 +271,18 @@
 <body>
 
 <div id="app-header">
+  <button id="back-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </button>
+  <div id="header-divider"></div>
   <div id="app-header-title">Entitlements Manager</div>
-  <div id="count-pill">— records</div>
+  <div id="count-pill">0 records</div>
 </div>
 
 <div id="toast"></div>
 
+<!-- Loading / empty -->
 <div id="empty-view">
   <div id="empty-icon">
     <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
@@ -255,22 +290,38 @@
   <p id="empty-msg">Loading…</p>
 </div>
 
-<div id="table-view">
-  <div id="col-heads">
-    <span id="head-key">Primary Key</span>
-    <span id="head-val">Email</span>
-    <span></span>
+<!-- Cost center list -->
+<div id="list-view">
+  <div class="search-bar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="cc-search" placeholder="Search cost centers…" />
+    </div>
   </div>
-  <div id="rows-wrap">
-    <div id="rows-container"></div>
+  <div id="cc-scroll">
+    <div id="cc-list"></div>
   </div>
 </div>
 
+<!-- Detail: members of selected cost center -->
+<div id="detail-view">
+  <div id="detail-toolbar">
+    <input type="text" id="add-email-input" placeholder="Add email address…" autocomplete="off" />
+    <button class="add-btn" id="add-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add
+    </button>
+  </div>
+  <div id="members-scroll">
+    <div id="members-list"></div>
+  </div>
+</div>
+
+<!-- Settings -->
 <div id="settings-overlay" class="overlay">
   <div class="panel">
     <h3>Configuration</h3>
     <p class="sub">Settings are saved to the workbook.</p>
-
     <div class="section-head">Column Labels</div>
     <div class="field-row">
       <div class="field">
@@ -284,24 +335,22 @@
         <p class="hint">Overrides the auto-detected field name for column 2.</p>
       </div>
     </div>
-
     <div class="section-head">Power Automate Flows</div>
     <div class="field">
       <label>Add Flow URL</label>
       <input type="text" id="cfg-add-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code> and adds a row.</p>
+      <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code></p>
     </div>
     <div class="field">
       <label>Delete Flow URL</label>
       <input type="text" id="cfg-del-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code> and deletes the matching row.</p>
+      <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code></p>
     </div>
     <div class="field">
       <label>API Key <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
       <input type="password" id="cfg-api-key" placeholder="Stored in workbook settings" />
       <p class="hint">Sent as <code>x-api-key</code> header. Never stored in source code.</p>
     </div>
-
     <div class="modal-actions">
       <button class="btn btn-ghost" id="settings-cancel">Cancel</button>
       <button class="btn btn-primary" id="settings-save">Save Settings</button>
@@ -312,15 +361,20 @@
 <script>
 'use strict';
 
-var addFlowUrl = '';
-var delFlowUrl = '';
-var apiKey     = '';
-var labelKey   = '';
-var labelVal   = '';
-var keyIdx     = 0;
-var valIdx     = 1;
-var entries    = [];
+var addFlowUrl   = '';
+var delFlowUrl   = '';
+var apiKey       = '';
+var labelKey     = '';
+var labelVal     = '';
+var keyIdx       = 0;
+var valIdx       = 1;
 
+// grouped data: { "Cost Center Name": ["email1", "email2", …] }
+var grouped      = {};
+var ccKeys       = []; // sorted list of cost center names
+var selectedCC   = null;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 (async function() {
   try {
     await tableau.extensions.initializeAsync({ configure: openSettings });
@@ -334,16 +388,15 @@ var entries    = [];
 })();
 
 function loadSettings() {
-  var s  = tableau.extensions.settings;
+  var s = tableau.extensions.settings;
   addFlowUrl = s.get('addFlowUrl') || '';
   delFlowUrl = s.get('delFlowUrl') || '';
   apiKey     = s.get('apiKey')     || '';
   labelKey   = s.get('labelKey')   || '';
   labelVal   = s.get('labelVal')   || '';
-  document.getElementById('head-key').textContent = labelKey || 'Primary Key';
-  document.getElementById('head-val').textContent = labelVal || 'Email';
 }
 
+// ─── Load + group data ────────────────────────────────────────────────────────
 async function loadData(ws) {
   try {
     var dt   = await ws.getSummaryDataAsync({ ignoreSelection: true });
@@ -353,140 +406,173 @@ async function loadData(ws) {
     keyIdx = 0;
     valIdx = 1;
 
-    document.getElementById('head-key').textContent = labelKey || cols[keyIdx].fieldName;
-    document.getElementById('head-val').textContent = labelVal || cols[valIdx].fieldName;
-
-    entries = dt.data.map(function(row) {
-      return {
-        key:   row[keyIdx].formattedValue || row[keyIdx].value || '',
-        value: row[valIdx].formattedValue || row[valIdx].value || ''
-      };
+    // Group rows by key (cost center)
+    grouped = {};
+    dt.data.forEach(function(row) {
+      var k = row[keyIdx].formattedValue || row[keyIdx].value || '';
+      var v = row[valIdx].formattedValue || row[valIdx].value || '';
+      if (!k) return; // skip blank keys
+      if (!grouped[k]) grouped[k] = [];
+      if (v) grouped[k].push(v);
     });
 
-    renderRows();
-    showTable();
+    ccKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
+
+    // If user was in detail view for a CC that still exists, refresh it
+    if (selectedCC && grouped[selectedCC]) {
+      renderMembers(selectedCC);
+    } else if (selectedCC) {
+      goBack();
+    }
+
+    renderCCList('');
+    showListView();
   } catch(e) {
     setEmptyMsg('Failed to load data: ' + e.message);
   }
 }
 
-function renderRows() {
-  var container = document.getElementById('rows-container');
-  container.innerHTML = '';
+// ─── List view ────────────────────────────────────────────────────────────────
+function renderCCList(filter) {
+  var list   = document.getElementById('cc-list');
+  var search = filter.toLowerCase().trim();
+  var keys   = search ? ccKeys.filter(function(k){ return k.toLowerCase().indexOf(search) !== -1; }) : ccKeys;
 
-  var pill = document.getElementById('count-pill');
-  pill.textContent = entries.length + ' record' + (entries.length === 1 ? '' : 's');
-  pill.style.display = entries.length ? 'block' : 'none';
+  updateCountPill(ccKeys.length + ' cost center' + (ccKeys.length === 1 ? '' : 's'));
 
-  if (entries.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12px;">No records found.</div>';
+  list.innerHTML = '';
+  if (keys.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12px;">' + (search ? 'No matching cost centers.' : 'No data found.') + '</div>';
     return;
   }
 
-  entries.forEach(function(entry, idx) {
-    var row = document.createElement('div');
-    row.className = 'ent-row';
-    row.setAttribute('data-idx', idx);
-    row.innerHTML = rowHTML(entry, idx);
-    container.appendChild(row);
+  keys.forEach(function(cc) {
+    var item = document.createElement('div');
+    item.className = 'cc-item';
+    item.innerHTML =
+      '<div class="cc-item-name">' + escHtml(cc) + '</div>' +
+      '<div class="cc-item-badge">' + (grouped[cc] ? grouped[cc].length : 0) + '</div>' +
+      '<div class="cc-item-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>';
+    item.addEventListener('click', function() { openDetail(cc); });
+    list.appendChild(item);
   });
 }
 
-function rowHTML(entry, idx) {
-  return '<div class="cell cell-key">' + escHtml(entry.key) + '</div>' +
-         '<div class="cell cell-val">'  + escHtml(entry.value) + '</div>' +
-         '<div class="cell-actions">' +
-           '<button class="act-btn edit-btn" data-action="edit" data-idx="' + idx + '" title="Edit">' +
-             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-           '</button>' +
-           '<button class="act-btn del-btn" data-action="delete" data-idx="' + idx + '" title="Remove">' +
-             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
-           '</button>' +
-         '</div>';
+document.getElementById('cc-search').addEventListener('input', function(e) {
+  renderCCList(e.target.value);
+});
+
+// ─── Detail view ──────────────────────────────────────────────────────────────
+function openDetail(cc) {
+  selectedCC = cc;
+  document.getElementById('app-header-title').textContent = cc;
+  document.getElementById('back-btn').classList.add('visible');
+  document.getElementById('header-divider').classList.add('visible');
+  document.getElementById('add-email-input').value = '';
+  renderMembers(cc);
+
+  document.getElementById('list-view').style.display   = 'none';
+  document.getElementById('detail-view').style.display = 'flex';
 }
 
-function editRowHTML(entry, idx) {
-  return '<div class="cell cell-key">' + escHtml(entry.key) + '</div>' +
-         '<div class="cell-edit-wrap"><input type="text" id="edit-input-' + idx + '" value="' + escAttr(entry.value) + '" /></div>' +
-         '<div class="cell-actions">' +
-           '<button class="act-btn save-btn" data-action="save" data-idx="' + idx + '" title="Save">' +
-             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
-           '</button>' +
-           '<button class="act-btn cancel-btn" data-action="cancel" data-idx="' + idx + '" title="Cancel">' +
-             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-           '</button>' +
-         '</div>';
+function renderMembers(cc) {
+  var members = grouped[cc] || [];
+  updateCountPill(members.length + ' member' + (members.length === 1 ? '' : 's'));
+
+  var list = document.getElementById('members-list');
+  list.innerHTML = '';
+
+  if (members.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12px;">No members yet. Add one above.</div>';
+    return;
+  }
+
+  var sorted = members.slice().sort(function(a,b){ return a.localeCompare(b); });
+  sorted.forEach(function(email) {
+    var row = document.createElement('div');
+    row.className = 'member-row';
+    row.setAttribute('data-email', email);
+    row.innerHTML =
+      '<div class="member-email">' + escHtml(email) + '</div>' +
+      '<button class="member-del" data-email="' + escAttr(email) + '" title="Remove access">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+      '</button>';
+    list.appendChild(row);
+  });
 }
 
-document.getElementById('rows-container').addEventListener('click', function(e) {
-  var btn = e.target.closest('[data-action]');
+// Delete member
+document.getElementById('members-list').addEventListener('click', function(e) {
+  var btn = e.target.closest('.member-del');
   if (!btn || btn.disabled) return;
-  var action = btn.getAttribute('data-action');
-  var idx    = parseInt(btn.getAttribute('data-idx'), 10);
-  if (action === 'edit')   startEdit(idx);
-  if (action === 'cancel') cancelEdit(idx);
-  if (action === 'save')   saveEdit(idx);
-  if (action === 'delete') deleteRow(idx);
+  var email = btn.getAttribute('data-email');
+  deleteMember(email);
 });
 
-document.getElementById('rows-container').addEventListener('keydown', function(e) {
-  if (e.target.tagName !== 'INPUT') return;
-  var row = e.target.closest('.ent-row');
-  if (!row) return;
-  var idx = parseInt(row.getAttribute('data-idx'), 10);
-  if (e.key === 'Enter')  saveEdit(idx);
-  if (e.key === 'Escape') cancelEdit(idx);
-});
-
-function startEdit(idx) {
-  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
-  row.classList.add('editing');
-  row.innerHTML = editRowHTML(entries[idx], idx);
-  var input = document.getElementById('edit-input-' + idx);
-  input.focus(); input.select();
-}
-
-function cancelEdit(idx) {
-  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
-  row.classList.remove('editing');
-  row.innerHTML = rowHTML(entries[idx], idx);
-}
-
-function saveEdit(idx) {
-  var input    = document.getElementById('edit-input-' + idx);
-  var newValue = input.value.trim();
-  var entry    = entries[idx];
-  if (!newValue)                  { showToast('Value is required.', 'error'); return; }
-  if (newValue === entry.value)   { cancelEdit(idx); return; }
-  if (!addFlowUrl || !delFlowUrl) { showToast('Flow URLs not configured — click Configure.', 'error'); return; }
-  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
-  setRowBusy(row, true);
-  callFlow(delFlowUrl, { key: entry.key, value: entry.value })
-    .then(function() { return callFlow(addFlowUrl, { key: entry.key, value: newValue }); })
-    .then(function() {
-      entries[idx].value = newValue;
-      row.classList.remove('editing');
-      row.innerHTML = rowHTML(entries[idx], idx);
-      showToast('Updated.', 'success');
-    })
-    .catch(function(err) { setRowBusy(row, false); showToast('Save failed: ' + err.message, 'error'); });
-}
-
-function deleteRow(idx) {
-  var entry = entries[idx];
+function deleteMember(email) {
   if (!delFlowUrl) { showToast('Delete Flow URL not configured — click Configure.', 'error'); return; }
-  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
-  setRowBusy(row, true);
-  callFlow(delFlowUrl, { key: entry.key, value: entry.value })
-    .then(function() { entries.splice(idx, 1); renderRows(); showToast('Removed.', 'success'); })
-    .catch(function(err) { setRowBusy(row, false); showToast('Delete failed: ' + err.message, 'error'); });
+
+  var row = document.querySelector('.member-row[data-email="' + escAttr(email) + '"]');
+  if (row) { row.style.opacity = '.4'; row.querySelector('.member-del').disabled = true; }
+
+  callFlow(delFlowUrl, { key: selectedCC, value: email })
+    .then(function() {
+      if (grouped[selectedCC]) {
+        grouped[selectedCC] = grouped[selectedCC].filter(function(e){ return e !== email; });
+      }
+      renderMembers(selectedCC);
+      showToast('Removed.', 'success');
+    })
+    .catch(function(err) {
+      if (row) { row.style.opacity = '1'; row.querySelector('.member-del').disabled = false; }
+      showToast('Delete failed: ' + err.message, 'error');
+    });
 }
 
-function setRowBusy(row, busy) {
-  row.querySelectorAll('.act-btn').forEach(function(b) { b.disabled = busy; });
-  row.style.opacity = busy ? '.45' : '1';
+// Add member
+document.getElementById('add-btn').addEventListener('click', addMember);
+document.getElementById('add-email-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addMember();
+});
+
+function addMember() {
+  var input = document.getElementById('add-email-input');
+  var email = input.value.trim().toLowerCase();
+  if (!email)              { showToast('Enter an email address.', 'error'); return; }
+  if (!isValidEmail(email)){ showToast('Enter a valid email address.', 'error'); return; }
+  if (!addFlowUrl)         { showToast('Add Flow URL not configured — click Configure.', 'error'); return; }
+
+  var members = grouped[selectedCC] || [];
+  if (members.indexOf(email) !== -1) { showToast('Already has access.', 'error'); return; }
+
+  var btn = document.getElementById('add-btn');
+  btn.disabled = true;
+
+  callFlow(addFlowUrl, { key: selectedCC, value: email })
+    .then(function() {
+      if (!grouped[selectedCC]) grouped[selectedCC] = [];
+      grouped[selectedCC].push(email);
+      input.value = '';
+      renderMembers(selectedCC);
+      showToast(email + ' added.', 'success');
+    })
+    .catch(function(err) { showToast('Add failed: ' + err.message, 'error'); })
+    .finally(function()  { btn.disabled = false; });
 }
 
+// Back button
+document.getElementById('back-btn').addEventListener('click', goBack);
+function goBack() {
+  selectedCC = null;
+  document.getElementById('app-header-title').textContent = 'Entitlements Manager';
+  document.getElementById('back-btn').classList.remove('visible');
+  document.getElementById('header-divider').classList.remove('visible');
+  renderCCList(document.getElementById('cc-search').value);
+  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('list-view').style.display   = 'flex';
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
 function openSettings() {
   loadSettings();
   document.getElementById('cfg-label-key').value = labelKey;
@@ -513,6 +599,7 @@ document.getElementById('settings-save').addEventListener('click', function() {
   }).catch(function(err) { showToast('Could not save: ' + err.message, 'error'); });
 });
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function callFlow(url, body) {
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['x-api-key'] = apiKey;
@@ -520,16 +607,22 @@ function callFlow(url, body) {
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(function(){ return {}; }); });
 }
 
-function showTable() {
-  document.getElementById('empty-view').style.display = 'none';
-  document.getElementById('table-view').style.display = 'flex';
+function showListView() {
+  document.getElementById('empty-view').style.display  = 'none';
+  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('list-view').style.display   = 'flex';
 }
 function setEmptyMsg(msg) {
-  document.getElementById('empty-view').style.display = 'flex';
-  document.getElementById('table-view').style.display = 'none';
-  document.getElementById('count-pill').style.display = 'none';
+  document.getElementById('empty-view').style.display  = 'flex';
+  document.getElementById('list-view').style.display   = 'none';
+  document.getElementById('detail-view').style.display = 'none';
   document.getElementById('empty-msg').textContent = msg;
 }
+function updateCountPill(text) {
+  var p = document.getElementById('count-pill');
+  p.textContent = text;
+}
+
 var toastTimer;
 function showToast(msg, type) {
   var el = document.getElementById('toast');
@@ -537,6 +630,7 @@ function showToast(msg, type) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3200);
 }
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 </script>
