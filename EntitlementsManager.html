@@ -442,21 +442,29 @@ async function loadData(ws) {
     dt.data.forEach(function(row) {
       var k = row[0].formattedValue || row[0].value || '';
       var v = row[1].formattedValue || row[1].value || '';
-      if (!k) return;
+      if (!k || k === 'Null' || k === 'null') return;
       if (!grouped[k]) grouped[k] = [];
-      if (v && grouped[k].indexOf(v) === -1) grouped[k].push(v);
+      if (v && v !== 'Null' && v !== 'null' && grouped[k].indexOf(v) === -1) grouped[k].push(v);
     });
     ccKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
 
     // Build full users list from col 2 (Tableau Users on Detail tile)
-    // Every user is its own row so deduplication is intentional here
     if (cols.length >= 3) {
       var userSet = {};
       dt.data.forEach(function(row) {
         var u = row[2].formattedValue || row[2].value || '';
-        if (u) userSet[u] = true;
+        if (u && u !== 'Null' && u !== 'null' && u !== 'NULL') userSet[u] = true;
       });
       allUsers = Object.keys(userSet).sort(function(a,b){ return a.localeCompare(b); });
+      console.log('[Entitlements] col0 field:', cols[0].fieldName);
+      console.log('[Entitlements] col1 field:', cols[1].fieldName);
+      console.log('[Entitlements] col2 field:', cols[2].fieldName);
+      console.log('[Entitlements] total rows:', dt.data.length);
+      console.log('[Entitlements] allUsers count:', allUsers.length);
+      console.log('[Entitlements] allUsers sample:', allUsers.slice(0,5));
+    } else {
+      console.log('[Entitlements] only', cols.length, 'cols — no users col');
+      cols.forEach(function(c,i){ console.log('  col'+i+':', c.fieldName); });
     }
 
     if (selectedCC && grouped[selectedCC]) {
