@@ -488,7 +488,7 @@ async function loadAllUsers() {
   try {
     var headers = { 'Content-Type': 'application/json' };
     if (apiKey) headers['x-api-key'] = apiKey;
-    var resp = await fetch(usersFlowUrl, { method: 'GET', headers: headers });
+    var resp = await fetch(usersFlowUrl, { method: 'POST', headers: headers, body: JSON.stringify({}) });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var data = await resp.json();
     // Accept either a plain array of emails or array of objects with an email field
