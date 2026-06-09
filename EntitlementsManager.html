@@ -9,118 +9,249 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #f5f6f8;
-      --surface:  #ffffff;
-      --border:   #dde1e7;
-      --accent:   #2563eb;
-      --accent-lt:#eff4ff;
-      --danger:   #dc2626;
-      --danger-lt:#fff1f1;
-      --success:  #16a34a;
-      --text-pri: #111827;
-      --text-sec: #6b7280;
-      --text-inv: #ffffff;
-      --radius:   5px;
+      --slate:      #1a2035;
+      --slate-mid:  #2d3a54;
+      --slate-soft: #3d4f70;
+      --amber:      #f59e0b;
+      --amber-dim:  #fcd34d;
+      --surface:    #ffffff;
+      --stripe:     #f8f9fb;
+      --border:     #e8eaee;
+      --border-mid: #d0d5df;
+      --danger:     #e03131;
+      --danger-lt:  #fff5f5;
+      --success:    #2f9e44;
+      --text-pri:   #1a2035;
+      --text-sec:   #5a6478;
+      --text-dim:   #8c96a8;
+      --text-inv:   #ffffff;
+      --mono:       'SF Mono', 'Menlo', 'Consolas', monospace;
+      --sans:       -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      --radius:     4px;
+      --radius-lg:  8px;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 13px; background: var(--bg); color: var(--text-pri);
-      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+      font-family: var(--sans);
+      font-size: 13px;
+      background: var(--stripe);
+      color: var(--text-pri);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
+    /* ── Header ── */
+    #app-header {
+      background: var(--slate);
+      padding: 0 14px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      border-bottom: 2px solid var(--amber);
+    }
+    #app-header-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-inv);
+      flex: 1;
+    }
+    #count-pill {
+      background: var(--slate-mid);
+      color: var(--amber-dim);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--slate-soft);
+      display: none;
+    }
+
+    /* ── Toast ── */
     #toast {
-      position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
-      background: var(--text-pri); color: var(--text-inv);
-      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-      opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 999; white-space: nowrap;
+      position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; letter-spacing: .02em;
+      opacity: 0; transition: opacity .18s;
+      pointer-events: none; z-index: 999; white-space: nowrap;
+      background: var(--slate); color: var(--text-inv);
     }
     #toast.show    { opacity: 1; }
     #toast.error   { background: var(--danger); }
     #toast.success { background: var(--success); }
 
+    /* ── Empty state ── */
     #empty-view {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 8px; color: var(--text-sec); text-align: center; padding: 20px;
+      gap: 10px; padding: 24px; text-align: center;
     }
-    #empty-view svg { width: 28px; height: 28px; opacity: .3; }
-    #empty-view p { font-size: 12px; line-height: 1.6; max-width: 220px; }
+    #empty-icon {
+      width: 36px; height: 36px;
+      background: var(--slate);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      opacity: .15;
+    }
+    #empty-icon svg { width: 20px; height: 20px; fill: white; }
+    #empty-msg { font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 210px; }
 
+    /* ── Table ── */
     #table-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
 
     #col-heads {
-      display: grid; grid-template-columns: 1fr 1fr 72px;
-      background: var(--surface); border-bottom: 2px solid var(--border); flex-shrink: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr 64px;
+      background: var(--slate);
+      flex-shrink: 0;
     }
     #col-heads span {
-      padding: 7px 10px; font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .05em; color: var(--text-sec);
+      padding: 7px 12px;
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: rgba(255,255,255,.45);
     }
 
     #rows-wrap { flex: 1; overflow-y: auto; }
+    #rows-wrap::-webkit-scrollbar { width: 5px; }
+    #rows-wrap::-webkit-scrollbar-track { background: transparent; }
+    #rows-wrap::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
 
     .ent-row {
-      display: grid; grid-template-columns: 1fr 1fr 72px;
-      align-items: center; min-height: 34px;
-      border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s;
+      display: grid;
+      grid-template-columns: 1fr 1fr 64px;
+      align-items: center;
+      min-height: 36px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      border-left: 3px solid transparent;
+      transition: border-left-color .12s, background .12s;
+      position: relative;
     }
+    .ent-row:nth-child(even) { background: var(--stripe); }
     .ent-row:last-child { border-bottom: none; }
-    .ent-row:hover { background: var(--accent-lt); }
-    .ent-row.editing { background: #fefce8; }
+    .ent-row:hover {
+      border-left-color: var(--amber);
+      background: #fffbf0 !important;
+    }
+    .ent-row.editing {
+      border-left-color: var(--slate-soft);
+      background: #f0f4ff !important;
+    }
 
-    .cell { padding: 5px 10px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cell-key { font-weight: 500; }
-    .cell-val { font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px; color: var(--text-sec); }
+    /* hide actions until hover */
+    .ent-row .cell-actions { opacity: 0; transition: opacity .12s; }
+    .ent-row:hover .cell-actions,
+    .ent-row.editing .cell-actions { opacity: 1; }
+
+    .cell { padding: 6px 12px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cell-key { font-weight: 500; color: var(--text-pri); font-size: 12px; }
+    .cell-val { font-family: var(--mono); font-size: 11px; color: var(--text-sec); }
 
     .cell-edit-wrap { padding: 3px 6px; }
     .cell-edit-wrap input {
-      width: 100%; padding: 4px 7px; border: 1px solid var(--accent); border-radius: 4px;
-      font-size: 11px; font-family: 'SF Mono', monospace;
+      width: 100%; padding: 5px 8px;
+      border: 1.5px solid var(--slate-soft); border-radius: var(--radius);
+      font-size: 11px; font-family: var(--mono);
       background: var(--surface); color: var(--text-pri); outline: none;
+      transition: border-color .12s;
     }
+    .cell-edit-wrap input:focus { border-color: var(--amber); }
 
-    .cell-actions { padding: 0 6px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
-    .act-btn {
-      background: none; border: none; cursor: pointer; padding: 5px; border-radius: 4px;
-      display: flex; align-items: center; color: var(--text-sec);
+    .cell-actions {
+      padding: 0 6px;
+      display: flex; align-items: center; justify-content: flex-end; gap: 2px;
     }
-    .act-btn svg { width: 14px; height: 14px; }
-    .act-btn.edit-btn:hover   { color: var(--accent); background: var(--accent-lt); }
+    .act-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 5px; border-radius: var(--radius);
+      display: flex; align-items: center; color: var(--text-dim);
+      transition: color .1s, background .1s;
+    }
+    .act-btn svg { width: 13px; height: 13px; }
+    .act-btn.edit-btn:hover   { color: var(--slate); background: rgba(26,32,53,.08); }
     .act-btn.save-btn         { color: var(--success); }
-    .act-btn.save-btn:hover   { background: #dcfce7; }
+    .act-btn.save-btn:hover   { background: #ebfbee; }
     .act-btn.cancel-btn:hover { color: var(--danger); background: var(--danger-lt); }
     .act-btn.del-btn:hover    { color: var(--danger); background: var(--danger-lt); }
-    .act-btn:disabled         { opacity: .35; cursor: not-allowed; }
+    .act-btn:disabled         { opacity: .3; cursor: not-allowed; }
 
-    /* Settings */
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; align-items: center; justify-content: center; }
+    /* ── Settings overlay ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(10,14,26,.5); z-index: 100;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(2px);
+    }
     .overlay.open { display: flex; }
-    .panel { background: var(--surface); border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.18); width: 420px; max-width: 92vw; padding: 20px; }
-    .panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .panel .sub { font-size: 11px; color: var(--text-sec); margin-bottom: 16px; }
-    .field { margin-bottom: 13px; }
-    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
-    .field input { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; font-family: 'SF Mono', monospace; color: var(--text-pri); background: var(--bg); outline: none; }
-    .field input.plain { font-family: inherit; }
-    .field input:focus { border-color: var(--accent); background: var(--surface); }
-    .field .hint { font-size: 11px; color: var(--text-sec); margin-top: 4px; line-height: 1.5; }
+    .panel {
+      background: var(--surface); border-radius: var(--radius-lg);
+      box-shadow: 0 12px 40px rgba(10,14,26,.22);
+      width: 420px; max-width: 92vw; padding: 22px;
+      border-top: 3px solid var(--amber);
+    }
+    .panel h3 {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: .04em; color: var(--slate);
+      margin-bottom: 3px;
+    }
+    .panel .sub { font-size: 11px; color: var(--text-dim); margin-bottom: 18px; }
+    .section-head {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-dim);
+      margin: 18px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 600;
+      color: var(--text-sec); margin-bottom: 5px;
+    }
+    .field input {
+      width: 100%; padding: 7px 10px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-family: var(--mono);
+      color: var(--text-pri); background: var(--stripe); outline: none;
+      transition: border-color .12s;
+    }
+    .field input.plain { font-family: var(--sans); }
+    .field input:focus { border-color: var(--slate-soft); background: var(--surface); }
+    .field .hint { font-size: 10.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-sec); margin: 16px 0 10px; border-top: 1px solid var(--border); padding-top: 14px; }
-    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
-    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; border: none; }
-    .btn-primary { background: var(--accent); color: var(--text-inv); }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-pri); }
-    .btn-ghost:hover { background: var(--bg); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 14px; border-radius: var(--radius);
+      font-size: 12px; font-weight: 600; cursor: pointer; border: none;
+      letter-spacing: .02em; transition: background .12s;
+    }
+    .btn-primary { background: var(--slate); color: var(--text-inv); }
+    .btn-primary:hover { background: var(--slate-mid); }
+    .btn-ghost { background: none; border: 1.5px solid var(--border); color: var(--text-sec); }
+    .btn-ghost:hover { border-color: var(--border-mid); background: var(--stripe); }
   </style>
 </head>
 <body>
 
+<div id="app-header">
+  <div id="app-header-title">Entitlements Manager</div>
+  <div id="count-pill">— records</div>
+</div>
+
 <div id="toast"></div>
 
 <div id="empty-view">
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+  <div id="empty-icon">
+    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+  </div>
   <p id="empty-msg">Loading…</p>
 </div>
 
@@ -137,14 +268,14 @@
 
 <div id="settings-overlay" class="overlay">
   <div class="panel">
-    <h3>⚙️ Configuration</h3>
+    <h3>Configuration</h3>
     <p class="sub">Settings are saved to the workbook.</p>
 
     <div class="section-head">Column Labels</div>
     <div class="field-row">
       <div class="field">
         <label>Primary Key Label</label>
-        <input type="text" id="cfg-label-key" class="plain" placeholder="e.g. Cost Center Description" />
+        <input type="text" id="cfg-label-key" class="plain" placeholder="e.g. Cost Center" />
         <p class="hint">Overrides the auto-detected field name for column 1.</p>
       </div>
       <div class="field">
@@ -166,7 +297,7 @@
       <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code> and deletes the matching row.</p>
     </div>
     <div class="field">
-      <label>API Key (optional)</label>
+      <label>API Key <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
       <input type="password" id="cfg-api-key" placeholder="Stored in workbook settings" />
       <p class="hint">Sent as <code>x-api-key</code> header. Never stored in source code.</p>
     </div>
@@ -186,14 +317,10 @@ var delFlowUrl = '';
 var apiKey     = '';
 var labelKey   = '';
 var labelVal   = '';
+var keyIdx     = 0;
+var valIdx     = 1;
+var entries    = [];
 
-// col indices discovered at runtime from whatever is in the encoding tiles
-var keyIdx = 0;
-var valIdx = 1;
-
-var entries = []; // [{ key, value }]
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
 (async function() {
   try {
     await tableau.extensions.initializeAsync({ configure: openSettings });
@@ -217,22 +344,15 @@ function loadSettings() {
   document.getElementById('head-val').textContent = labelVal || 'Email';
 }
 
-// ─── Load data ────────────────────────────────────────────────────────────────
 async function loadData(ws) {
   try {
     var dt   = await ws.getSummaryDataAsync({ ignoreSelection: true });
     var cols = dt.columns;
+    if (cols.length < 2) { setEmptyMsg('Add two fields to the encoding tiles to get started.'); return; }
 
-    if (cols.length < 2) {
-      setEmptyMsg('Add two fields to the encoding tiles to get started.');
-      return;
-    }
-
-    // Use first two columns — whatever the user dropped into the encoding tiles
     keyIdx = 0;
     valIdx = 1;
 
-    // Auto-label headers from actual field names if no custom label set
     document.getElementById('head-key').textContent = labelKey || cols[keyIdx].fieldName;
     document.getElementById('head-val').textContent = labelVal || cols[valIdx].fieldName;
 
@@ -250,13 +370,16 @@ async function loadData(ws) {
   }
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
 function renderRows() {
   var container = document.getElementById('rows-container');
   container.innerHTML = '';
 
+  var pill = document.getElementById('count-pill');
+  pill.textContent = entries.length + ' record' + (entries.length === 1 ? '' : 's');
+  pill.style.display = entries.length ? 'block' : 'none';
+
   if (entries.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-sec);font-size:12px;">No data found.</div>';
+    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12px;">No records found.</div>';
     return;
   }
 
@@ -270,8 +393,8 @@ function renderRows() {
 }
 
 function rowHTML(entry, idx) {
-  return '<div class="cell cell-key">' + escHtml(entry.key)   + '</div>' +
-         '<div class="cell cell-val">' + escHtml(entry.value) + '</div>' +
+  return '<div class="cell cell-key">' + escHtml(entry.key) + '</div>' +
+         '<div class="cell cell-val">'  + escHtml(entry.value) + '</div>' +
          '<div class="cell-actions">' +
            '<button class="act-btn edit-btn" data-action="edit" data-idx="' + idx + '" title="Edit">' +
              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
@@ -295,7 +418,6 @@ function editRowHTML(entry, idx) {
          '</div>';
 }
 
-// ─── Row actions ──────────────────────────────────────────────────────────────
 document.getElementById('rows-container').addEventListener('click', function(e) {
   var btn = e.target.closest('[data-action]');
   if (!btn || btn.disabled) return;
@@ -334,14 +456,11 @@ function saveEdit(idx) {
   var input    = document.getElementById('edit-input-' + idx);
   var newValue = input.value.trim();
   var entry    = entries[idx];
-
-  if (!newValue)                         { showToast('Value is required.', 'error'); return; }
-  if (newValue === entry.value)          { cancelEdit(idx); return; }
-  if (!addFlowUrl || !delFlowUrl)        { showToast('Flow URLs not configured — click Configure.', 'error'); return; }
-
+  if (!newValue)                  { showToast('Value is required.', 'error'); return; }
+  if (newValue === entry.value)   { cancelEdit(idx); return; }
+  if (!addFlowUrl || !delFlowUrl) { showToast('Flow URLs not configured — click Configure.', 'error'); return; }
   var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
   setRowBusy(row, true);
-
   callFlow(delFlowUrl, { key: entry.key, value: entry.value })
     .then(function() { return callFlow(addFlowUrl, { key: entry.key, value: newValue }); })
     .then(function() {
@@ -350,37 +469,24 @@ function saveEdit(idx) {
       row.innerHTML = rowHTML(entries[idx], idx);
       showToast('Updated.', 'success');
     })
-    .catch(function(err) {
-      setRowBusy(row, false);
-      showToast('Save failed: ' + err.message, 'error');
-    });
+    .catch(function(err) { setRowBusy(row, false); showToast('Save failed: ' + err.message, 'error'); });
 }
 
 function deleteRow(idx) {
   var entry = entries[idx];
   if (!delFlowUrl) { showToast('Delete Flow URL not configured — click Configure.', 'error'); return; }
-
   var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
   setRowBusy(row, true);
-
   callFlow(delFlowUrl, { key: entry.key, value: entry.value })
-    .then(function() {
-      entries.splice(idx, 1);
-      renderRows();
-      showToast('Removed.', 'success');
-    })
-    .catch(function(err) {
-      setRowBusy(row, false);
-      showToast('Delete failed: ' + err.message, 'error');
-    });
+    .then(function() { entries.splice(idx, 1); renderRows(); showToast('Removed.', 'success'); })
+    .catch(function(err) { setRowBusy(row, false); showToast('Delete failed: ' + err.message, 'error'); });
 }
 
 function setRowBusy(row, busy) {
   row.querySelectorAll('.act-btn').forEach(function(b) { b.disabled = busy; });
-  row.style.opacity = busy ? '.5' : '1';
+  row.style.opacity = busy ? '.45' : '1';
 }
 
-// ─── Settings ─────────────────────────────────────────────────────────────────
 function openSettings() {
   loadSettings();
   document.getElementById('cfg-label-key').value = labelKey;
@@ -407,7 +513,6 @@ document.getElementById('settings-save').addEventListener('click', function() {
   }).catch(function(err) { showToast('Could not save: ' + err.message, 'error'); });
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function callFlow(url, body) {
   var headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['x-api-key'] = apiKey;
@@ -422,6 +527,7 @@ function showTable() {
 function setEmptyMsg(msg) {
   document.getElementById('empty-view').style.display = 'flex';
   document.getElementById('table-view').style.display = 'none';
+  document.getElementById('count-pill').style.display = 'none';
   document.getElementById('empty-msg').textContent = msg;
 }
 var toastTimer;
