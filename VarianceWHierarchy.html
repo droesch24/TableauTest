@@ -190,6 +190,19 @@
         <input type="text" id="cfg-apikey" placeholder="Enter API key" autocomplete="off"/>
         <span class="hint">Admin only — stored in the workbook, never in source code.</span>
       </div>
+      <div class="field">
+        <label>POST Flow URL</label>
+        <input type="text" id="cfg-post-url" placeholder="Power Automate POST URL" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>GET Flow URL</label>
+        <input type="text" id="cfg-get-url" placeholder="Power Automate GET URL" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>DELETE Flow URL</label>
+        <input type="text" id="cfg-delete-url" placeholder="Power Automate DELETE URL" autocomplete="off"/>
+        <span class="hint">Leave blank if delete flow not yet configured.</span>
+      </div>
       <hr class="modal-divider"/>
 
       <div class="field">
@@ -225,9 +238,9 @@
 // ================================================================
 // POWER AUTOMATE URLS — set by admin, not editable by users
 // ================================================================
-var PA_POST_URL   = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b28332ca3555446396db1e3979b307f2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2OCWHZ9t8hU1z2ptmiSTzdlI2qcJz2Urb6L8fE4Dfwc';
-var PA_GET_URL    = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/87f4223d13bc49f9ba5cfb602cf5b417/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pHi1nTkH3aiLc04w8H_ecOOgbto3cV5gOFwm8RWwBOk';
-var PA_DELETE_URL = 'REPLACE_WITH_DELETE_FLOW_URL';
+var PA_POST_URL   = '';
+var PA_GET_URL    = '';
+var PA_DELETE_URL = '';
 var PA_API_KEY    = '';
 // ================================================================
 
@@ -403,14 +416,17 @@ function getHierOrderFromUI() {
 }
 
 // ── Config ────────────────────────────────────────────────────────
-var CFG = { sourceId: '', apiKey: '', colorRules: [], defaultColor: '#5b8db8', hierOrder: [], parentColor: '#5b8db8' };
+var CFG = { sourceId: '', apiKey: '', postUrl: '', getUrl: '', deleteUrl: '', colorRules: [], defaultColor: '#5b8db8', hierOrder: [], parentColor: '#5b8db8' };
 var CURRENT_USER = '';
 var configIsFirstRun = false;
 
 function openConfig(isFirstRun) {
   configIsFirstRun = !!isFirstRun;
-  document.getElementById('cfg-apikey').value    = CFG.apiKey || '';
-  document.getElementById('parent-color').value  = CFG.parentColor || '#5b8db8';
+  document.getElementById('cfg-apikey').value      = CFG.apiKey    || '';
+  document.getElementById('cfg-post-url').value   = CFG.postUrl   || '';
+  document.getElementById('cfg-get-url').value    = CFG.getUrl    || '';
+  document.getElementById('cfg-delete-url').value = CFG.deleteUrl || '';
+  document.getElementById('parent-color').value   = CFG.parentColor || '#5b8db8';
   if (lastDetectedDimCols.length) buildHierSortUI(lastDetectedDimCols);
   document.getElementById('cfg-source-id').value = CFG.sourceId;
   loadRulesToUI(CFG.colorRules, CFG.defaultColor);
@@ -426,6 +442,9 @@ function saveConfig() {
   var sourceId = document.getElementById('cfg-source-id').value.trim() || CFG.sourceId;
   if (!sourceId) { alert('Please enter a dashboard name.'); return; }
   CFG.apiKey       = document.getElementById('cfg-apikey').value.trim();
+  CFG.postUrl      = document.getElementById('cfg-post-url').value.trim();
+  CFG.getUrl       = document.getElementById('cfg-get-url').value.trim();
+  CFG.deleteUrl    = document.getElementById('cfg-delete-url').value.trim();
   CFG.hierOrder    = getHierOrderFromUI();
   CFG.parentColor  = document.getElementById('parent-color').value;
   CFG.sourceId     = sourceId;
@@ -433,6 +452,9 @@ function saveConfig() {
   CFG.defaultColor = document.getElementById('default-color').value;
   try {
     tableau.extensions.settings.set('cfg_api_key',       CFG.apiKey);
+    tableau.extensions.settings.set('cfg_post_url',      CFG.postUrl);
+    tableau.extensions.settings.set('cfg_get_url',       CFG.getUrl);
+    tableau.extensions.settings.set('cfg_delete_url',    CFG.deleteUrl);
     tableau.extensions.settings.set('cfg_parent_color',  CFG.parentColor);
     tableau.extensions.settings.set('cfg_hier_order',    JSON.stringify(CFG.hierOrder));
     tableau.extensions.settings.set('cfg_source_id',     CFG.sourceId);
@@ -448,7 +470,10 @@ function saveConfig() {
 function loadConfig() {
   try {
     var s = tableau.extensions.settings.getAll();
-    CFG.apiKey       = s.cfg_api_key       || '';
+    CFG.apiKey       = s.cfg_api_key    || '';
+    CFG.postUrl      = s.cfg_post_url   || '';
+    CFG.getUrl       = s.cfg_get_url    || '';
+    CFG.deleteUrl    = s.cfg_delete_url || '';
     try { CFG.hierOrder = JSON.parse(s.cfg_hier_order||'[]'); } catch(_) { CFG.hierOrder = []; }
     CFG.parentColor  = s.cfg_parent_color || '#5b8db8';
     CFG.sourceId     = s.cfg_source_id     || '';
@@ -589,9 +614,9 @@ function render(rows) {
 
 // ── Comments ──────────────────────────────────────────────────────
 async function loadCommentsFromAPI() {
-  if (!CFG.sourceId || PA_GET_URL.indexOf('REPLACE') === 0) return;
+  if (!CFG.sourceId || !CFG.getUrl) return;
   try {
-    var res=await fetch(PA_GET_URL, { method:'POST', headers:paHeaders(), body:JSON.stringify({source_id:CFG.sourceId}) });
+    var res=await fetch(CFG.getUrl, { method:'POST', headers:paHeaders(), body:JSON.stringify({source_id:CFG.sourceId}) });
     if (!res.ok) throw new Error('GET flow returned '+res.status);
     var data=await res.json();
     comments={};
@@ -654,7 +679,7 @@ async function pushComment() {
   if (!pendingComment) return;
   var rowId=pendingComment.rowId, author=pendingComment.author, text=pendingComment.text;
   try {
-    var res=await fetch(PA_POST_URL,{ method:'POST', headers:paHeaders(), body:JSON.stringify({ source_id:CFG.sourceId, row_id:rowId, author:author, comment_text:text, created_at:new Date().toISOString() }) });
+    var res=await fetch(CFG.postUrl,{ method:'POST', headers:paHeaders(), body:JSON.stringify({ source_id:CFG.sourceId, row_id:rowId, author:author, comment_text:text, created_at:new Date().toISOString() }) });
     if (!res.ok) throw new Error('Push failed ('+res.status+')');
     var created={}; try{ created=await res.json(); }catch(_){}
     if (!comments[rowId]) comments[rowId]=[];
@@ -667,7 +692,7 @@ async function pushComment() {
 async function deleteComment(id,rowId) {
   if (!confirm('Delete this comment?')) return;
   try {
-    var res=await fetch(PA_DELETE_URL,{ method:'POST', headers:paHeaders(), body:JSON.stringify({id:id,source_id:CFG.sourceId}) });
+    var res=await fetch(CFG.deleteUrl,{ method:'POST', headers:paHeaders(), body:JSON.stringify({id:id,source_id:CFG.sourceId}) });
     if (!res.ok) throw new Error('Delete failed ('+res.status+')');
     if (comments[rowId]) comments[rowId]=comments[rowId].filter(function(c){ return String(c.id)!==String(id); });
     renderSidebarComments(); renderHier(lastRows);
