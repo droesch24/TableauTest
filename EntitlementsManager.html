@@ -383,11 +383,13 @@
 <script>
 'use strict';
 
-var addFlowUrl = '';
-var delFlowUrl = '';
-var apiKey     = '';
-var labelKey   = '';
-var labelVal   = '';
+var addFlowUrl     = '';
+var delFlowUrl     = '';
+var apiKey         = '';
+var labelKey       = '';
+var labelVal       = '';
+var usersSheetName = '';
+var usersFieldName = '';
 
 var grouped    = {}; // { "CC Name": ["email1", …] }
 var ccKeys     = [];
@@ -410,21 +412,32 @@ var selectedUser = null; // currently picked user email
 
 function loadSettings() {
   var s = tableau.extensions.settings;
-  addFlowUrl = s.get('addFlowUrl') || '';
-  delFlowUrl = s.get('delFlowUrl') || '';
-  apiKey     = s.get('apiKey')     || '';
-  labelKey   = s.get('labelKey')   || '';
-  labelVal   = s.get('labelVal')   || '';
+  addFlowUrl     = s.get('addFlowUrl')     || '';
+  delFlowUrl     = s.get('delFlowUrl')     || '';
+  apiKey         = s.get('apiKey')         || '';
+  labelKey       = s.get('labelKey')       || '';
+  labelVal       = s.get('labelVal')       || '';
+  usersSheetName = s.get('usersSheetName') || '';
+  usersFieldName = s.get('usersFieldName') || '';
 }
 
 // ─── Load data ────────────────────────────────────────────────────────────────
 async function loadData(ws) {
   try {
-    var dt   = await ws.getSummaryDataAsync({ ignoreSelection: true });
+    // Use getSummaryDataAsync with a high maxRows to get all rows untruncated.
+    // Col 0 = Cost Center, Col 1 = Email (entitlements), Col 2 = Tableau Users field.
+    // Because the Tableau Users field is on Detail (not aggregated), every user
+    // appears as its own row — we collect cols 0+1 for entitlements grouping,
+    // and col 2 for the full licensed users list independently.
+    var dt = await ws.getSummaryDataAsync({ ignoreSelection: true, maxRows: 100000 });
     var cols = dt.columns;
-    if (cols.length < 2) { setEmptyMsg('Add Cost Center, Email, and Tableau Users fields to the encoding tiles.'); return; }
 
-    // cols 0 = cost center, 1 = email, 2 = tableau users
+    if (cols.length < 2) {
+      setEmptyMsg('Add Cost Center and Email to the encoding tiles.');
+      return;
+    }
+
+    // Build entitlements grouping from cols 0 + 1
     grouped = {};
     dt.data.forEach(function(row) {
       var k = row[0].formattedValue || row[0].value || '';
@@ -435,44 +448,15 @@ async function loadData(ws) {
     });
     ccKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
 
-    // For Tableau Users we need the full undeduped list.
-    // getSummaryDataAsync collapses rows, so we use getUnderlyingTableDataAsync
-    // to get every user independently of whether they appear in an entitlement row.
-    allUsers = [];
+    // Build full users list from col 2 (Tableau Users on Detail tile)
+    // Every user is its own row so deduplication is intentional here
     if (cols.length >= 3) {
-      var usersFieldName = cols[2].fieldName;
-      try {
-        var tables = await ws.getUnderlyingTablesAsync();
-        var found  = false;
-        for (var t = 0; t < tables.length; t++) {
-          try {
-            var tableData = await ws.getUnderlyingTableDataAsync(tables[t].id, {
-              maxRows: 10000,
-              ignoreSelection: true,
-              includeAllColumns: true
-            });
-            var uIdx = tableData.columns.findIndex(function(c){ return c.fieldName === usersFieldName; });
-            if (uIdx === -1) continue;
-            var userSet = {};
-            tableData.data.forEach(function(row) {
-              var u = row[uIdx].formattedValue || row[uIdx].value || '';
-              if (u) userSet[u] = true;
-            });
-            allUsers = Object.keys(userSet).sort(function(a,b){ return a.localeCompare(b); });
-            found = true;
-            break;
-          } catch(_) { continue; }
-        }
-        if (!found) throw new Error('field not found in underlying tables');
-      } catch(e2) {
-        // Fallback: pull from summary col 2 (will be deduplicated but better than nothing)
-        var userSet2 = {};
-        dt.data.forEach(function(row) {
-          var u = row[2].formattedValue || row[2].value || '';
-          if (u) userSet2[u] = true;
-        });
-        allUsers = Object.keys(userSet2).sort(function(a,b){ return a.localeCompare(b); });
-      }
+      var userSet = {};
+      dt.data.forEach(function(row) {
+        var u = row[2].formattedValue || row[2].value || '';
+        if (u) userSet[u] = true;
+      });
+      allUsers = Object.keys(userSet).sort(function(a,b){ return a.localeCompare(b); });
     }
 
     if (selectedCC && grouped[selectedCC]) {
