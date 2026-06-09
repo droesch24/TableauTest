@@ -246,15 +246,29 @@ function loadSettings() {
 
 // ─── Load data from encoding tiles ───────────────────────────────────────────
 function loadData() {
-  tableau.extensions.worksheet.getSummaryDataAsync({ ignoreAliases: false })
-    .then(dataTable => {
-      const cols = dataTable.columns.map(c => ({ name: c.fieldName, idx: c.index }));
+  const ws = tableau.extensions.worksheet;
 
-      // Find Cost Center and Email columns by fieldName
-      const ccCol    = cols.find(c => c.name === tableau.extensions.worksheet.getEncodingInfoAsync
-        ? c : c); // fallback — match by name patterns below
-      const ccIdx    = cols.findIndex(c => c.name.toLowerCase().includes('cost center'));
-      const emailIdx = cols.findIndex(c => c.name.toLowerCase().includes('email'));
+  // Get encoding info first so we know which field names are in each tile
+  ws.getEncodingInfoAsync().then(encodingInfo => {
+    // Find the field names assigned to our two encoding tiles
+    const ccEncoding    = encodingInfo.find(e => e.id === 'cost-center');
+    const emailEncoding = encodingInfo.find(e => e.id === 'email');
+
+    const ccFieldName    = ccEncoding    && ccEncoding.fields.length    ? ccEncoding.fields[0].fieldName    : null;
+    const emailFieldName = emailEncoding && emailEncoding.fields.length ? emailEncoding.fields[0].fieldName : null;
+
+    if (!ccFieldName || !emailFieldName) {
+      entries = [];
+      showEmpty();
+      return;
+    }
+
+    // Now fetch summary data and match columns by the exact field names from encodings
+    ws.getSummaryDataAsync({ ignoreAliases: false }).then(dataTable => {
+      const cols = dataTable.columns;
+
+      const ccIdx    = cols.findIndex(c => c.fieldName === ccFieldName);
+      const emailIdx = cols.findIndex(c => c.fieldName === emailFieldName);
 
       if (ccIdx === -1 || emailIdx === -1) {
         entries = [];
@@ -262,28 +276,40 @@ function loadData() {
         return;
       }
 
-      // Also look for a description column (optional)
-      const descIdx = cols.findIndex(c =>
-        c.name.toLowerCase().includes('description') &&
-        !c.name.toLowerCase().includes('cost center')
-      );
-
-      // Update column header to actual field name
-      document.getElementById('head-cc').textContent = cols[ccIdx].name;
+      // Update column header to the actual field name used
+      document.getElementById('head-cc').textContent = ccFieldName;
 
       entries = dataTable.data.map(row => ({
         costCenter:  row[ccIdx].formattedValue  || row[ccIdx].value  || '',
-        description: descIdx !== -1 ? (row[descIdx].formattedValue || row[descIdx].value || '') : '',
+        description: row[ccIdx].formattedValue  || row[ccIdx].value  || '', // use CC value as description key
         email:       row[emailIdx].formattedValue || row[emailIdx].value || '',
       }));
 
       renderRows();
       showTable();
-    })
-    .catch(err => {
-      entries = [];
-      showEmpty();
     });
+
+  }).catch(err => {
+    // getEncodingInfoAsync not available — fall back to column name matching
+    ws.getSummaryDataAsync({ ignoreAliases: false }).then(dataTable => {
+      const cols = dataTable.columns;
+      const ccIdx    = cols.findIndex(c => c.fieldName.toLowerCase().includes('cost center'));
+      const emailIdx = cols.findIndex(c => c.fieldName.toLowerCase().includes('email'));
+
+      if (ccIdx === -1 || emailIdx === -1) { entries = []; showEmpty(); return; }
+
+      document.getElementById('head-cc').textContent = cols[ccIdx].fieldName;
+
+      entries = dataTable.data.map(row => ({
+        costCenter:  row[ccIdx].formattedValue  || row[ccIdx].value  || '',
+        description: row[ccIdx].formattedValue  || row[ccIdx].value  || '',
+        email:       row[emailIdx].formattedValue || row[emailIdx].value || '',
+      }));
+
+      renderRows();
+      showTable();
+    }).catch(() => { entries = []; showEmpty(); });
+  });
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
