@@ -2,50 +2,437 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Cost Center Entitlements</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entitlements Manager</title>
   <script src="tableau.extensions.1.latest.js"></script>
   <style>
-    body { font-family: monospace; font-size: 12px; padding: 12px; background: #1e1e1e; color: #d4d4d4; }
-    pre { white-space: pre-wrap; word-break: break-all; }
-    .ok  { color: #4ec9b0; }
-    .err { color: #f48771; }
-    .inf { color: #9cdcfe; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f5f6f8;
+      --surface:  #ffffff;
+      --border:   #dde1e7;
+      --accent:   #2563eb;
+      --accent-lt:#eff4ff;
+      --danger:   #dc2626;
+      --danger-lt:#fff1f1;
+      --success:  #16a34a;
+      --text-pri: #111827;
+      --text-sec: #6b7280;
+      --text-inv: #ffffff;
+      --radius:   5px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px; background: var(--bg); color: var(--text-pri);
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    #toast {
+      position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+      background: var(--text-pri); color: var(--text-inv);
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 999; white-space: nowrap;
+    }
+    #toast.show    { opacity: 1; }
+    #toast.error   { background: var(--danger); }
+    #toast.success { background: var(--success); }
+
+    #empty-view {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: var(--text-sec); text-align: center; padding: 20px;
+    }
+    #empty-view svg { width: 28px; height: 28px; opacity: .3; }
+    #empty-view p { font-size: 12px; line-height: 1.6; max-width: 220px; }
+
+    #table-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+
+    #col-heads {
+      display: grid; grid-template-columns: 1fr 1fr 72px;
+      background: var(--surface); border-bottom: 2px solid var(--border); flex-shrink: 0;
+    }
+    #col-heads span {
+      padding: 7px 10px; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em; color: var(--text-sec);
+    }
+
+    #rows-wrap { flex: 1; overflow-y: auto; }
+
+    .ent-row {
+      display: grid; grid-template-columns: 1fr 1fr 72px;
+      align-items: center; min-height: 34px;
+      border-bottom: 1px solid var(--border); background: var(--surface); transition: background .1s;
+    }
+    .ent-row:last-child { border-bottom: none; }
+    .ent-row:hover { background: var(--accent-lt); }
+    .ent-row.editing { background: #fefce8; }
+
+    .cell { padding: 5px 10px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cell-key { font-weight: 500; }
+    .cell-val { font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px; color: var(--text-sec); }
+
+    .cell-edit-wrap { padding: 3px 6px; }
+    .cell-edit-wrap input {
+      width: 100%; padding: 4px 7px; border: 1px solid var(--accent); border-radius: 4px;
+      font-size: 11px; font-family: 'SF Mono', monospace;
+      background: var(--surface); color: var(--text-pri); outline: none;
+    }
+
+    .cell-actions { padding: 0 6px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+    .act-btn {
+      background: none; border: none; cursor: pointer; padding: 5px; border-radius: 4px;
+      display: flex; align-items: center; color: var(--text-sec);
+    }
+    .act-btn svg { width: 14px; height: 14px; }
+    .act-btn.edit-btn:hover   { color: var(--accent); background: var(--accent-lt); }
+    .act-btn.save-btn         { color: var(--success); }
+    .act-btn.save-btn:hover   { background: #dcfce7; }
+    .act-btn.cancel-btn:hover { color: var(--danger); background: var(--danger-lt); }
+    .act-btn.del-btn:hover    { color: var(--danger); background: var(--danger-lt); }
+    .act-btn:disabled         { opacity: .35; cursor: not-allowed; }
+
+    /* Settings */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .panel { background: var(--surface); border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.18); width: 420px; max-width: 92vw; padding: 20px; }
+    .panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .panel .sub { font-size: 11px; color: var(--text-sec); margin-bottom: 16px; }
+    .field { margin-bottom: 13px; }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+    .field input { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; font-family: 'SF Mono', monospace; color: var(--text-pri); background: var(--bg); outline: none; }
+    .field input.plain { font-family: inherit; }
+    .field input:focus { border-color: var(--accent); background: var(--surface); }
+    .field .hint { font-size: 11px; color: var(--text-sec); margin-top: 4px; line-height: 1.5; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-sec); margin: 16px 0 10px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; border: none; }
+    .btn-primary { background: var(--accent); color: var(--text-inv); }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-pri); }
+    .btn-ghost:hover { background: var(--bg); }
   </style>
 </head>
-<body><pre id="log"><span class="inf">Loading…</span></pre>
+<body>
+
+<div id="toast"></div>
+
+<div id="empty-view">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+  <p id="empty-msg">Loading…</p>
+</div>
+
+<div id="table-view">
+  <div id="col-heads">
+    <span id="head-key">Primary Key</span>
+    <span id="head-val">Email</span>
+    <span></span>
+  </div>
+  <div id="rows-wrap">
+    <div id="rows-container"></div>
+  </div>
+</div>
+
+<div id="settings-overlay" class="overlay">
+  <div class="panel">
+    <h3>⚙️ Configuration</h3>
+    <p class="sub">Settings are saved to the workbook.</p>
+
+    <div class="section-head">Column Labels</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Primary Key Label</label>
+        <input type="text" id="cfg-label-key" class="plain" placeholder="e.g. Cost Center Description" />
+        <p class="hint">Overrides the auto-detected field name for column 1.</p>
+      </div>
+      <div class="field">
+        <label>Email Label</label>
+        <input type="text" id="cfg-label-val" class="plain" placeholder="e.g. Email Address" />
+        <p class="hint">Overrides the auto-detected field name for column 2.</p>
+      </div>
+    </div>
+
+    <div class="section-head">Power Automate Flows</div>
+    <div class="field">
+      <label>Add Flow URL</label>
+      <input type="text" id="cfg-add-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+      <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code> and adds a row.</p>
+    </div>
+    <div class="field">
+      <label>Delete Flow URL</label>
+      <input type="text" id="cfg-del-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+      <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code> and deletes the matching row.</p>
+    </div>
+    <div class="field">
+      <label>API Key (optional)</label>
+      <input type="password" id="cfg-api-key" placeholder="Stored in workbook settings" />
+      <p class="hint">Sent as <code>x-api-key</code> header. Never stored in source code.</p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="settings-cancel">Cancel</button>
+      <button class="btn btn-primary" id="settings-save">Save Settings</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
-const logEl = document.getElementById('log');
-function log(msg, cls) {
-  console.log(msg);
-  logEl.innerHTML += '\n<span class="' + (cls||'') + '">' + msg + '</span>';
+
+var addFlowUrl = '';
+var delFlowUrl = '';
+var apiKey     = '';
+var labelKey   = '';
+var labelVal   = '';
+
+// col indices discovered at runtime from whatever is in the encoding tiles
+var keyIdx = 0;
+var valIdx = 1;
+
+var entries = []; // [{ key, value }]
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+(async function() {
+  try {
+    await tableau.extensions.initializeAsync({ configure: openSettings });
+    loadSettings();
+    var ws = tableau.extensions.worksheetContent.worksheet;
+    await loadData(ws);
+    ws.addEventListener(tableau.TableauEventType.SummaryDataChanged, function() { loadData(ws); });
+  } catch(e) {
+    setEmptyMsg('Error: ' + e.message);
+  }
+})();
+
+function loadSettings() {
+  var s  = tableau.extensions.settings;
+  addFlowUrl = s.get('addFlowUrl') || '';
+  delFlowUrl = s.get('delFlowUrl') || '';
+  apiKey     = s.get('apiKey')     || '';
+  labelKey   = s.get('labelKey')   || '';
+  labelVal   = s.get('labelVal')   || '';
+  document.getElementById('head-key').textContent = labelKey || 'Primary Key';
+  document.getElementById('head-val').textContent = labelVal || 'Email';
 }
 
-// Timeout fallback
-const initTimeout = setTimeout(() => {
-  log('⚠️ initializeAsync timed out after 5s', 'err');
-  log('tableau object exists: ' + (typeof tableau !== "undefined"), 'inf');
-  log('tableau.extensions exists: ' + (typeof tableau !== "undefined" && !!tableau.extensions), 'inf');
-}, 5000);
+// ─── Load data ────────────────────────────────────────────────────────────────
+async function loadData(ws) {
+  try {
+    var dt   = await ws.getSummaryDataAsync({ ignoreSelection: true });
+    var cols = dt.columns;
 
-log('tableau defined: ' + (typeof tableau !== 'undefined'), 'inf');
-log('calling initializeAsync…', 'inf');
+    if (cols.length < 2) {
+      setEmptyMsg('Add two fields to the encoding tiles to get started.');
+      return;
+    }
 
-tableau.extensions.initializeAsync().then(() => {
-  clearTimeout(initTimeout);
-  log('✅ init OK', 'ok');
-  const ws = tableau.extensions.worksheetContent.worksheet;
-  log('worksheet: ' + (ws ? ws.name : 'NULL'), 'inf');
+    // Use first two columns — whatever the user dropped into the encoding tiles
+    keyIdx = 0;
+    valIdx = 1;
 
-  ws.getSummaryDataAsync().then(dt => {
-    log('rows: ' + dt.data.length, 'ok');
-    log('columns: ' + dt.columns.map(c => c.fieldName).join(', '), 'inf');
-  }).catch(e => log('getSummaryDataAsync error: ' + e, 'err'));
+    // Auto-label headers from actual field names if no custom label set
+    document.getElementById('head-key').textContent = labelKey || cols[keyIdx].fieldName;
+    document.getElementById('head-val').textContent = labelVal || cols[valIdx].fieldName;
 
-}).catch(err => {
-  clearTimeout(initTimeout);
-  log('❌ init error: ' + err, 'err');
+    entries = dt.data.map(function(row) {
+      return {
+        key:   row[keyIdx].formattedValue || row[keyIdx].value || '',
+        value: row[valIdx].formattedValue || row[valIdx].value || ''
+      };
+    });
+
+    renderRows();
+    showTable();
+  } catch(e) {
+    setEmptyMsg('Failed to load data: ' + e.message);
+  }
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderRows() {
+  var container = document.getElementById('rows-container');
+  container.innerHTML = '';
+
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-sec);font-size:12px;">No data found.</div>';
+    return;
+  }
+
+  entries.forEach(function(entry, idx) {
+    var row = document.createElement('div');
+    row.className = 'ent-row';
+    row.setAttribute('data-idx', idx);
+    row.innerHTML = rowHTML(entry, idx);
+    container.appendChild(row);
+  });
+}
+
+function rowHTML(entry, idx) {
+  return '<div class="cell cell-key">' + escHtml(entry.key)   + '</div>' +
+         '<div class="cell cell-val">' + escHtml(entry.value) + '</div>' +
+         '<div class="cell-actions">' +
+           '<button class="act-btn edit-btn" data-action="edit" data-idx="' + idx + '" title="Edit">' +
+             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+           '</button>' +
+           '<button class="act-btn del-btn" data-action="delete" data-idx="' + idx + '" title="Remove">' +
+             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+           '</button>' +
+         '</div>';
+}
+
+function editRowHTML(entry, idx) {
+  return '<div class="cell cell-key">' + escHtml(entry.key) + '</div>' +
+         '<div class="cell-edit-wrap"><input type="text" id="edit-input-' + idx + '" value="' + escAttr(entry.value) + '" /></div>' +
+         '<div class="cell-actions">' +
+           '<button class="act-btn save-btn" data-action="save" data-idx="' + idx + '" title="Save">' +
+             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+           '</button>' +
+           '<button class="act-btn cancel-btn" data-action="cancel" data-idx="' + idx + '" title="Cancel">' +
+             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+           '</button>' +
+         '</div>';
+}
+
+// ─── Row actions ──────────────────────────────────────────────────────────────
+document.getElementById('rows-container').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn || btn.disabled) return;
+  var action = btn.getAttribute('data-action');
+  var idx    = parseInt(btn.getAttribute('data-idx'), 10);
+  if (action === 'edit')   startEdit(idx);
+  if (action === 'cancel') cancelEdit(idx);
+  if (action === 'save')   saveEdit(idx);
+  if (action === 'delete') deleteRow(idx);
 });
+
+document.getElementById('rows-container').addEventListener('keydown', function(e) {
+  if (e.target.tagName !== 'INPUT') return;
+  var row = e.target.closest('.ent-row');
+  if (!row) return;
+  var idx = parseInt(row.getAttribute('data-idx'), 10);
+  if (e.key === 'Enter')  saveEdit(idx);
+  if (e.key === 'Escape') cancelEdit(idx);
+});
+
+function startEdit(idx) {
+  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
+  row.classList.add('editing');
+  row.innerHTML = editRowHTML(entries[idx], idx);
+  var input = document.getElementById('edit-input-' + idx);
+  input.focus(); input.select();
+}
+
+function cancelEdit(idx) {
+  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
+  row.classList.remove('editing');
+  row.innerHTML = rowHTML(entries[idx], idx);
+}
+
+function saveEdit(idx) {
+  var input    = document.getElementById('edit-input-' + idx);
+  var newValue = input.value.trim();
+  var entry    = entries[idx];
+
+  if (!newValue)                         { showToast('Value is required.', 'error'); return; }
+  if (newValue === entry.value)          { cancelEdit(idx); return; }
+  if (!addFlowUrl || !delFlowUrl)        { showToast('Flow URLs not configured — click Configure.', 'error'); return; }
+
+  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
+  setRowBusy(row, true);
+
+  callFlow(delFlowUrl, { key: entry.key, value: entry.value })
+    .then(function() { return callFlow(addFlowUrl, { key: entry.key, value: newValue }); })
+    .then(function() {
+      entries[idx].value = newValue;
+      row.classList.remove('editing');
+      row.innerHTML = rowHTML(entries[idx], idx);
+      showToast('Updated.', 'success');
+    })
+    .catch(function(err) {
+      setRowBusy(row, false);
+      showToast('Save failed: ' + err.message, 'error');
+    });
+}
+
+function deleteRow(idx) {
+  var entry = entries[idx];
+  if (!delFlowUrl) { showToast('Delete Flow URL not configured — click Configure.', 'error'); return; }
+
+  var row = document.querySelector('.ent-row[data-idx="' + idx + '"]');
+  setRowBusy(row, true);
+
+  callFlow(delFlowUrl, { key: entry.key, value: entry.value })
+    .then(function() {
+      entries.splice(idx, 1);
+      renderRows();
+      showToast('Removed.', 'success');
+    })
+    .catch(function(err) {
+      setRowBusy(row, false);
+      showToast('Delete failed: ' + err.message, 'error');
+    });
+}
+
+function setRowBusy(row, busy) {
+  row.querySelectorAll('.act-btn').forEach(function(b) { b.disabled = busy; });
+  row.style.opacity = busy ? '.5' : '1';
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function openSettings() {
+  loadSettings();
+  document.getElementById('cfg-label-key').value = labelKey;
+  document.getElementById('cfg-label-val').value = labelVal;
+  document.getElementById('cfg-add-url').value   = addFlowUrl;
+  document.getElementById('cfg-del-url').value   = delFlowUrl;
+  document.getElementById('cfg-api-key').value   = apiKey;
+  document.getElementById('settings-overlay').classList.add('open');
+}
+document.getElementById('settings-cancel').addEventListener('click', function() {
+  document.getElementById('settings-overlay').classList.remove('open');
+});
+document.getElementById('settings-save').addEventListener('click', function() {
+  var s = tableau.extensions.settings;
+  s.set('labelKey',   document.getElementById('cfg-label-key').value.trim());
+  s.set('labelVal',   document.getElementById('cfg-label-val').value.trim());
+  s.set('addFlowUrl', document.getElementById('cfg-add-url').value.trim());
+  s.set('delFlowUrl', document.getElementById('cfg-del-url').value.trim());
+  s.set('apiKey',     document.getElementById('cfg-api-key').value.trim());
+  s.saveAsync().then(function() {
+    loadSettings();
+    document.getElementById('settings-overlay').classList.remove('open');
+    showToast('Settings saved.', 'success');
+  }).catch(function(err) { showToast('Could not save: ' + err.message, 'error'); });
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function callFlow(url, body) {
+  var headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['x-api-key'] = apiKey;
+  return fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(function(){ return {}; }); });
+}
+
+function showTable() {
+  document.getElementById('empty-view').style.display = 'none';
+  document.getElementById('table-view').style.display = 'flex';
+}
+function setEmptyMsg(msg) {
+  document.getElementById('empty-view').style.display = 'flex';
+  document.getElementById('table-view').style.display = 'none';
+  document.getElementById('empty-msg').textContent = msg;
+}
+var toastTimer;
+function showToast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show ' + (type || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3200);
+}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 </script>
 </body>
 </html>
