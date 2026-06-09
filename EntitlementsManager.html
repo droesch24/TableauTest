@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cost Center Entitlements</title>
+  <script src="https://extensions.cdn.tableau.com/tableau.extensions.1.latest.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f5f6f8;
+      --surface:  #ffffff;
+      --border:   #dde1e7;
+      --accent:   #2563eb;
+      --accent-lt:#eff4ff;
+      --danger:   #dc2626;
+      --danger-lt:#fff1f1;
+      --success:  #16a34a;
+      --text-pri: #111827;
+      --text-sec: #6b7280;
+      --text-inv: #ffffff;
+      --radius:   6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text-pri);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    #header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    #header-icon {
+      width: 28px; height: 28px;
+      background: var(--accent); border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    #header-icon svg { width: 15px; height: 15px; fill: white; }
+    #header-info { flex: 1; min-width: 0; }
+    #header-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #header-sub   { font-size: 11px; color: var(--text-sec); margin-top: 1px; }
+    #settings-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-sec); padding: 4px; border-radius: var(--radius);
+      display: flex; align-items: center;
+    }
+    #settings-btn:hover { background: var(--bg); color: var(--text-pri); }
+    #settings-btn svg { width: 15px; height: 15px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      background: var(--text-pri); color: var(--text-inv);
+      padding: 7px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      opacity: 0; transition: opacity .2s;
+      pointer-events: none; z-index: 999; white-space: nowrap;
+    }
+    #toast.show    { opacity: 1; }
+    #toast.error   { background: var(--danger); }
+    #toast.success { background: var(--success); }
+
+    /* ── Idle state ── */
+    #idle-view {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: var(--text-sec); padding: 24px; text-align: center;
+    }
+    #idle-view svg { width: 32px; height: 32px; opacity: .3; }
+    #idle-view p { font-size: 12px; line-height: 1.6; max-width: 210px; }
+
+    /* ── Action panel ── */
+    #action-view {
+      flex: 1; display: none;
+      flex-direction: column; gap: 0;
+      overflow-y: auto;
+    }
+
+    .section {
+      padding: 16px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:last-child { border-bottom: none; }
+    .section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-sec); margin-bottom: 10px;
+    }
+
+    /* email input row */
+    .input-row { display: flex; gap: 8px; }
+    .input-row input {
+      flex: 1; padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; background: var(--bg); color: var(--text-pri); outline: none;
+    }
+    .input-row input:focus { border-color: var(--accent); background: var(--surface); }
+    .input-row input.error-border { border-color: var(--danger); }
+
+    .field-error { font-size: 11px; color: var(--danger); margin-top: 5px; display: none; }
+
+    /* buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 13px; border-radius: var(--radius);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      border: none; transition: background .15s, opacity .15s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .btn svg { width: 13px; height: 13px; }
+    .btn-primary { background: var(--accent); color: var(--text-inv); }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-danger  { background: var(--danger-lt); color: var(--danger); border: 1px solid #fca5a5; }
+    .btn-danger:hover  { background: #fee2e2; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* context chip */
+    #cc-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-lt); border: 1px solid #bfdbfe;
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 11px; color: var(--accent); font-weight: 500;
+    }
+    #cc-chip svg { width: 11px; height: 11px; fill: var(--accent); flex-shrink: 0; }
+
+    /* ── Settings overlay ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.35); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .panel {
+      background: var(--surface); border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      width: 400px; max-width: 92vw; padding: 20px;
+    }
+    .panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .field { margin-bottom: 13px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 600; color: var(--text-sec);
+      margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .field input {
+      width: 100%; padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-family: 'SF Mono', monospace;
+      color: var(--text-pri); background: var(--bg); outline: none;
+    }
+    .field input:focus { border-color: var(--accent); background: var(--surface); }
+    .field .hint { font-size: 11px; color: var(--text-sec); margin-top: 4px; line-height: 1.5; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-pri); }
+    .btn-ghost:hover { background: var(--bg); }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-icon">
+    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+  </div>
+  <div id="header-info">
+    <div id="header-title">Cost Center Entitlements</div>
+    <div id="header-sub">Select a cost center to begin</div>
+  </div>
+  <button id="settings-btn" title="Configure flows">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+</div>
+
+<div id="toast"></div>
+
+<!-- Idle -->
+<div id="idle-view">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L20 8.5v7L12 19.82 4 15.5v-7L12 4.18z"/></svg>
+  <p>Select a cost center in the worksheet to manage entitlements.</p>
+</div>
+
+<!-- Action panel -->
+<div id="action-view">
+
+  <!-- Context -->
+  <div class="section" style="background:var(--surface);">
+    <div class="section-label">Selected Cost Center</div>
+    <div id="cc-chip">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2z"/></svg>
+      <span id="cc-chip-text">—</span>
+    </div>
+  </div>
+
+  <!-- Add -->
+  <div class="section">
+    <div class="section-label">Grant Access</div>
+    <div class="input-row">
+      <input type="email" id="add-email" placeholder="user@growmark.com" autocomplete="off" />
+      <button class="btn btn-primary" id="add-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add
+      </button>
+    </div>
+    <div class="field-error" id="add-error"></div>
+  </div>
+
+  <!-- Remove -->
+  <div class="section">
+    <div class="section-label">Revoke Access</div>
+    <div class="input-row">
+      <input type="email" id="del-email" placeholder="user@growmark.com" autocomplete="off" />
+      <button class="btn btn-danger" id="del-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14H6L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4h6v2"/>
+        </svg>
+        Remove
+      </button>
+    </div>
+    <div class="field-error" id="del-error"></div>
+  </div>
+
+</div>
+
+<!-- Settings -->
+<div id="settings-overlay" class="overlay">
+  <div class="panel">
+    <h3>⚙️ Flow Configuration</h3>
+    <div class="field">
+      <label>Add Flow URL</label>
+      <input type="text" id="cfg-add-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+      <p class="hint">POST — receives <code>{"CostCenter":"…","Description":"…","Email":"…"}</code> and appends a row to the SharePoint Excel table.</p>
+    </div>
+    <div class="field">
+      <label>Delete Flow URL</label>
+      <input type="text" id="cfg-del-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+      <p class="hint">POST — receives <code>{"Description":"…","Email":"…"}</code> and deletes the matching row from the SharePoint Excel table.</p>
+    </div>
+    <div class="field">
+      <label>API Key (optional)</label>
+      <input type="password" id="cfg-api-key" placeholder="Stored in workbook settings" />
+      <p class="hint">Sent as <code>x-api-key</code> on every request. Stored in Tableau workbook settings — never in source code.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="settings-cancel">Cancel</button>
+      <button class="btn btn-primary" id="settings-save">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+let addFlowUrl  = '';
+let delFlowUrl  = '';
+let apiKey      = '';
+let currentCC   = '';
+let currentDesc = '';
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+tableau.extensions.initializeAsync({ configure: openSettings }).then(() => {
+  loadSettings();
+  const db = tableau.extensions.dashboardContent.dashboard;
+  const ws = db.worksheets[0];
+  if (!ws) return;
+  ws.addEventListener(tableau.TableauEventType.MarkSelectionChanged, e => {
+    e.getMarksAsync().then(processMarks);
+  });
+  ws.getSelectedMarksAsync().then(m => { if (m.data && m.data.length) processMarks(m); });
+}).catch(err => showToast('Tableau init failed: ' + err.message, 'error'));
+
+function loadSettings() {
+  const s = tableau.extensions.settings;
+  addFlowUrl = s.get('addFlowUrl') || '';
+  delFlowUrl = s.get('delFlowUrl') || '';
+  apiKey     = s.get('apiKey')     || '';
+}
+
+// ─── Mark selection ───────────────────────────────────────────────────────────
+function processMarks(marks) {
+  if (!marks.data || !marks.data.length) {
+    currentCC = ''; currentDesc = '';
+    showIdle(); return;
+  }
+  const dt   = marks.data[0];
+  const cols = dt.columns.map(c => c.fieldName);
+  const descIdx = cols.findIndex(c =>
+    c.toLowerCase().includes('cost center description') || c.toLowerCase() === 'description'
+  );
+  const ccIdx = cols.findIndex(c =>
+    c.toLowerCase().includes('cost center') && !c.toLowerCase().includes('description')
+  );
+  if (descIdx === -1) { showToast('Field "Cost Center Description" not found in selection.', 'error'); return; }
+
+  const row   = dt.data[0];
+  currentDesc = row[descIdx].formattedValue || row[descIdx].value || '';
+  currentCC   = ccIdx !== -1 ? (row[ccIdx].formattedValue || row[ccIdx].value || '') : currentDesc;
+
+  if (!currentDesc) { showIdle(); return; }
+
+  document.getElementById('cc-chip-text').textContent = currentDesc;
+  document.getElementById('header-title').textContent = currentDesc;
+  document.getElementById('header-sub').textContent   = currentCC && currentCC !== currentDesc
+    ? 'Cost Center: ' + currentCC : 'Managing access';
+
+  // Clear inputs when cost center changes
+  document.getElementById('add-email').value = '';
+  document.getElementById('del-email').value = '';
+  hideError('add-error');
+  hideError('del-error');
+
+  showActionView();
+}
+
+// ─── Add ──────────────────────────────────────────────────────────────────────
+document.getElementById('add-btn').addEventListener('click', handleAdd);
+document.getElementById('add-email').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
+
+function handleAdd() {
+  const email = document.getElementById('add-email').value.trim().toLowerCase();
+  hideError('add-error');
+  if (!email)                              { showError('add-error', 'Email is required.'); return; }
+  if (!isValidEmail(email))               { showError('add-error', 'Enter a valid email address.'); return; }
+  if (!addFlowUrl)                         { showToast('Add Flow URL not configured — click ⚙️.', 'error'); return; }
+
+  setLoading('add-btn', true);
+  callFlow(addFlowUrl, { CostCenter: currentCC, Description: currentDesc, Email: email })
+    .then(() => {
+      document.getElementById('add-email').value = '';
+      showToast(email + ' added.', 'success');
+    })
+    .catch(err => showError('add-error', 'Failed: ' + err.message))
+    .finally(() => setLoading('add-btn', false));
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+document.getElementById('del-btn').addEventListener('click', handleDelete);
+document.getElementById('del-email').addEventListener('keydown', e => { if (e.key === 'Enter') handleDelete(); });
+
+function handleDelete() {
+  const email = document.getElementById('del-email').value.trim().toLowerCase();
+  hideError('del-error');
+  if (!email)            { showError('del-error', 'Email is required.'); return; }
+  if (!isValidEmail(email)) { showError('del-error', 'Enter a valid email address.'); return; }
+  if (!delFlowUrl)       { showToast('Delete Flow URL not configured — click ⚙️.', 'error'); return; }
+
+  setLoading('del-btn', true);
+  callFlow(delFlowUrl, { Description: currentDesc, Email: email })
+    .then(() => {
+      document.getElementById('del-email').value = '';
+      showToast(email + ' removed.', 'success');
+    })
+    .catch(err => showError('del-error', 'Failed: ' + err.message))
+    .finally(() => setLoading('del-btn', false));
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+document.getElementById('settings-btn').addEventListener('click', openSettings);
+function openSettings() {
+  loadSettings();
+  document.getElementById('cfg-add-url').value = addFlowUrl;
+  document.getElementById('cfg-del-url').value = delFlowUrl;
+  document.getElementById('cfg-api-key').value = apiKey;
+  document.getElementById('settings-overlay').classList.add('open');
+}
+document.getElementById('settings-cancel').addEventListener('click', () => {
+  document.getElementById('settings-overlay').classList.remove('open');
+});
+document.getElementById('settings-save').addEventListener('click', () => {
+  const s = tableau.extensions.settings;
+  s.set('addFlowUrl', document.getElementById('cfg-add-url').value.trim());
+  s.set('delFlowUrl', document.getElementById('cfg-del-url').value.trim());
+  s.set('apiKey',     document.getElementById('cfg-api-key').value.trim());
+  s.saveAsync().then(() => {
+    loadSettings();
+    document.getElementById('settings-overlay').classList.remove('open');
+    showToast('Settings saved.', 'success');
+  }).catch(err => showToast('Could not save: ' + err.message, 'error'));
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function callFlow(url, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['x-api-key'] = apiKey;
+  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(() => ({})); });
+}
+
+function showIdle() {
+  document.getElementById('idle-view').style.display   = 'flex';
+  document.getElementById('action-view').style.display = 'none';
+  document.getElementById('header-title').textContent  = 'Cost Center Entitlements';
+  document.getElementById('header-sub').textContent    = 'Select a cost center to begin';
+}
+function showActionView() {
+  document.getElementById('idle-view').style.display   = 'none';
+  document.getElementById('action-view').style.display = 'flex';
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  if (btnId === 'add-btn') btn.innerHTML = loading
+    ? '<span style="opacity:.6">Adding…</span>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add';
+  if (btnId === 'del-btn') btn.innerHTML = loading
+    ? '<span style="opacity:.6">Removing…</span>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Remove';
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show ' + (type || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
+function hideError(id)      { document.getElementById(id).style.display = 'none'; }
+function isValidEmail(e)    { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+</script>
+</body>
+</html>
