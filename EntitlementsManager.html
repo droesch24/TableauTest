@@ -20,7 +20,8 @@
       --text-pri: #111827;
       --text-sec: #6b7280;
       --text-inv: #ffffff;
-      --radius:   6px;
+      --radius:   5px;
+      --row-h:    36px;
     }
 
     body {
@@ -34,36 +35,11 @@
       overflow: hidden;
     }
 
-    /* ── Header ── */
-    #header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 14px;
-      display: flex; align-items: center; gap: 10px;
-      flex-shrink: 0;
-    }
-    #header-icon {
-      width: 28px; height: 28px;
-      background: var(--accent); border-radius: var(--radius);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    #header-icon svg { width: 15px; height: 15px; fill: white; }
-    #header-info { flex: 1; min-width: 0; }
-    #header-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #header-sub   { font-size: 11px; color: var(--text-sec); margin-top: 1px; }
-    #settings-btn {
-      background: none; border: none; cursor: pointer;
-      color: var(--text-sec); padding: 4px; border-radius: var(--radius);
-      display: flex; align-items: center;
-    }
-    #settings-btn:hover { background: var(--bg); color: var(--text-pri); }
-    #settings-btn svg { width: 15px; height: 15px; }
-
     /* ── Toast ── */
     #toast {
-      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
       background: var(--text-pri); color: var(--text-inv);
-      padding: 7px 14px; border-radius: 20px;
+      padding: 6px 14px; border-radius: 20px;
       font-size: 12px; font-weight: 500;
       opacity: 0; transition: opacity .2s;
       pointer-events: none; z-index: 999; white-space: nowrap;
@@ -72,67 +48,84 @@
     #toast.error   { background: var(--danger); }
     #toast.success { background: var(--success); }
 
-    /* ── Idle state ── */
-    #idle-view {
+    /* ── Empty state ── */
+    #empty-view {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 8px; color: var(--text-sec); padding: 24px; text-align: center;
+      gap: 8px; color: var(--text-sec);
+      text-align: center; padding: 20px;
     }
-    #idle-view svg { width: 32px; height: 32px; opacity: .3; }
-    #idle-view p { font-size: 12px; line-height: 1.6; max-width: 210px; }
+    #empty-view svg { width: 28px; height: 28px; opacity: .3; }
+    #empty-view p { font-size: 12px; line-height: 1.6; max-width: 200px; }
 
-    /* ── Action panel ── */
-    #action-view {
-      flex: 1; display: none;
-      flex-direction: column; gap: 0;
-      overflow-y: auto;
+    /* ── Table ── */
+    #table-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+
+    /* col headers */
+    #col-heads {
+      display: grid;
+      grid-template-columns: 1fr 1fr 80px;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    #col-heads span {
+      padding: 6px 10px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--text-sec);
     }
 
-    .section {
-      padding: 16px 14px;
+    /* rows */
+    #rows-wrap { flex: 1; overflow-y: auto; }
+    .ent-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 80px;
+      align-items: center;
+      min-height: var(--row-h);
       border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      transition: background .1s;
     }
-    .section:last-child { border-bottom: none; }
-    .section-label {
-      font-size: 11px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: .05em; color: var(--text-sec); margin-bottom: 10px;
+    .ent-row:last-child { border-bottom: none; }
+    .ent-row:hover { background: var(--accent-lt); }
+    .ent-row.editing { background: #fefce8; }
+
+    .cell {
+      padding: 6px 10px;
+      font-size: 12px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cell-cc    { font-weight: 500; }
+    .cell-email { font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px; color: var(--text-sec); }
+
+    /* inline edit input */
+    .cell-edit-wrap { padding: 3px 6px; }
+    .cell-edit-wrap input {
+      width: 100%; padding: 4px 7px;
+      border: 1px solid var(--accent); border-radius: 4px;
+      font-size: 11px; font-family: 'SF Mono', monospace;
+      background: var(--surface); color: var(--text-pri); outline: none;
     }
 
-    /* email input row */
-    .input-row { display: flex; gap: 8px; }
-    .input-row input {
-      flex: 1; padding: 7px 10px;
-      border: 1px solid var(--border); border-radius: var(--radius);
-      font-size: 12px; background: var(--bg); color: var(--text-pri); outline: none;
+    /* action cell */
+    .cell-actions {
+      padding: 0 8px;
+      display: flex; align-items: center; justify-content: flex-end; gap: 4px;
     }
-    .input-row input:focus { border-color: var(--accent); background: var(--surface); }
-    .input-row input.error-border { border-color: var(--danger); }
-
-    .field-error { font-size: 11px; color: var(--danger); margin-top: 5px; display: none; }
-
-    /* buttons */
-    .btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 13px; border-radius: var(--radius);
-      font-size: 12px; font-weight: 500; cursor: pointer;
-      border: none; transition: background .15s, opacity .15s;
-      white-space: nowrap; flex-shrink: 0;
+    .act-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 5px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-sec); flex-shrink: 0;
     }
-    .btn svg { width: 13px; height: 13px; }
-    .btn-primary { background: var(--accent); color: var(--text-inv); }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-danger  { background: var(--danger-lt); color: var(--danger); border: 1px solid #fca5a5; }
-    .btn-danger:hover  { background: #fee2e2; }
-    .btn:disabled { opacity: .45; cursor: not-allowed; }
-
-    /* context chip */
-    #cc-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--accent-lt); border: 1px solid #bfdbfe;
-      border-radius: 20px; padding: 4px 10px;
-      font-size: 11px; color: var(--accent); font-weight: 500;
-    }
-    #cc-chip svg { width: 11px; height: 11px; fill: var(--accent); flex-shrink: 0; }
+    .act-btn svg { width: 14px; height: 14px; }
+    .act-btn.edit-btn:hover  { color: var(--accent); background: var(--accent-lt); }
+    .act-btn.save-btn        { color: var(--success); }
+    .act-btn.save-btn:hover  { background: #dcfce7; }
+    .act-btn.cancel-btn:hover { color: var(--danger); background: var(--danger-lt); }
+    .act-btn.del-btn:hover   { color: var(--danger); background: var(--danger-lt); }
+    .act-btn:disabled        { opacity: .35; cursor: not-allowed; }
 
     /* ── Settings overlay ── */
     .overlay {
@@ -161,81 +154,40 @@
     .field input:focus { border-color: var(--accent); background: var(--surface); }
     .field .hint { font-size: 11px; color: var(--text-sec); margin-top: 4px; line-height: 1.5; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 13px; border-radius: var(--radius);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      border: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: var(--text-inv); }
+    .btn-primary:hover { background: #1d4ed8; }
     .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-pri); }
     .btn-ghost:hover { background: var(--bg); }
   </style>
 </head>
 <body>
 
-<div id="header">
-  <div id="header-icon">
-    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-  </div>
-  <div id="header-info">
-    <div id="header-title">Cost Center Entitlements</div>
-    <div id="header-sub">Select a cost center to begin</div>
-  </div>
-  <button id="settings-btn" title="Configure flows">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-  </button>
-</div>
-
 <div id="toast"></div>
 
-<!-- Idle -->
-<div id="idle-view">
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L20 8.5v7L12 19.82 4 15.5v-7L12 4.18z"/></svg>
-  <p>Select a cost center in the worksheet to manage entitlements.</p>
+<!-- Empty state -->
+<div id="empty-view">
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+  </svg>
+  <p>Add <strong>Cost Center</strong> and <strong>Email</strong> to the encoding tiles to see entitlements.</p>
 </div>
 
-<!-- Action panel -->
-<div id="action-view">
-
-  <!-- Context -->
-  <div class="section" style="background:var(--surface);">
-    <div class="section-label">Selected Cost Center</div>
-    <div id="cc-chip">
-      <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2z"/></svg>
-      <span id="cc-chip-text">—</span>
-    </div>
+<!-- Table -->
+<div id="table-view">
+  <div id="col-heads">
+    <span id="head-cc">Cost Center</span>
+    <span>Email</span>
+    <span></span>
   </div>
-
-  <!-- Add -->
-  <div class="section">
-    <div class="section-label">Grant Access</div>
-    <div class="input-row">
-      <input type="email" id="add-email" placeholder="user@growmark.com" autocomplete="off" />
-      <button class="btn btn-primary" id="add-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Add
-      </button>
-    </div>
-    <div class="field-error" id="add-error"></div>
+  <div id="rows-wrap">
+    <div id="rows-container"></div>
   </div>
-
-  <!-- Remove -->
-  <div class="section">
-    <div class="section-label">Revoke Access</div>
-    <div class="input-row">
-      <input type="email" id="del-email" placeholder="user@growmark.com" autocomplete="off" />
-      <button class="btn btn-danger" id="del-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14H6L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4h6v2"/>
-        </svg>
-        Remove
-      </button>
-    </div>
-    <div class="field-error" id="del-error"></div>
-  </div>
-
 </div>
 
 <!-- Settings -->
@@ -245,17 +197,17 @@
     <div class="field">
       <label>Add Flow URL</label>
       <input type="text" id="cfg-add-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">POST — receives <code>{"CostCenter":"…","Description":"…","Email":"…"}</code> and appends a row to the SharePoint Excel table.</p>
+      <p class="hint">POST — receives <code>{"CostCenter":"…","Description":"…","Email":"…"}</code></p>
     </div>
     <div class="field">
       <label>Delete Flow URL</label>
       <input type="text" id="cfg-del-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">POST — receives <code>{"Description":"…","Email":"…"}</code> and deletes the matching row from the SharePoint Excel table.</p>
+      <p class="hint">POST — receives <code>{"Description":"…","Email":"…"}</code></p>
     </div>
     <div class="field">
       <label>API Key (optional)</label>
       <input type="password" id="cfg-api-key" placeholder="Stored in workbook settings" />
-      <p class="hint">Sent as <code>x-api-key</code> on every request. Stored in Tableau workbook settings — never in source code.</p>
+      <p class="hint">Sent as <code>x-api-key</code> header on every request.</p>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="settings-cancel">Cancel</button>
@@ -267,23 +219,23 @@
 <script>
 'use strict';
 
-let addFlowUrl  = '';
-let delFlowUrl  = '';
-let apiKey      = '';
-let currentCC   = '';
-let currentDesc = '';
+let addFlowUrl = '';
+let delFlowUrl = '';
+let apiKey     = '';
+
+// Each entry: { costCenter, description, email }
+let entries = [];
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 tableau.extensions.initializeAsync({ configure: openSettings }).then(() => {
   loadSettings();
-  const db = tableau.extensions.dashboardContent.dashboard;
-  const ws = db.worksheets[0];
-  if (!ws) return;
-  ws.addEventListener(tableau.TableauEventType.MarkSelectionChanged, e => {
-    e.getMarksAsync().then(processMarks);
-  });
-  ws.getSelectedMarksAsync().then(m => { if (m.data && m.data.length) processMarks(m); });
-}).catch(err => showToast('Tableau init failed: ' + err.message, 'error'));
+  loadData();
+
+  tableau.extensions.worksheet.addEventListener(
+    tableau.TableauEventType.SummaryDataChanged,
+    loadData
+  );
+}).catch(err => showToast('Init failed: ' + err.message, 'error'));
 
 function loadSettings() {
   const s = tableau.extensions.settings;
@@ -292,86 +244,208 @@ function loadSettings() {
   apiKey     = s.get('apiKey')     || '';
 }
 
-// ─── Mark selection ───────────────────────────────────────────────────────────
-function processMarks(marks) {
-  if (!marks.data || !marks.data.length) {
-    currentCC = ''; currentDesc = '';
-    showIdle(); return;
+// ─── Load data from encoding tiles ───────────────────────────────────────────
+function loadData() {
+  tableau.extensions.worksheet.getSummaryDataAsync({ ignoreAliases: false })
+    .then(dataTable => {
+      const cols = dataTable.columns.map(c => ({ name: c.fieldName, idx: c.index }));
+
+      // Find Cost Center and Email columns by fieldName
+      const ccCol    = cols.find(c => c.name === tableau.extensions.worksheet.getEncodingInfoAsync
+        ? c : c); // fallback — match by name patterns below
+      const ccIdx    = cols.findIndex(c => c.name.toLowerCase().includes('cost center'));
+      const emailIdx = cols.findIndex(c => c.name.toLowerCase().includes('email'));
+
+      if (ccIdx === -1 || emailIdx === -1) {
+        entries = [];
+        showEmpty();
+        return;
+      }
+
+      // Also look for a description column (optional)
+      const descIdx = cols.findIndex(c =>
+        c.name.toLowerCase().includes('description') &&
+        !c.name.toLowerCase().includes('cost center')
+      );
+
+      // Update column header to actual field name
+      document.getElementById('head-cc').textContent = cols[ccIdx].name;
+
+      entries = dataTable.data.map(row => ({
+        costCenter:  row[ccIdx].formattedValue  || row[ccIdx].value  || '',
+        description: descIdx !== -1 ? (row[descIdx].formattedValue || row[descIdx].value || '') : '',
+        email:       row[emailIdx].formattedValue || row[emailIdx].value || '',
+      }));
+
+      renderRows();
+      showTable();
+    })
+    .catch(err => {
+      entries = [];
+      showEmpty();
+    });
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderRows() {
+  const container = document.getElementById('rows-container');
+  container.innerHTML = '';
+
+  if (entries.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-sec);font-size:12px;">No data. Add Cost Center and Email to the encoding tiles.</div>`;
+    return;
   }
-  const dt   = marks.data[0];
-  const cols = dt.columns.map(c => c.fieldName);
-  const descIdx = cols.findIndex(c =>
-    c.toLowerCase().includes('cost center description') || c.toLowerCase() === 'description'
-  );
-  const ccIdx = cols.findIndex(c =>
-    c.toLowerCase().includes('cost center') && !c.toLowerCase().includes('description')
-  );
-  if (descIdx === -1) { showToast('Field "Cost Center Description" not found in selection.', 'error'); return; }
 
-  const row   = dt.data[0];
-  currentDesc = row[descIdx].formattedValue || row[descIdx].value || '';
-  currentCC   = ccIdx !== -1 ? (row[ccIdx].formattedValue || row[ccIdx].value || '') : currentDesc;
-
-  if (!currentDesc) { showIdle(); return; }
-
-  document.getElementById('cc-chip-text').textContent = currentDesc;
-  document.getElementById('header-title').textContent = currentDesc;
-  document.getElementById('header-sub').textContent   = currentCC && currentCC !== currentDesc
-    ? 'Cost Center: ' + currentCC : 'Managing access';
-
-  // Clear inputs when cost center changes
-  document.getElementById('add-email').value = '';
-  document.getElementById('del-email').value = '';
-  hideError('add-error');
-  hideError('del-error');
-
-  showActionView();
+  entries.forEach((entry, idx) => {
+    const row = document.createElement('div');
+    row.className = 'ent-row';
+    row.setAttribute('data-idx', idx);
+    row.innerHTML = rowHTML(entry, idx);
+    container.appendChild(row);
+  });
 }
 
-// ─── Add ──────────────────────────────────────────────────────────────────────
-document.getElementById('add-btn').addEventListener('click', handleAdd);
-document.getElementById('add-email').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
-
-function handleAdd() {
-  const email = document.getElementById('add-email').value.trim().toLowerCase();
-  hideError('add-error');
-  if (!email)                              { showError('add-error', 'Email is required.'); return; }
-  if (!isValidEmail(email))               { showError('add-error', 'Enter a valid email address.'); return; }
-  if (!addFlowUrl)                         { showToast('Add Flow URL not configured — click ⚙️.', 'error'); return; }
-
-  setLoading('add-btn', true);
-  callFlow(addFlowUrl, { CostCenter: currentCC, Description: currentDesc, Email: email })
-    .then(() => {
-      document.getElementById('add-email').value = '';
-      showToast(email + ' added.', 'success');
-    })
-    .catch(err => showError('add-error', 'Failed: ' + err.message))
-    .finally(() => setLoading('add-btn', false));
+function rowHTML(entry, idx) {
+  return `
+    <div class="cell cell-cc">${escHtml(entry.costCenter)}</div>
+    <div class="cell cell-email">${escHtml(entry.email)}</div>
+    <div class="cell-actions">
+      <button class="act-btn edit-btn" data-action="edit" data-idx="${idx}" title="Edit email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+      <button class="act-btn del-btn" data-action="delete" data-idx="${idx}" title="Remove access">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14H6L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4h6v2"/>
+        </svg>
+      </button>
+    </div>`;
 }
 
-// ─── Delete ───────────────────────────────────────────────────────────────────
-document.getElementById('del-btn').addEventListener('click', handleDelete);
-document.getElementById('del-email').addEventListener('keydown', e => { if (e.key === 'Enter') handleDelete(); });
+function editRowHTML(entry, idx) {
+  return `
+    <div class="cell cell-cc">${escHtml(entry.costCenter)}</div>
+    <div class="cell-edit-wrap">
+      <input type="email" id="edit-input-${idx}" value="${escAttr(entry.email)}" placeholder="user@growmark.com" />
+    </div>
+    <div class="cell-actions">
+      <button class="act-btn save-btn" data-action="save" data-idx="${idx}" title="Save">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </button>
+      <button class="act-btn cancel-btn" data-action="cancel" data-idx="${idx}" title="Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>`;
+}
 
-function handleDelete() {
-  const email = document.getElementById('del-email').value.trim().toLowerCase();
-  hideError('del-error');
-  if (!email)            { showError('del-error', 'Email is required.'); return; }
-  if (!isValidEmail(email)) { showError('del-error', 'Enter a valid email address.'); return; }
-  if (!delFlowUrl)       { showToast('Delete Flow URL not configured — click ⚙️.', 'error'); return; }
+// ─── Row actions (delegated) ──────────────────────────────────────────────────
+document.getElementById('rows-container').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn || btn.disabled) return;
+  const action = btn.getAttribute('data-action');
+  const idx    = parseInt(btn.getAttribute('data-idx'), 10);
 
-  setLoading('del-btn', true);
-  callFlow(delFlowUrl, { Description: currentDesc, Email: email })
+  if (action === 'edit')   startEdit(idx);
+  if (action === 'cancel') cancelEdit(idx);
+  if (action === 'save')   saveEdit(idx);
+  if (action === 'delete') deleteRow(idx);
+});
+
+document.getElementById('rows-container').addEventListener('keydown', e => {
+  if (e.target.tagName !== 'INPUT') return;
+  const row = e.target.closest('.ent-row');
+  if (!row) return;
+  const idx = parseInt(row.getAttribute('data-idx'), 10);
+  if (e.key === 'Enter')  saveEdit(idx);
+  if (e.key === 'Escape') cancelEdit(idx);
+});
+
+function startEdit(idx) {
+  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
+  row.classList.add('editing');
+  row.innerHTML = editRowHTML(entries[idx], idx);
+  const input = document.getElementById(`edit-input-${idx}`);
+  input.focus();
+  input.select();
+}
+
+function cancelEdit(idx) {
+  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
+  row.classList.remove('editing');
+  row.innerHTML = rowHTML(entries[idx], idx);
+}
+
+function saveEdit(idx) {
+  const input    = document.getElementById(`edit-input-${idx}`);
+  const newEmail = input.value.trim().toLowerCase();
+  const entry    = entries[idx];
+
+  if (!newEmail)                { showToast('Email is required.', 'error'); return; }
+  if (!isValidEmail(newEmail))  { showToast('Enter a valid email address.', 'error'); return; }
+  if (newEmail === entry.email) { cancelEdit(idx); return; }
+
+  if (!addFlowUrl || !delFlowUrl) {
+    showToast('Flow URLs not configured — click ⚙️ in the Tableau menu.', 'error'); return;
+  }
+
+  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
+  setRowBusy(row, true);
+
+  // Delete old → Add new
+  callFlow(delFlowUrl, { Description: entry.description || entry.costCenter, Email: entry.email })
+    .then(() => callFlow(addFlowUrl, {
+      CostCenter:  entry.costCenter,
+      Description: entry.description || entry.costCenter,
+      Email:       newEmail
+    }))
     .then(() => {
-      document.getElementById('del-email').value = '';
-      showToast(email + ' removed.', 'success');
+      entries[idx].email = newEmail;
+      row.classList.remove('editing');
+      row.innerHTML = rowHTML(entries[idx], idx);
+      showToast('Updated.', 'success');
     })
-    .catch(err => showError('del-error', 'Failed: ' + err.message))
-    .finally(() => setLoading('del-btn', false));
+    .catch(err => {
+      setRowBusy(row, false);
+      showToast('Save failed: ' + err.message, 'error');
+    });
+}
+
+function deleteRow(idx) {
+  const entry = entries[idx];
+  if (!delFlowUrl) {
+    showToast('Delete Flow URL not configured — click ⚙️.', 'error'); return;
+  }
+
+  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
+  setRowBusy(row, true);
+
+  callFlow(delFlowUrl, { Description: entry.description || entry.costCenter, Email: entry.email })
+    .then(() => {
+      entries.splice(idx, 1);
+      renderRows(); // re-render all so indices stay correct
+      showToast('Access removed.', 'success');
+    })
+    .catch(err => {
+      setRowBusy(row, false);
+      showToast('Delete failed: ' + err.message, 'error');
+    });
+}
+
+function setRowBusy(row, busy) {
+  row.querySelectorAll('.act-btn').forEach(b => b.disabled = busy);
+  row.style.opacity = busy ? '.5' : '1';
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
-document.getElementById('settings-btn').addEventListener('click', openSettings);
 function openSettings() {
   loadSettings();
   document.getElementById('cfg-add-url').value = addFlowUrl;
@@ -402,26 +476,13 @@ function callFlow(url, body) {
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(() => ({})); });
 }
 
-function showIdle() {
-  document.getElementById('idle-view').style.display   = 'flex';
-  document.getElementById('action-view').style.display = 'none';
-  document.getElementById('header-title').textContent  = 'Cost Center Entitlements';
-  document.getElementById('header-sub').textContent    = 'Select a cost center to begin';
+function showEmpty() {
+  document.getElementById('empty-view').style.display = 'flex';
+  document.getElementById('table-view').style.display = 'none';
 }
-function showActionView() {
-  document.getElementById('idle-view').style.display   = 'none';
-  document.getElementById('action-view').style.display = 'flex';
-}
-
-function setLoading(btnId, loading) {
-  const btn = document.getElementById(btnId);
-  btn.disabled = loading;
-  if (btnId === 'add-btn') btn.innerHTML = loading
-    ? '<span style="opacity:.6">Adding…</span>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add';
-  if (btnId === 'del-btn') btn.innerHTML = loading
-    ? '<span style="opacity:.6">Removing…</span>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Remove';
+function showTable() {
+  document.getElementById('empty-view').style.display = 'none';
+  document.getElementById('table-view').style.display = 'flex';
 }
 
 let toastTimer;
@@ -431,9 +492,9 @@ function showToast(msg, type) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
 }
-function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
-function hideError(id)      { document.getElementById(id).style.display = 'none'; }
-function isValidEmail(e)    { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 </script>
 </body>
 </html>
