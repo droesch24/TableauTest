@@ -424,32 +424,55 @@ async function loadData(ws) {
     var cols = dt.columns;
     if (cols.length < 2) { setEmptyMsg('Add Cost Center, Email, and Tableau Users fields to the encoding tiles.'); return; }
 
-    // col 0 = cost center, col 1 = email, col 2 = tableau users (if present)
-    var keyIdx   = 0;
-    var valIdx   = 1;
-    var usersIdx = cols.length >= 3 ? 2 : -1;
-
-    // Group entitlements
+    // cols 0 = cost center, 1 = email, 2 = tableau users
     grouped = {};
     dt.data.forEach(function(row) {
-      var k = row[keyIdx].formattedValue || row[keyIdx].value || '';
-      var v = row[valIdx].formattedValue || row[valIdx].value || '';
+      var k = row[0].formattedValue || row[0].value || '';
+      var v = row[1].formattedValue || row[1].value || '';
       if (!k) return;
       if (!grouped[k]) grouped[k] = [];
       if (v && grouped[k].indexOf(v) === -1) grouped[k].push(v);
     });
     ccKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
 
-    // Collect unique Tableau users from col 2
-    if (usersIdx !== -1) {
-      var userSet = {};
-      dt.data.forEach(function(row) {
-        var u = row[usersIdx].formattedValue || row[usersIdx].value || '';
-        if (u) userSet[u] = true;
-      });
-      allUsers = Object.keys(userSet).sort(function(a,b){ return a.localeCompare(b); });
-    } else {
-      allUsers = [];
+    // For Tableau Users we need the full undeduped list.
+    // getSummaryDataAsync collapses rows, so we use getUnderlyingTableDataAsync
+    // to get every user independently of whether they appear in an entitlement row.
+    allUsers = [];
+    if (cols.length >= 3) {
+      var usersFieldName = cols[2].fieldName;
+      try {
+        var tables = await ws.getUnderlyingTablesAsync();
+        var found  = false;
+        for (var t = 0; t < tables.length; t++) {
+          try {
+            var tableData = await ws.getUnderlyingTableDataAsync(tables[t].id, {
+              maxRows: 10000,
+              ignoreSelection: true,
+              includeAllColumns: true
+            });
+            var uIdx = tableData.columns.findIndex(function(c){ return c.fieldName === usersFieldName; });
+            if (uIdx === -1) continue;
+            var userSet = {};
+            tableData.data.forEach(function(row) {
+              var u = row[uIdx].formattedValue || row[uIdx].value || '';
+              if (u) userSet[u] = true;
+            });
+            allUsers = Object.keys(userSet).sort(function(a,b){ return a.localeCompare(b); });
+            found = true;
+            break;
+          } catch(_) { continue; }
+        }
+        if (!found) throw new Error('field not found in underlying tables');
+      } catch(e2) {
+        // Fallback: pull from summary col 2 (will be deduplicated but better than nothing)
+        var userSet2 = {};
+        dt.data.forEach(function(row) {
+          var u = row[2].formattedValue || row[2].value || '';
+          if (u) userSet2[u] = true;
+        });
+        allUsers = Object.keys(userSet2).sort(function(a,b){ return a.localeCompare(b); });
+      }
     }
 
     if (selectedCC && grouped[selectedCC]) {
