@@ -359,6 +359,11 @@
     </div>
     <div class="section-head">Power Automate Flows</div>
     <div class="field">
+      <label>Users Flow URL</label>
+      <input type="text" id="cfg-users-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+      <p class="hint">GET — returns array of licensed Tableau user emails. Called once on load.</p>
+    </div>
+    <div class="field">
       <label>Add Flow URL</label>
       <input type="text" id="cfg-add-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
       <p class="hint">POST — receives <code>{"key":"…","value":"…"}</code></p>
@@ -383,13 +388,12 @@
 <script>
 'use strict';
 
-var addFlowUrl     = '';
-var delFlowUrl     = '';
-var apiKey         = '';
-var labelKey       = '';
-var labelVal       = '';
-var usersSheetName = '';
-var usersFieldName = '';
+var addFlowUrl   = '';
+var delFlowUrl   = '';
+var usersFlowUrl = '';
+var apiKey       = '';
+var labelKey     = '';
+var labelVal     = '';
 
 var grouped    = {}; // { "CC Name": ["email1", …] }
 var ccKeys     = [];
@@ -412,13 +416,12 @@ var selectedUser = null; // currently picked user email
 
 function loadSettings() {
   var s = tableau.extensions.settings;
-  addFlowUrl     = s.get('addFlowUrl')     || '';
-  delFlowUrl     = s.get('delFlowUrl')     || '';
-  apiKey         = s.get('apiKey')         || '';
-  labelKey       = s.get('labelKey')       || '';
-  labelVal       = s.get('labelVal')       || '';
-  usersSheetName = s.get('usersSheetName') || '';
-  usersFieldName = s.get('usersFieldName') || '';
+  addFlowUrl   = s.get('addFlowUrl')   || '';
+  delFlowUrl   = s.get('delFlowUrl')   || '';
+  usersFlowUrl = s.get('usersFlowUrl') || '';
+  apiKey       = s.get('apiKey')       || '';
+  labelKey     = s.get('labelKey')     || '';
+  labelVal     = s.get('labelVal')     || '';
 }
 
 // ─── Load data ────────────────────────────────────────────────────────────────
@@ -448,24 +451,8 @@ async function loadData(ws) {
     });
     ccKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
 
-    // Build full users list from col 2 (Tableau Users on Detail tile)
-    if (cols.length >= 3) {
-      var userSet = {};
-      dt.data.forEach(function(row) {
-        var u = row[2].formattedValue || row[2].value || '';
-        if (u && u !== 'Null' && u !== 'null' && u !== 'NULL') userSet[u] = true;
-      });
-      allUsers = Object.keys(userSet).sort(function(a,b){ return a.localeCompare(b); });
-      console.log('[Entitlements] col0 field:', cols[0].fieldName);
-      console.log('[Entitlements] col1 field:', cols[1].fieldName);
-      console.log('[Entitlements] col2 field:', cols[2].fieldName);
-      console.log('[Entitlements] total rows:', dt.data.length);
-      console.log('[Entitlements] allUsers count:', allUsers.length);
-      console.log('[Entitlements] allUsers sample:', allUsers.slice(0,5));
-    } else {
-      console.log('[Entitlements] only', cols.length, 'cols — no users col');
-      cols.forEach(function(c,i){ console.log('  col'+i+':', c.fieldName); });
-    }
+    // Load full Tableau users list from flow (independent of worksheet data)
+    await loadAllUsers();
 
     if (selectedCC && grouped[selectedCC]) {
       renderMembers(selectedCC);
@@ -477,6 +464,33 @@ async function loadData(ws) {
     showListView();
   } catch(e) {
     setEmptyMsg('Failed to load data: ' + e.message);
+  }
+}
+
+// ─── Load all Tableau users from flow ────────────────────────────────────────
+async function loadAllUsers() {
+  if (!usersFlowUrl) return; // not configured yet
+  try {
+    var headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-api-key'] = apiKey;
+    var resp = await fetch(usersFlowUrl, { method: 'GET', headers: headers });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    // Accept either a plain array of emails or array of objects with an email field
+    if (Array.isArray(data)) {
+      if (typeof data[0] === 'string') {
+        allUsers = data.filter(function(u){ return u && u !== 'Null'; })
+                       .sort(function(a,b){ return a.localeCompare(b); });
+      } else {
+        // objects — look for common email field names
+        var emailKey = ['email','Email','userEmail','user_email','name','Name'].find(function(k){ return data[0][k]; });
+        allUsers = data.map(function(u){ return u[emailKey] || ''; })
+                       .filter(function(u){ return u && u !== 'Null'; })
+                       .sort(function(a,b){ return a.localeCompare(b); });
+      }
+    }
+  } catch(e) {
+    console.warn('[Entitlements] loadAllUsers failed:', e.message);
   }
 }
 
@@ -699,21 +713,23 @@ function goBack() {
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function openSettings() {
   loadSettings();
-  document.getElementById('cfg-label-key').value = labelKey;
-  document.getElementById('cfg-label-val').value = labelVal;
-  document.getElementById('cfg-add-url').value   = addFlowUrl;
-  document.getElementById('cfg-del-url').value   = delFlowUrl;
-  document.getElementById('cfg-api-key').value   = apiKey;
+  document.getElementById('cfg-label-key').value  = labelKey;
+  document.getElementById('cfg-label-val').value  = labelVal;
+  document.getElementById('cfg-users-url').value  = usersFlowUrl;
+  document.getElementById('cfg-add-url').value    = addFlowUrl;
+  document.getElementById('cfg-del-url').value    = delFlowUrl;
+  document.getElementById('cfg-api-key').value    = apiKey;
   document.getElementById('settings-overlay').classList.add('open');
 }
 document.getElementById('settings-cancel').addEventListener('click', function() { document.getElementById('settings-overlay').classList.remove('open'); });
 document.getElementById('settings-save').addEventListener('click', function() {
   var s = tableau.extensions.settings;
-  s.set('labelKey',   document.getElementById('cfg-label-key').value.trim());
-  s.set('labelVal',   document.getElementById('cfg-label-val').value.trim());
-  s.set('addFlowUrl', document.getElementById('cfg-add-url').value.trim());
-  s.set('delFlowUrl', document.getElementById('cfg-del-url').value.trim());
-  s.set('apiKey',     document.getElementById('cfg-api-key').value.trim());
+  s.set('labelKey',    document.getElementById('cfg-label-key').value.trim());
+  s.set('labelVal',    document.getElementById('cfg-label-val').value.trim());
+  s.set('usersFlowUrl',document.getElementById('cfg-users-url').value.trim());
+  s.set('addFlowUrl',  document.getElementById('cfg-add-url').value.trim());
+  s.set('delFlowUrl',  document.getElementById('cfg-del-url').value.trim());
+  s.set('apiKey',      document.getElementById('cfg-api-key').value.trim());
   s.saveAsync().then(function() {
     loadSettings();
     document.getElementById('settings-overlay').classList.remove('open');
