@@ -7,520 +7,65 @@
   <script src="https://extensions.cdn.tableau.com/tableau.extensions.1.latest.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:       #f5f6f8;
-      --surface:  #ffffff;
-      --border:   #dde1e7;
-      --accent:   #2563eb;
-      --accent-lt:#eff4ff;
-      --danger:   #dc2626;
-      --danger-lt:#fff1f1;
-      --success:  #16a34a;
-      --text-pri: #111827;
-      --text-sec: #6b7280;
-      --text-inv: #ffffff;
-      --radius:   5px;
-      --row-h:    36px;
-    }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 13px;
-      background: var(--bg);
-      color: var(--text-pri);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      font-size: 12px; padding: 12px; background: #f5f6f8; color: #111;
     }
-
-    /* ── Toast ── */
-    #toast {
-      position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
-      background: var(--text-pri); color: var(--text-inv);
-      padding: 6px 14px; border-radius: 20px;
-      font-size: 12px; font-weight: 500;
-      opacity: 0; transition: opacity .2s;
-      pointer-events: none; z-index: 999; white-space: nowrap;
+    pre {
+      background: #1e1e1e; color: #d4d4d4;
+      padding: 12px; border-radius: 6px;
+      font-size: 11px; white-space: pre-wrap;
+      word-break: break-all; margin-top: 8px;
+      max-height: 80vh; overflow-y: auto;
     }
-    #toast.show    { opacity: 1; }
-    #toast.error   { background: var(--danger); }
-    #toast.success { background: var(--success); }
-
-    /* ── Empty state ── */
-    #empty-view {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 8px; color: var(--text-sec);
-      text-align: center; padding: 20px;
-    }
-    #empty-view svg { width: 28px; height: 28px; opacity: .3; }
-    #empty-view p { font-size: 12px; line-height: 1.6; max-width: 200px; }
-
-    /* ── Table ── */
-    #table-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
-
-    /* col headers */
-    #col-heads {
-      display: grid;
-      grid-template-columns: 1fr 1fr 80px;
-      background: var(--surface);
-      border-bottom: 2px solid var(--border);
-      flex-shrink: 0;
-    }
-    #col-heads span {
-      padding: 6px 10px;
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .05em;
-      color: var(--text-sec);
-    }
-
-    /* rows */
-    #rows-wrap { flex: 1; overflow-y: auto; }
-    .ent-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 80px;
-      align-items: center;
-      min-height: var(--row-h);
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      transition: background .1s;
-    }
-    .ent-row:last-child { border-bottom: none; }
-    .ent-row:hover { background: var(--accent-lt); }
-    .ent-row.editing { background: #fefce8; }
-
-    .cell {
-      padding: 6px 10px;
-      font-size: 12px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .cell-cc    { font-weight: 500; }
-    .cell-email { font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px; color: var(--text-sec); }
-
-    /* inline edit input */
-    .cell-edit-wrap { padding: 3px 6px; }
-    .cell-edit-wrap input {
-      width: 100%; padding: 4px 7px;
-      border: 1px solid var(--accent); border-radius: 4px;
-      font-size: 11px; font-family: 'SF Mono', monospace;
-      background: var(--surface); color: var(--text-pri); outline: none;
-    }
-
-    /* action cell */
-    .cell-actions {
-      padding: 0 8px;
-      display: flex; align-items: center; justify-content: flex-end; gap: 4px;
-    }
-    .act-btn {
-      background: none; border: none; cursor: pointer;
-      padding: 5px; border-radius: 4px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-sec); flex-shrink: 0;
-    }
-    .act-btn svg { width: 14px; height: 14px; }
-    .act-btn.edit-btn:hover  { color: var(--accent); background: var(--accent-lt); }
-    .act-btn.save-btn        { color: var(--success); }
-    .act-btn.save-btn:hover  { background: #dcfce7; }
-    .act-btn.cancel-btn:hover { color: var(--danger); background: var(--danger-lt); }
-    .act-btn.del-btn:hover   { color: var(--danger); background: var(--danger-lt); }
-    .act-btn:disabled        { opacity: .35; cursor: not-allowed; }
-
-    /* ── Settings overlay ── */
-    .overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,.35); z-index: 100;
-      align-items: center; justify-content: center;
-    }
-    .overlay.open { display: flex; }
-    .panel {
-      background: var(--surface); border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.18);
-      width: 400px; max-width: 92vw; padding: 20px;
-    }
-    .panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
-    .field { margin-bottom: 13px; }
-    .field label {
-      display: block; font-size: 11px; font-weight: 600; color: var(--text-sec);
-      margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em;
-    }
-    .field input {
-      width: 100%; padding: 7px 10px;
-      border: 1px solid var(--border); border-radius: var(--radius);
-      font-size: 12px; font-family: 'SF Mono', monospace;
-      color: var(--text-pri); background: var(--bg); outline: none;
-    }
-    .field input:focus { border-color: var(--accent); background: var(--surface); }
-    .field .hint { font-size: 11px; color: var(--text-sec); margin-top: 4px; line-height: 1.5; }
-    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 13px; border-radius: var(--radius);
-      font-size: 12px; font-weight: 500; cursor: pointer;
-      border: none; white-space: nowrap;
-    }
-    .btn-primary { background: var(--accent); color: var(--text-inv); }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-pri); }
-    .btn-ghost:hover { background: var(--bg); }
+    h3 { font-size: 13px; margin-bottom: 6px; }
   </style>
 </head>
 <body>
-
-<div id="toast"></div>
-
-<!-- Empty state -->
-<div id="empty-view">
-  <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-  </svg>
-  <p>Add <strong>Cost Center</strong> and <strong>Email</strong> to the encoding tiles to see entitlements.</p>
-</div>
-
-<!-- Table -->
-<div id="table-view">
-  <div id="col-heads">
-    <span id="head-cc">Cost Center</span>
-    <span>Email</span>
-    <span></span>
-  </div>
-  <div id="rows-wrap">
-    <div id="rows-container"></div>
-  </div>
-</div>
-
-<!-- Settings -->
-<div id="settings-overlay" class="overlay">
-  <div class="panel">
-    <h3>⚙️ Flow Configuration</h3>
-    <div class="field">
-      <label>Add Flow URL</label>
-      <input type="text" id="cfg-add-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">POST — receives <code>{"CostCenter":"…","Description":"…","Email":"…"}</code></p>
-    </div>
-    <div class="field">
-      <label>Delete Flow URL</label>
-      <input type="text" id="cfg-del-url" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">POST — receives <code>{"Description":"…","Email":"…"}</code></p>
-    </div>
-    <div class="field">
-      <label>API Key (optional)</label>
-      <input type="password" id="cfg-api-key" placeholder="Stored in workbook settings" />
-      <p class="hint">Sent as <code>x-api-key</code> header on every request.</p>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="settings-cancel">Cancel</button>
-      <button class="btn btn-primary" id="settings-save">Save Settings</button>
-    </div>
-  </div>
-</div>
+  <h3>🔍 Entitlements Debug</h3>
+  <pre id="log">Initializing…</pre>
 
 <script>
 'use strict';
 
-let addFlowUrl = '';
-let delFlowUrl = '';
-let apiKey     = '';
-
-// Each entry: { costCenter, description, email }
-let entries = [];
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
-tableau.extensions.initializeAsync({ configure: openSettings }).then(() => {
-  loadSettings();
-  loadData();
-
-  tableau.extensions.worksheet.addEventListener(
-    tableau.TableauEventType.SummaryDataChanged,
-    loadData
-  );
-}).catch(err => showToast('Init failed: ' + err.message, 'error'));
-
-function loadSettings() {
-  const s = tableau.extensions.settings;
-  addFlowUrl = s.get('addFlowUrl') || '';
-  delFlowUrl = s.get('delFlowUrl') || '';
-  apiKey     = s.get('apiKey')     || '';
+function log(msg) {
+  console.log('[Entitlements]', msg);
+  const el = document.getElementById('log');
+  el.textContent += '\n' + msg;
 }
 
-// ─── Load data from encoding tiles ───────────────────────────────────────────
-function loadData() {
+tableau.extensions.initializeAsync().then(() => {
+  log('✅ init OK');
+
   const ws = tableau.extensions.worksheet;
+  log('worksheet name: ' + ws.name);
 
-  // Get encoding info first so we know which field names are in each tile
-  ws.getEncodingInfoAsync().then(encodingInfo => {
-    // Find the field names assigned to our two encoding tiles
-    const ccEncoding    = encodingInfo.find(e => e.id === 'cost-center');
-    const emailEncoding = encodingInfo.find(e => e.id === 'email');
-
-    const ccFieldName    = ccEncoding    && ccEncoding.fields.length    ? ccEncoding.fields[0].fieldName    : null;
-    const emailFieldName = emailEncoding && emailEncoding.fields.length ? emailEncoding.fields[0].fieldName : null;
-
-    if (!ccFieldName || !emailFieldName) {
-      entries = [];
-      showEmpty();
-      return;
+  // Try getSummaryDataAsync
+  log('\n--- getSummaryDataAsync ---');
+  ws.getSummaryDataAsync({ ignoreAliases: false }).then(dt => {
+    log('row count: ' + dt.data.length);
+    log('columns (' + dt.columns.length + '):');
+    dt.columns.forEach(c => log('  [' + c.index + '] fieldName="' + c.fieldName + '" dataType=' + c.dataType));
+    if (dt.data.length > 0) {
+      log('first row values:');
+      dt.data[0].forEach((cell, i) => log('  [' + i + '] value="' + cell.value + '" formatted="' + cell.formattedValue + '"'));
     }
+  }).catch(err => log('getSummaryDataAsync ERROR: ' + err));
 
-    // Now fetch summary data and match columns by the exact field names from encodings
-    ws.getSummaryDataAsync({ ignoreAliases: false }).then(dataTable => {
-      const cols = dataTable.columns;
-
-      const ccIdx    = cols.findIndex(c => c.fieldName === ccFieldName);
-      const emailIdx = cols.findIndex(c => c.fieldName === emailFieldName);
-
-      if (ccIdx === -1 || emailIdx === -1) {
-        entries = [];
-        showEmpty();
-        return;
-      }
-
-      // Update column header to the actual field name used
-      document.getElementById('head-cc').textContent = ccFieldName;
-
-      entries = dataTable.data.map(row => ({
-        costCenter:  row[ccIdx].formattedValue  || row[ccIdx].value  || '',
-        description: row[ccIdx].formattedValue  || row[ccIdx].value  || '', // use CC value as description key
-        email:       row[emailIdx].formattedValue || row[emailIdx].value || '',
-      }));
-
-      renderRows();
-      showTable();
-    });
-
-  }).catch(err => {
-    // getEncodingInfoAsync not available — fall back to column name matching
-    ws.getSummaryDataAsync({ ignoreAliases: false }).then(dataTable => {
-      const cols = dataTable.columns;
-      const ccIdx    = cols.findIndex(c => c.fieldName.toLowerCase().includes('cost center'));
-      const emailIdx = cols.findIndex(c => c.fieldName.toLowerCase().includes('email'));
-
-      if (ccIdx === -1 || emailIdx === -1) { entries = []; showEmpty(); return; }
-
-      document.getElementById('head-cc').textContent = cols[ccIdx].fieldName;
-
-      entries = dataTable.data.map(row => ({
-        costCenter:  row[ccIdx].formattedValue  || row[ccIdx].value  || '',
-        description: row[ccIdx].formattedValue  || row[ccIdx].value  || '',
-        email:       row[emailIdx].formattedValue || row[emailIdx].value || '',
-      }));
-
-      renderRows();
-      showTable();
-    }).catch(() => { entries = []; showEmpty(); });
-  });
-}
-
-// ─── Render ───────────────────────────────────────────────────────────────────
-function renderRows() {
-  const container = document.getElementById('rows-container');
-  container.innerHTML = '';
-
-  if (entries.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-sec);font-size:12px;">No data. Add Cost Center and Email to the encoding tiles.</div>`;
-    return;
+  // Try getEncodingInfoAsync
+  log('\n--- getEncodingInfoAsync ---');
+  if (typeof ws.getEncodingInfoAsync === 'function') {
+    ws.getEncodingInfoAsync().then(info => {
+      log('encoding count: ' + info.length);
+      info.forEach(e => {
+        log('  id="' + e.id + '" fields=' + JSON.stringify((e.fields||[]).map(f => f.fieldName)));
+      });
+    }).catch(err => log('getEncodingInfoAsync ERROR: ' + err));
+  } else {
+    log('getEncodingInfoAsync: NOT AVAILABLE on this version');
   }
 
-  entries.forEach((entry, idx) => {
-    const row = document.createElement('div');
-    row.className = 'ent-row';
-    row.setAttribute('data-idx', idx);
-    row.innerHTML = rowHTML(entry, idx);
-    container.appendChild(row);
-  });
-}
-
-function rowHTML(entry, idx) {
-  return `
-    <div class="cell cell-cc">${escHtml(entry.costCenter)}</div>
-    <div class="cell cell-email">${escHtml(entry.email)}</div>
-    <div class="cell-actions">
-      <button class="act-btn edit-btn" data-action="edit" data-idx="${idx}" title="Edit email">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-      <button class="act-btn del-btn" data-action="delete" data-idx="${idx}" title="Remove access">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14H6L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4h6v2"/>
-        </svg>
-      </button>
-    </div>`;
-}
-
-function editRowHTML(entry, idx) {
-  return `
-    <div class="cell cell-cc">${escHtml(entry.costCenter)}</div>
-    <div class="cell-edit-wrap">
-      <input type="email" id="edit-input-${idx}" value="${escAttr(entry.email)}" placeholder="user@growmark.com" />
-    </div>
-    <div class="cell-actions">
-      <button class="act-btn save-btn" data-action="save" data-idx="${idx}" title="Save">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-      </button>
-      <button class="act-btn cancel-btn" data-action="cancel" data-idx="${idx}" title="Cancel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>`;
-}
-
-// ─── Row actions (delegated) ──────────────────────────────────────────────────
-document.getElementById('rows-container').addEventListener('click', e => {
-  const btn = e.target.closest('[data-action]');
-  if (!btn || btn.disabled) return;
-  const action = btn.getAttribute('data-action');
-  const idx    = parseInt(btn.getAttribute('data-idx'), 10);
-
-  if (action === 'edit')   startEdit(idx);
-  if (action === 'cancel') cancelEdit(idx);
-  if (action === 'save')   saveEdit(idx);
-  if (action === 'delete') deleteRow(idx);
-});
-
-document.getElementById('rows-container').addEventListener('keydown', e => {
-  if (e.target.tagName !== 'INPUT') return;
-  const row = e.target.closest('.ent-row');
-  if (!row) return;
-  const idx = parseInt(row.getAttribute('data-idx'), 10);
-  if (e.key === 'Enter')  saveEdit(idx);
-  if (e.key === 'Escape') cancelEdit(idx);
-});
-
-function startEdit(idx) {
-  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
-  row.classList.add('editing');
-  row.innerHTML = editRowHTML(entries[idx], idx);
-  const input = document.getElementById(`edit-input-${idx}`);
-  input.focus();
-  input.select();
-}
-
-function cancelEdit(idx) {
-  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
-  row.classList.remove('editing');
-  row.innerHTML = rowHTML(entries[idx], idx);
-}
-
-function saveEdit(idx) {
-  const input    = document.getElementById(`edit-input-${idx}`);
-  const newEmail = input.value.trim().toLowerCase();
-  const entry    = entries[idx];
-
-  if (!newEmail)                { showToast('Email is required.', 'error'); return; }
-  if (!isValidEmail(newEmail))  { showToast('Enter a valid email address.', 'error'); return; }
-  if (newEmail === entry.email) { cancelEdit(idx); return; }
-
-  if (!addFlowUrl || !delFlowUrl) {
-    showToast('Flow URLs not configured — click ⚙️ in the Tableau menu.', 'error'); return;
-  }
-
-  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
-  setRowBusy(row, true);
-
-  // Delete old → Add new
-  callFlow(delFlowUrl, { Description: entry.description || entry.costCenter, Email: entry.email })
-    .then(() => callFlow(addFlowUrl, {
-      CostCenter:  entry.costCenter,
-      Description: entry.description || entry.costCenter,
-      Email:       newEmail
-    }))
-    .then(() => {
-      entries[idx].email = newEmail;
-      row.classList.remove('editing');
-      row.innerHTML = rowHTML(entries[idx], idx);
-      showToast('Updated.', 'success');
-    })
-    .catch(err => {
-      setRowBusy(row, false);
-      showToast('Save failed: ' + err.message, 'error');
-    });
-}
-
-function deleteRow(idx) {
-  const entry = entries[idx];
-  if (!delFlowUrl) {
-    showToast('Delete Flow URL not configured — click ⚙️.', 'error'); return;
-  }
-
-  const row = document.querySelector(`.ent-row[data-idx="${idx}"]`);
-  setRowBusy(row, true);
-
-  callFlow(delFlowUrl, { Description: entry.description || entry.costCenter, Email: entry.email })
-    .then(() => {
-      entries.splice(idx, 1);
-      renderRows(); // re-render all so indices stay correct
-      showToast('Access removed.', 'success');
-    })
-    .catch(err => {
-      setRowBusy(row, false);
-      showToast('Delete failed: ' + err.message, 'error');
-    });
-}
-
-function setRowBusy(row, busy) {
-  row.querySelectorAll('.act-btn').forEach(b => b.disabled = busy);
-  row.style.opacity = busy ? '.5' : '1';
-}
-
-// ─── Settings ─────────────────────────────────────────────────────────────────
-function openSettings() {
-  loadSettings();
-  document.getElementById('cfg-add-url').value = addFlowUrl;
-  document.getElementById('cfg-del-url').value = delFlowUrl;
-  document.getElementById('cfg-api-key').value = apiKey;
-  document.getElementById('settings-overlay').classList.add('open');
-}
-document.getElementById('settings-cancel').addEventListener('click', () => {
-  document.getElementById('settings-overlay').classList.remove('open');
-});
-document.getElementById('settings-save').addEventListener('click', () => {
-  const s = tableau.extensions.settings;
-  s.set('addFlowUrl', document.getElementById('cfg-add-url').value.trim());
-  s.set('delFlowUrl', document.getElementById('cfg-del-url').value.trim());
-  s.set('apiKey',     document.getElementById('cfg-api-key').value.trim());
-  s.saveAsync().then(() => {
-    loadSettings();
-    document.getElementById('settings-overlay').classList.remove('open');
-    showToast('Settings saved.', 'success');
-  }).catch(err => showToast('Could not save: ' + err.message, 'error'));
-});
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function callFlow(url, body) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (apiKey) headers['x-api-key'] = apiKey;
-  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) })
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(() => ({})); });
-}
-
-function showEmpty() {
-  document.getElementById('empty-view').style.display = 'flex';
-  document.getElementById('table-view').style.display = 'none';
-}
-function showTable() {
-  document.getElementById('empty-view').style.display = 'none';
-  document.getElementById('table-view').style.display = 'flex';
-}
-
-let toastTimer;
-function showToast(msg, type) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className = 'show ' + (type || '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
-}
-function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function escAttr(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+}).catch(err => log('❌ init failed: ' + err));
 </script>
 </body>
 </html>
