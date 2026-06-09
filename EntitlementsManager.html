@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Cost Center Entitlements</title>
-  <script src="./tableau_extensions_1_latest_.js"></script>
+  <script src="tableau.extensions.1.latest.js"></script>
   <style>
     body { font-family: monospace; font-size: 12px; padding: 12px; background: #1e1e1e; color: #d4d4d4; }
     pre { white-space: pre-wrap; word-break: break-all; }
@@ -34,7 +34,7 @@ log('calling initializeAsync…', 'inf');
 tableau.extensions.initializeAsync().then(() => {
   clearTimeout(initTimeout);
   log('✅ init OK', 'ok');
-  const ws = tableau.extensions.worksheet;
+  const ws = tableau.extensions.worksheetContent.worksheet;
   log('worksheet: ' + (ws ? ws.name : 'NULL'), 'inf');
 
   ws.getSummaryDataAsync().then(dt => {
