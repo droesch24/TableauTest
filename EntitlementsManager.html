@@ -491,25 +491,18 @@ async function loadAllUsers() {
     var resp = await fetch(usersFlowUrl, { method: 'POST', headers: headers, body: JSON.stringify({}) });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var data = await resp.json();
-    // Power Automate Select wraps the array in an object with a blank key: {"": [...]}
-    // Unwrap it, then handle plain string arrays or objects with email/name fields
-    var raw = data;
-    if (!Array.isArray(raw)) {
-      // Try blank key first (Power Automate Select output)
-      if (raw[''] && Array.isArray(raw[''])) raw = raw[''];
-      else if (raw.user) raw = raw.user;
-      else if (raw.users && raw.users.user) raw = raw.users.user;
-      else raw = Object.values(raw)[0]; // fallback: take first value
-    }
+    // Power Automate Select wraps output as {"": [...]} — unwrap via Object.values
+    var raw = Array.isArray(data) ? data : Object.values(data)[0];
+    if (!raw) raw = [];
 
-    if (Array.isArray(raw) && raw.length > 0) {
+    if (raw.length > 0) {
       if (typeof raw[0] === 'string') {
-        allUsers = raw.filter(function(u){ return u && u !== 'Null'; })
+        allUsers = raw.filter(function(u){ return u && u !== 'Null' && u !== 'null'; })
                       .sort(function(a,b){ return a.localeCompare(b); });
       } else {
-        // Objects with email + name fields (Tableau REST API shape)
-        allUsers = raw.map(function(u){ return u.email || u.name || ''; })
-                      .filter(function(u){ return u && u !== 'Null'; })
+        // Tableau REST API user objects: { email, name, siteRole, ... }
+        allUsers = raw.map(function(u){ return (u.email || u.name || '').toLowerCase(); })
+                      .filter(function(u){ return u && u !== 'null'; })
                       .sort(function(a,b){ return a.localeCompare(b); });
       }
     }
