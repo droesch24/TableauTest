@@ -491,19 +491,23 @@ async function loadAllUsers() {
     var resp = await fetch(usersFlowUrl, { method: 'POST', headers: headers, body: JSON.stringify({}) });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var data = await resp.json();
-    // Response is array of user objects with an 'email' field
-    // Also handle plain string arrays and nested { user: [...] } shapes
+    // Power Automate Select wraps the array in an object with a blank key: {"": [...]}
+    // Unwrap it, then handle plain string arrays or objects with email/name fields
     var raw = data;
-    if (!Array.isArray(raw) && raw.user) raw = raw.user;
-    if (!Array.isArray(raw) && raw.users && raw.users.user) raw = raw.users.user;
+    if (!Array.isArray(raw)) {
+      // Try blank key first (Power Automate Select output)
+      if (raw[''] && Array.isArray(raw[''])) raw = raw[''];
+      else if (raw.user) raw = raw.user;
+      else if (raw.users && raw.users.user) raw = raw.users.user;
+      else raw = Object.values(raw)[0]; // fallback: take first value
+    }
 
     if (Array.isArray(raw) && raw.length > 0) {
       if (typeof raw[0] === 'string') {
         allUsers = raw.filter(function(u){ return u && u !== 'Null'; })
                       .sort(function(a,b){ return a.localeCompare(b); });
       } else {
-        // Objects — Tableau REST API returns { email, name, siteRole, ... }
-        // Use email field; fall back to name which is also the email on Tableau Cloud
+        // Objects with email + name fields (Tableau REST API shape)
         allUsers = raw.map(function(u){ return u.email || u.name || ''; })
                       .filter(function(u){ return u && u !== 'Null'; })
                       .sort(function(a,b){ return a.localeCompare(b); });
