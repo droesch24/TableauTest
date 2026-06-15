@@ -403,9 +403,9 @@
 <script>
 'use strict';
 
-var addFlowUrl   = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/795378444f724238be123fb95202881a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XKQtl6SpN15NxkX28mqKSCu0Zk1nvOW7Oyg5m7thY-A';
+var addFlowUrl   = '';
 var delFlowUrl   = '';
-var usersFlowUrl = 'https://80870fdadb9ee3bfa6f7c5fbda525a.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/795378444f724238be123fb95202881a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XKQtl6SpN15NxkX28mqKSCu0Zk1nvOW7Oyg5m7thY-A';
+var usersFlowUrl = '';
 var apiKey       = '';
 var labelKey     = '';
 var labelVal     = '';
@@ -491,17 +491,22 @@ async function loadAllUsers() {
     var resp = await fetch(usersFlowUrl, { method: 'POST', headers: headers, body: JSON.stringify({}) });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var data = await resp.json();
-    // Accept either a plain array of emails or array of objects with an email field
-    if (Array.isArray(data)) {
-      if (typeof data[0] === 'string') {
-        allUsers = data.filter(function(u){ return u && u !== 'Null'; })
-                       .sort(function(a,b){ return a.localeCompare(b); });
+    // Response is array of user objects with an 'email' field
+    // Also handle plain string arrays and nested { user: [...] } shapes
+    var raw = data;
+    if (!Array.isArray(raw) && raw.user) raw = raw.user;
+    if (!Array.isArray(raw) && raw.users && raw.users.user) raw = raw.users.user;
+
+    if (Array.isArray(raw) && raw.length > 0) {
+      if (typeof raw[0] === 'string') {
+        allUsers = raw.filter(function(u){ return u && u !== 'Null'; })
+                      .sort(function(a,b){ return a.localeCompare(b); });
       } else {
-        // objects — look for common email field names
-        var emailKey = ['email','Email','userEmail','user_email','name','Name'].find(function(k){ return data[0][k]; });
-        allUsers = data.map(function(u){ return u[emailKey] || ''; })
-                       .filter(function(u){ return u && u !== 'Null'; })
-                       .sort(function(a,b){ return a.localeCompare(b); });
+        // Objects — Tableau REST API returns { email, name, siteRole, ... }
+        // Use email field; fall back to name which is also the email on Tableau Cloud
+        allUsers = raw.map(function(u){ return u.email || u.name || ''; })
+                      .filter(function(u){ return u && u !== 'Null'; })
+                      .sort(function(a,b){ return a.localeCompare(b); });
       }
     }
   } catch(e) {
