@@ -656,7 +656,9 @@ function renderDropdown(q) {
     return;
   }
 
-  filtered.slice(0, 80).forEach(function(email) { // cap at 80 for perf
+  // Render all filtered results (use a fragment so 400+ rows stay snappy)
+  var frag = document.createDocumentFragment();
+  filtered.forEach(function(email) {
     var opt = document.createElement('div');
     opt.className = 'user-option';
     opt.textContent = email;
@@ -664,8 +666,9 @@ function renderDropdown(q) {
       e.preventDefault(); // prevent blur before click
       selectUser(email);
     });
-    dd.appendChild(opt);
+    frag.appendChild(opt);
   });
+  dd.appendChild(frag);
 }
 
 function openDropdown() {
