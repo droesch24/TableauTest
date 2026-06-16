@@ -180,7 +180,7 @@
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
             <button class="btn btn-primary btn-sm" id="btn-edit">Edit</button>
-            <button class="btn btn-ghost btn-sm" id="btn-reload-doc">&#8635; Reload</button>
+            <button class="btn btn-ghost btn-sm" id="btn-reload-doc" style="display:none">&#8635; Load Documentation</button>
           </div>
         </div>
         <div id="detail-undocumented">No documentation yet. Click Edit to add some.</div>
@@ -459,6 +459,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var body         = $('detail-body');
     var undocumented = $('detail-undocumented');
     body.innerHTML   = '';
+    $('btn-reload-doc').style.display = !doc ? 'inline-flex' : 'none';
     if (!doc) { undocumented.style.display = 'block'; return; }
     undocumented.style.display = 'none';
 
