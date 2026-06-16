@@ -934,7 +934,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       setStatus('Checking docs\u2026');
       try {
         var res = await callFlow({ action: 'list' });
-        var documented = new Set((res && res.luids) ? res.luids : []);
+        var documented = new Set((res && res.luids) ? res.luids.map(function(x) { return x.luid || x; }) : []);
         workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
