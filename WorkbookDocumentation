@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workbook Documentation</title>
+<script src="tableau.extensions.1.latest.js"></script>
+<style>
+  /* ── Reset & base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f1117;
+    --surface:   #1a1d27;
+    --surface2:  #22263a;
+    --border:    #2e3352;
+    --accent:    #4f7cff;
+    --accent-dim:#2a3f80;
+    --success:   #22c55e;
+    --warn:      #f59e0b;
+    --danger:    #ef4444;
+    --text:      #e8eaf6;
+    --text2:     #7b82a8;
+    --mono:      'JetBrains Mono', 'Fira Mono', monospace;
+    --sans:      'Inter', system-ui, sans-serif;
+    --radius:    6px;
+    --transition: 150ms ease;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── Layout ───────────────────────────────────────────────────── */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Top bar ──────────────────────────────────────────────────── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  #wb-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  #wb-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #wb-meta {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* ── Status pill ──────────────────────────────────────────────── */
+  #status-pill {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  #status-pill.saving  { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  #status-pill.saved   { background: #14532d; color: var(--success); border-color: var(--success); }
+  #status-pill.error   { background: #450a0a; color: var(--danger); border-color: var(--danger); }
+  #status-pill.loading { background: var(--surface2); color: var(--text2); }
+
+  /* ── Buttons ──────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all var(--transition);
+    white-space: nowrap;
+    font-family: var(--sans);
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover:not(:disabled) { background: #6b8fff; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border-color: var(--border);
+  }
+  .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text2); }
+
+  /* ── Scroll area ──────────────────────────────────────────────── */
+  #scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #scroll-area::-webkit-scrollbar { width: 5px; }
+  #scroll-area::-webkit-scrollbar-track { background: transparent; }
+  #scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── Section cards ────────────────────────────────────────────── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  /* ── Form fields ──────────────────────────────────────────────── */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .field-label {
+    font-size: 11px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  textarea, input[type="text"], input[type="date"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 7px 10px;
+    resize: vertical;
+    transition: border-color var(--transition);
+    line-height: 1.5;
+  }
+  textarea:focus, input[type="text"]:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea::placeholder, input::placeholder { color: var(--text2); opacity: 0.6; }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+  }
+
+  /* ── Two-column layout for short fields ──────────────────────── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* ── Tags ─────────────────────────────────────────────────────── */
+  #tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    min-height: 36px;
+    cursor: text;
+    transition: border-color var(--transition);
+  }
+  #tags-container:focus-within { border-color: var(--accent); }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-chip button {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.7;
+  }
+  .tag-chip button:hover { opacity: 1; }
+
+  #tag-input {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--sans);
+    outline: none;
+    min-width: 80px;
+    flex: 1;
+    padding: 2px 2px;
+  }
+  #tag-input::placeholder { color: var(--text2); opacity: 0.6; }
+
+  /* ── Change log ───────────────────────────────────────────────── */
+  #changelog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .log-entry {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+  }
+
+  .log-date {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    white-space: nowrap;
+    padding-top: 1px;
+    min-width: 80px;
+  }
+
+  .log-note {
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+    word-break: break-word;
+  }
+
+  .log-delete {
+    background: none;
+    border: none;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+  .log-delete:hover { color: var(--danger); opacity: 1; }
+
+  .log-empty {
+    font-size: 12px;
+    color: var(--text2);
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* New log entry row */
+  #new-log-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 4px;
+  }
+
+  #new-log-date {
+    flex-shrink: 0;
+    width: 136px;
+  }
+
+  #new-log-note {
+    flex: 1;
+    resize: none;
+    height: 34px;
+  }
+
+  .btn-add-log {
+    flex-shrink: 0;
+    align-self: flex-start;
+    padding: 6px 10px;
+  }
+
+  /* ── Loading overlay ──────────────────────────────────────────── */
+  #loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 100;
+    transition: opacity 0.3s ease;
+  }
+
+  #loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+
+  /* ── Error state ──────────────────────────────────────────────── */
+  #error-banner {
+    display: none;
+    background: #450a0a;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  /* ── Unsaved indicator ────────────────────────────────────────── */
+  #unsaved-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--warn);
+    border-radius: 50%;
+    margin-right: 4px;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  #unsaved-dot.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading documentation…</div>
+</div>
+
+<div id="app">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <div id="wb-identity">
+      <div id="wb-name">—</div>
+      <div id="wb-meta">—</div>
+    </div>
+    <div id="topbar-actions">
+      <span id="status-pill">Ready</span>
+      <button class="btn btn-ghost" id="btn-reload" title="Reload saved doc">↺</button>
+      <button class="btn btn-primary" id="btn-save" disabled>
+        <span id="unsaved-dot"></span>Save
+      </button>
+    </div>
+  </div>
+
+  <!-- Main scroll area -->
+  <div id="scroll-area">
+
+    <div id="error-banner"></div>
+
+    <!-- Core fields -->
+    <div class="section">
+      <div class="section-label">Documentation</div>
+
+      <div class="field-group">
+        <div class="field-label">Intended Audience</div>
+        <textarea id="field-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Key Metrics / Fields</div>
+        <textarea id="field-metrics" rows="3" placeholder="The most important measures, dimensions, or calculated fields — what they mean and any caveats about their definitions."></textarea>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Known Limitations / Caveats</div>
+        <textarea id="field-caveats" rows="3" placeholder="Filter interactions, data freshness assumptions, edge cases, or anything that could mislead a reader."></textarea>
+      </div>
+    </div>
+
+    <!-- Owner / review -->
+    <div class="section">
+      <div class="section-label">Ownership</div>
+      <div class="two-col">
+        <div class="field-group">
+          <div class="field-label">SME / Owner Contact</div>
+          <input type="text" id="field-sme" placeholder="Name or email" />
+        </div>
+        <div class="field-group">
+          <div class="field-label">Last Reviewed</div>
+          <input type="date" id="field-reviewed" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="section">
+      <div class="section-label">Tags</div>
+      <div id="tags-container" onclick="document.getElementById('tag-input').focus()">
+        <!-- chips render here -->
+        <input id="tag-input" type="text" placeholder="Add a tag, press Enter…" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- Change log -->
+    <div class="section">
+      <div class="section-label">Change Log</div>
+      <div id="changelog-list">
+        <div class="log-empty">No entries yet.</div>
+      </div>
+      <div id="new-log-row">
+        <input type="date" id="new-log-date" />
+        <textarea id="new-log-note" placeholder="Describe the change…"></textarea>
+        <button class="btn btn-ghost btn-add-log" id="btn-add-log">+ Add</button>
+      </div>
+    </div>
+
+  </div><!-- /scroll-area -->
+</div><!-- /app -->
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ──────────────────────────────────────────────────────
+  let workbookLuid    = '';
+  let workbookName    = '';
+  let workbookProject = '';
+  let workbookOwner   = '';
+  let workbookUpdated = '';
+  let flowUrl         = '';
+  let tags            = [];
+  let changelog       = [];   // [{date, note}]
+  let isDirty         = false;
+
+  // ── DOM refs ───────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const loadingOverlay = $('loading-overlay');
+  const statusPill     = $('status-pill');
+  const errorBanner    = $('error-banner');
+  const btnSave        = $('btn-save');
+  const btnReload      = $('btn-reload');
+  const unsavedDot     = $('unsaved-dot');
+
+  // ── Helpers ────────────────────────────────────────────────────
+  function setStatus(msg, cls = '') {
+    statusPill.textContent = msg;
+    statusPill.className   = cls ? `${cls}` : '';
+  }
+
+  function showError(msg) {
+    errorBanner.style.display = 'block';
+    errorBanner.textContent   = msg;
+  }
+
+  function clearError() {
+    errorBanner.style.display = 'none';
+    errorBanner.textContent   = '';
+  }
+
+  function markDirty() {
+    if (!isDirty) {
+      isDirty = true;
+      unsavedDot.classList.add('visible');
+      setStatus('Unsaved changes');
+    }
+  }
+
+  function markClean() {
+    isDirty = false;
+    unsavedDot.classList.remove('visible');
+  }
+
+  // ── Tags ───────────────────────────────────────────────────────
+  function renderTags() {
+    const container = $('tags-container');
+    // Remove existing chips
+    container.querySelectorAll('.tag-chip').forEach(c => c.remove());
+    const input = $('tag-input');
+    tags.forEach((tag, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `${tag}<button title="Remove tag" data-i="${i}">×</button>`;
+      chip.querySelector('button').addEventListener('click', () => {
+        tags.splice(i, 1);
+        renderTags();
+        markDirty();
+      });
+      container.insertBefore(chip, input);
+    });
+  }
+
+  $('tag-input').addEventListener('keydown', e => {
+    const val = e.target.value.trim();
+    if ((e.key === 'Enter' || e.key === ',') && val) {
+      e.preventDefault();
+      if (!tags.includes(val)) { tags.push(val); markDirty(); }
+      e.target.value = '';
+      renderTags();
+    }
+    if (e.key === 'Backspace' && !val && tags.length) {
+      tags.pop();
+      renderTags();
+      markDirty();
+    }
+  });
+
+  // ── Change log ─────────────────────────────────────────────────
+  function renderChangelog() {
+    const list = $('changelog-list');
+    list.innerHTML = '';
+    if (!changelog.length) {
+      list.innerHTML = '<div class="log-empty">No entries yet.</div>';
+      return;
+    }
+    // Most recent first
+    [...changelog].reverse().forEach((entry, ri) => {
+      const realIdx = changelog.length - 1 - ri;
+      const row = document.createElement('div');
+      row.className = 'log-entry';
+      row.innerHTML = `
+        <span class="log-date">${entry.date || '—'}</span>
+        <span class="log-note">${escHtml(entry.note)}</span>
+        <button class="log-delete" title="Remove entry" data-i="${realIdx}">×</button>
+      `;
+      row.querySelector('.log-delete').addEventListener('click', () => {
+        changelog.splice(realIdx, 1);
+        renderChangelog();
+        markDirty();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  // Set today as default for new log entry date
+  function todayISO() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  $('new-log-date').value = todayISO();
+
+  $('btn-add-log').addEventListener('click', () => {
+    const date = $('new-log-date').value;
+    const note = $('new-log-note').value.trim();
+    if (!note) { $('new-log-note').focus(); return; }
+    changelog.push({ date, note });
+    renderChangelog();
+    $('new-log-note').value = '';
+    $('new-log-date').value = todayISO();
+    markDirty();
+  });
+
+  // Also allow Enter in the note textarea to add
+  $('new-log-note').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      $('btn-add-log').click();
+    }
+  });
+
+  // ── Populate form from doc object ──────────────────────────────
+  function populateForm(doc) {
+    $('field-audience').value = doc.audience  || '';
+    $('field-metrics').value  = doc.metrics   || '';
+    $('field-caveats').value  = doc.caveats   || '';
+    $('field-sme').value      = doc.sme       || '';
+    $('field-reviewed').value = doc.reviewed  || '';
+    tags      = doc.tags      || [];
+    changelog = doc.changelog || [];
+    renderTags();
+    renderChangelog();
+  }
+
+  // ── Collect form into doc object ───────────────────────────────
+  function collectForm() {
+    return {
+      luid:      workbookLuid,
+      name:      workbookName,
+      project:   workbookProject,
+      owner:     workbookOwner,
+      updatedAt: workbookUpdated,
+      audience:  $('field-audience').value.trim(),
+      metrics:   $('field-metrics').value.trim(),
+      caveats:   $('field-caveats').value.trim(),
+      sme:       $('field-sme').value.trim(),
+      reviewed:  $('field-reviewed').value,
+      tags,
+      changelog,
+      savedAt:   new Date().toISOString(),
+    };
+  }
+
+  // ── Flow call ──────────────────────────────────────────────────
+  async function callFlow(payload) {
+    const resp = await fetch(flowUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    if (!resp.ok) throw new Error(`Flow returned ${resp.status}`);
+    const text = await resp.text();
+    try { return text ? JSON.parse(text) : {}; }
+    catch { return {}; }
+  }
+
+  // ── Load existing doc ──────────────────────────────────────────
+  async function loadDoc() {
+    if (!workbookLuid || !flowUrl) return;
+    setStatus('Loading…', 'loading');
+    clearError();
+    try {
+      const result = await callFlow({ action: 'get', luid: workbookLuid });
+      if (result && result.doc) {
+        populateForm(result.doc);
+      } else {
+        populateForm({});
+      }
+      markClean();
+      setStatus('Ready');
+    } catch (err) {
+      showError(`Could not load documentation: ${err.message}`);
+      setStatus('Load failed', 'error');
+    }
+  }
+
+  // ── Save doc ───────────────────────────────────────────────────
+  async function saveDoc() {
+    if (!flowUrl) { showError('Flow URL not configured in extension settings.'); return; }
+    setStatus('Saving…', 'saving');
+    clearError();
+    btnSave.disabled = true;
+    try {
+      await callFlow({ action: 'save', luid: workbookLuid, doc: collectForm() });
+      markClean();
+      setStatus('Saved', 'saved');
+      setTimeout(() => setStatus('Ready'), 2500);
+    } catch (err) {
+      showError(`Save failed: ${err.message}`);
+      setStatus('Save failed', 'error');
+    } finally {
+      btnSave.disabled = false;
+    }
+  }
+
+  // ── Dirty tracking on all inputs ───────────────────────────────
+  ['field-audience','field-metrics','field-caveats','field-sme','field-reviewed'].forEach(id => {
+    $(id).addEventListener('input', markDirty);
+  });
+
+  btnSave.addEventListener('click', saveDoc);
+  btnReload.addEventListener('click', loadDoc);
+
+  // ── Escape HTML ────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  tableau.extensions.initializeAsync({ configure }).then(async () => {
+
+    // Read settings
+    const settings = tableau.extensions.settings.getAll();
+    flowUrl = settings.flowUrl || '';
+
+    // Read worksheet data
+    try {
+      const ws      = tableau.extensions.worksheetContent.worksheet;
+      const dataTable = await ws.getSummaryDataAsync({ maxRows: 1 });
+      const cols    = dataTable.columns;
+      const rows    = dataTable.data;
+
+      if (rows.length === 0) throw new Error('No worksheet data');
+
+      // Detect columns by name (case-insensitive)
+      function colIdx(name) {
+        return cols.findIndex(c => c.fieldName.toLowerCase().includes(name.toLowerCase()));
+      }
+
+      const row = rows[0];
+      const getVal = name => {
+        const i = colIdx(name);
+        return (i >= 0 && row[i]) ? row[i].formattedValue : '';
+      };
+
+      workbookLuid    = getVal('luid') || getVal('id');
+      workbookName    = getVal('name');
+      workbookProject = getVal('project');
+      workbookOwner   = getVal('owner');
+      workbookUpdated = getVal('updated') || getVal('modified');
+
+      // Update header
+      $('wb-name').textContent = workbookName || 'Unknown Workbook';
+      $('wb-meta').textContent = [
+        workbookProject && `Project: ${workbookProject}`,
+        workbookOwner   && `Owner: ${workbookOwner}`,
+        workbookUpdated && `Updated: ${workbookUpdated.substring(0,10)}`,
+      ].filter(Boolean).join('  ·  ');
+
+      btnSave.disabled = false;
+
+    } catch (err) {
+      showError(`Could not read worksheet data: ${err.message}. Check that luid, name, project, owner, and updated fields are in the view.`);
+    }
+
+    // Hide loading overlay
+    loadingOverlay.classList.add('hidden');
+    setTimeout(() => loadingOverlay.style.display = 'none', 300);
+
+    // Load existing doc if flow is configured
+    if (flowUrl && workbookLuid) {
+      await loadDoc();
+    } else if (!flowUrl) {
+      setStatus('Flow URL not set', 'error');
+      showError('No Flow URL configured. Open extension settings and paste your Power Automate POST trigger URL.');
+    }
+
+  }).catch(err => {
+    loadingOverlay.classList.add('hidden');
+    showError(`Extension failed to initialize: ${err.message}`);
+  });
+
+  // ── Settings dialog ────────────────────────────────────────────
+  function configure() {
+    const popupUrl = `${window.location.origin}${window.location.pathname}?config=1`;
+    tableau.extensions.ui.displayDialogAsync(popupUrl, '', { height: 240, width: 440 })
+      .then(() => {
+        const settings = tableau.extensions.settings.getAll();
+        flowUrl = settings.flowUrl || '';
+        if (flowUrl && workbookLuid) loadDoc();
+      })
+      .catch(() => {});
+  }
+
+  // ── Config popup mode ──────────────────────────────────────────
+  if (new URLSearchParams(window.location.search).get('config') === '1') {
+    document.body.innerHTML = `
+      <style>
+        body { background:#0f1117; color:#e8eaf6; font-family:Inter,system-ui,sans-serif;
+               padding:24px; font-size:13px; }
+        h2 { font-size:14px; font-weight:600; margin-bottom:16px; }
+        label { display:block; font-size:11px; color:#7b82a8; margin-bottom:4px; font-weight:500; }
+        input { width:100%; background:#1a1d27; border:1px solid #2e3352; border-radius:6px;
+                color:#e8eaf6; padding:7px 10px; font-size:12px; margin-bottom:14px; }
+        input:focus { outline:none; border-color:#4f7cff; }
+        .row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+        .btn { padding:6px 16px; border-radius:6px; font-size:12px; font-weight:500;
+               cursor:pointer; border:1px solid transparent; font-family:inherit; }
+        .btn-primary { background:#4f7cff; color:#fff; border-color:#4f7cff; }
+        .btn-ghost { background:transparent; color:#7b82a8; border-color:#2e3352; }
+        p.hint { font-size:11px; color:#7b82a8; margin-top:-10px; margin-bottom:14px; line-height:1.4; }
+      </style>
+      <h2>Extension Settings</h2>
+      <label>Power Automate Flow URL</label>
+      <input id="cfg-flow-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+      <p class="hint">Paste the HTTP POST trigger URL from your Power Automate flow. This handles both loading and saving documentation.</p>
+      <div class="row">
+        <button class="btn btn-ghost" id="cfg-cancel">Cancel</button>
+        <button class="btn btn-primary" id="cfg-save">Save Settings</button>
+      </div>
+    `;
+
+    tableau.extensions.initializeDialogAsync().then(() => {
+      const settings = tableau.extensions.settings.getAll();
+      document.getElementById('cfg-flow-url').value = settings.flowUrl || '';
+
+      document.getElementById('cfg-save').addEventListener('click', () => {
+        tableau.extensions.settings.set('flowUrl', document.getElementById('cfg-flow-url').value.trim());
+        tableau.extensions.settings.saveAsync().then(() => {
+          tableau.extensions.ui.closeDialog('saved');
+        });
+      });
+
+      document.getElementById('cfg-cancel').addEventListener('click', () => {
+        tableau.extensions.ui.closeDialog('cancelled');
+      });
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
