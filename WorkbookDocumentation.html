@@ -515,9 +515,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       row.className = 'wb-row';
       row.dataset.luid = wb.luid;
       const metaParts = [
-        wb.project && `${wb.project}`,
-        wb.owner   && `${wb.owner}`,
-        wb.updated && wb.updated.substring(0, 10),
+        wb.parentProject && `${wb.parentProject}`,
+        wb.project       && `${wb.project}`,
+        wb.owner         && `${wb.owner}`,
+        wb.updated       && wb.updated.substring(0, 10),
       ].filter(Boolean).join('  ·  ');
       row.innerHTML = `
         <div class="wb-row-main">
@@ -545,11 +546,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Header
     $('detail-wb-name').textContent = wb.name || '—';
     $('detail-wb-meta').innerHTML   = [
-      wb.project     && `Project: <b>${escHtml(wb.project)}</b>`,
-      wb.owner       && `Owner: <b>${escHtml(wb.owner)}</b>`,
-      wb.ownerEmail  && `Email: <b><a href="mailto:${escHtml(wb.ownerEmail)}" style="color:var(--accent)">${escHtml(wb.ownerEmail)}</a></b>`,
-      wb.updated     && `Updated: <b>${wb.updated.substring(0, 10)}</b>`,
-      wb.description && `<span style="color:var(--text);font-family:var(--sans)">${escHtml(wb.description)}</span>`,
+      wb.parentProject && `Parent Project: <b>${escHtml(wb.parentProject)}</b>`,
+      wb.project       && `Project: <b>${escHtml(wb.project)}</b>`,
+      wb.owner         && `Owner: <b>${escHtml(wb.owner)}</b>`,
+      wb.ownerEmail    && `Email: <b><a href="mailto:${escHtml(wb.ownerEmail)}" style="color:var(--accent)">${escHtml(wb.ownerEmail)}</a></b>`,
+      wb.updated       && `Updated: <b>${wb.updated.substring(0, 10)}</b>`,
+      wb.description   && `<span style="color:var(--text);font-family:var(--sans)">${escHtml(wb.description)}</span>`,
     ].filter(Boolean).join('<br>');
 
     // Load doc if not cached
@@ -815,13 +817,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           return (i >= 0 && row[i]) ? row[i].formattedValue : '';
         };
         return {
-          luid:        get('luid') || get('id'),
-          name:        get('name'),
-          project:     get('project'),
-          owner:       get('owner'),
-          ownerEmail:  get('email') || get('owner email'),
-          description: get('description'),
-          updated:     get('updated') || get('modified'),
+          luid:          get('luid') || get('id'),
+          name:          get('name'),
+          project:       get('project'),
+          parentProject: get('parent project') || get('parent'),
+          owner:         get('owner'),
+          ownerEmail:    get('email') || get('owner email'),
+          description:   get('description'),
+          updated:       get('updated') || get('modified'),
         };
       }).filter(w => w.luid || w.name);
 
