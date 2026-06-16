@@ -7,265 +7,124 @@
 <script src="tableau.extensions.1.latest.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg:         #0f1117;
-    --surface:    #1a1d27;
-    --surface2:   #22263a;
-    --border:     #2e3352;
-    --accent:     #4f7cff;
-    --accent-dim: #2a3f80;
-    --success:    #22c55e;
-    --success-bg: #14532d;
-    --warn:       #f59e0b;
-    --danger:     #ef4444;
-    --danger-bg:  #450a0a;
-    --text:       #e8eaf6;
-    --text2:      #7b82a8;
-    --mono:       'JetBrains Mono', 'Fira Mono', monospace;
-    --sans:       'Inter', system-ui, sans-serif;
-    --radius:     6px;
-    --tr:         150ms ease;
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3352;
+    --accent:#4f7cff; --accent-dim:#2a3f80; --success:#22c55e; --success-bg:#14532d;
+    --warn:#f59e0b; --danger:#ef4444; --danger-bg:#450a0a;
+    --text:#e8eaf6; --text2:#7b82a8;
+    --mono:'JetBrains Mono','Fira Mono',monospace; --sans:'Inter',system-ui,sans-serif;
+    --radius:6px; --tr:150ms ease;
   }
-
-  html, body { height: 100%; background: var(--bg); color: var(--text);
-               font-family: var(--sans); font-size: 13px; line-height: 1.5; }
-
-  /* ── App shell ─────────────────────────────────────────────────── */
-  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-  /* ── Top bar ───────────────────────────────────────────────────── */
-  #topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 14px; background: var(--surface);
-    border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 10px;
-  }
-  #topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  #back-btn {
-    display: none; background: none; border: none; color: var(--text2);
-    cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 4px;
-    border-radius: 4px; transition: color var(--tr);
-  }
-  #back-btn:hover { color: var(--text); }
-  #topbar-title { font-size: 13px; font-weight: 600; color: var(--text);
-                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-  /* ── Status pill ───────────────────────────────────────────────── */
-  #status-pill {
-    font-size: 11px; font-family: var(--mono); padding: 3px 8px;
-    border-radius: 20px; background: var(--surface2); color: var(--text2);
-    border: 1px solid var(--border); transition: all var(--tr); white-space: nowrap;
-  }
-  #status-pill.saving  { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  #status-pill.saved   { background: var(--success-bg); color: var(--success); border-color: var(--success); }
-  #status-pill.error   { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger); }
-
-  /* ── Buttons ───────────────────────────────────────────────────── */
-  .btn {
-    display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px;
-    border-radius: var(--radius); font-size: 12px; font-weight: 500;
-    cursor: pointer; border: 1px solid transparent; transition: all var(--tr);
-    white-space: nowrap; font-family: var(--sans);
-  }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn-primary:hover:not(:disabled) { background: #6b8fff; }
-  .btn-ghost    { background: transparent; color: var(--text2); border-color: var(--border); }
-  .btn-ghost:hover:not(:disabled)   { color: var(--text); border-color: var(--text2); }
-  .btn-danger   { background: transparent; color: var(--danger); border-color: var(--danger); }
-  .btn-danger:hover:not(:disabled)  { background: var(--danger-bg); }
-  .btn-sm { padding: 4px 10px; font-size: 11px; }
-
-  /* ── Views ─────────────────────────────────────────────────────── */
-  .view { display: none; flex: 1; overflow: hidden; flex-direction: column; }
-  .view.active { display: flex; }
-
-  /* ── LIST VIEW ─────────────────────────────────────────────────── */
-  #search-bar {
-    display: flex; gap: 8px; padding: 10px 14px;
-    border-bottom: 1px solid var(--border); flex-shrink: 0;
-  }
-  #search-input {
-    flex: 1; background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text); font-family: var(--sans);
-    font-size: 12px; padding: 6px 10px;
-  }
-  #search-input:focus { outline: none; border-color: var(--accent); }
-  #search-input::placeholder { color: var(--text2); opacity: 0.6; }
-
-  #sort-select {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    color: var(--text2); font-size: 12px; padding: 6px 8px; font-family: var(--sans);
-    cursor: pointer;
-  }
-  #sort-select:focus { outline: none; border-color: var(--accent); }
-
-  #list-scroll { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
-  #list-scroll::-webkit-scrollbar { width: 4px; }
-  #list-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  .wb-row {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 10px 12px;
-    cursor: pointer; transition: border-color var(--tr), background var(--tr);
-  }
-  .wb-row:hover { border-color: var(--accent); background: var(--surface2); }
-
-  .wb-row-main { flex: 1; min-width: 0; }
-  .wb-row-name { font-size: 13px; font-weight: 500; color: var(--text);
-                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .wb-row-meta { font-size: 11px; color: var(--text2); margin-top: 2px;
-                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  .doc-badge {
-    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
-    flex-shrink: 0; white-space: nowrap;
-  }
-  .doc-badge.yes { background: var(--success-bg); color: var(--success); }
-  .doc-badge.no  { background: var(--surface2);   color: var(--text2);   }
-
-  .wb-row-arrow { color: var(--text2); font-size: 14px; flex-shrink: 0; }
-
-  #list-empty { display: none; padding: 32px; text-align: center; color: var(--text2); font-size: 12px; }
-
-  /* ── DETAIL VIEW ───────────────────────────────────────────────── */
-  #detail-scroll {
-    flex: 1; overflow-y: auto; padding: 14px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  #detail-scroll::-webkit-scrollbar { width: 4px; }
-  #detail-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  /* workbook identity card */
-  #detail-identity {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px 14px;
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-  }
-  #detail-wb-name   { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  #detail-wb-meta   { font-size: 11px; color: var(--text2); font-family: var(--mono); line-height: 1.8; }
-
-  .detail-section {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px 14px;
-  }
-  .detail-section-label {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--text2); margin-bottom: 8px;
-  }
-  .detail-field { margin-bottom: 10px; }
-  .detail-field:last-child { margin-bottom: 0; }
-  .detail-field-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 3px; }
-  .detail-field-value { font-size: 12px; color: var(--text); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-  .detail-field-empty { font-size: 12px; color: var(--text2); font-style: italic; }
-
-  .tag-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: var(--accent-dim); color: var(--accent);
-    border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 500;
-    margin: 2px 2px 2px 0;
-  }
-  .tag-chip button {
-    background: none; border: none; color: var(--accent);
-    cursor: pointer; font-size: 13px; line-height: 1; padding: 0; opacity: 0.7;
-  }
-  .tag-chip button:hover { opacity: 1; }
-
-  /* change log read view */
-  .log-entry {
-    display: flex; gap: 10px; align-items: flex-start;
-    padding: 7px 0; border-bottom: 1px solid var(--border);
-  }
-  .log-entry:last-child { border-bottom: none; padding-bottom: 0; }
-  .log-date  { font-size: 11px; font-family: var(--mono); color: var(--accent);
-               white-space: nowrap; min-width: 82px; padding-top: 1px; }
-  .log-note  { font-size: 12px; color: var(--text); flex: 1; word-break: break-word; }
-  .log-delete {
-    background: none; border: none; color: var(--text2); cursor: pointer;
-    font-size: 14px; line-height: 1; padding: 0; opacity: 0.4; flex-shrink: 0;
-  }
-  .log-delete:hover { color: var(--danger); opacity: 1; }
-
-  #detail-undocumented {
-    display: none; text-align: center; padding: 24px;
-    color: var(--text2); font-size: 12px; font-style: italic;
-  }
-
-  /* ── EDIT VIEW ─────────────────────────────────────────────────── */
-  #edit-scroll {
-    flex: 1; overflow-y: auto; padding: 14px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  #edit-scroll::-webkit-scrollbar { width: 4px; }
-  #edit-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  .edit-section {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .edit-section-label {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--text2);
-  }
-  .field-group { display: flex; flex-direction: column; gap: 4px; }
-  .field-label { font-size: 11px; color: var(--text2); font-weight: 500; }
-
-  textarea, input[type="text"], input[type="date"] {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text); font-family: var(--sans);
-    font-size: 12px; padding: 7px 10px; resize: vertical; transition: border-color var(--tr);
-    line-height: 1.5;
-  }
-  textarea:focus, input[type="text"]:focus, input[type="date"]:focus {
-    outline: none; border-color: var(--accent);
-  }
-  textarea::placeholder, input::placeholder { color: var(--text2); opacity: 0.6; }
-  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
-
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-  /* Tags edit */
-  #tags-container {
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 6px 8px; min-height: 36px; cursor: text; transition: border-color var(--tr);
-  }
-  #tags-container:focus-within { border-color: var(--accent); }
-  #tag-input {
-    border: none; background: transparent; color: var(--text); font-size: 12px;
-    font-family: var(--sans); outline: none; min-width: 80px; flex: 1; padding: 2px;
-  }
-  #tag-input::placeholder { color: var(--text2); opacity: 0.6; }
-
-  /* new log row */
-  #new-log-row { display: flex; gap: 8px; align-items: flex-start; }
-  #new-log-date { flex-shrink: 0; width: 136px; resize: none; }
-  #new-log-note { flex: 1; resize: none; height: 34px; }
-
-  /* ── Loading overlay ────────────────────────────────────────────── */
-  #loading-overlay {
-    position: fixed; inset: 0; background: var(--bg);
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 12px; z-index: 100; transition: opacity 0.3s ease;
-  }
-  #loading-overlay.hidden { opacity: 0; pointer-events: none; }
-  .spinner {
-    width: 26px; height: 26px; border: 2px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 12px; color: var(--text2); font-family: var(--mono); }
-
-  /* ── Error banner ───────────────────────────────────────────────── */
-  .error-banner {
-    background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger);
-    border-radius: var(--radius); padding: 9px 12px; font-size: 12px; display: none;
-    margin: 10px 14px 0;
-  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5}
+  #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  /* topbar */
+  #topbar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:10px}
+  #topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+  #back-btn{display:none;background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;border-radius:4px;transition:color var(--tr)}
+  #back-btn:hover{color:var(--text)}
+  #topbar-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  /* status */
+  #status-pill{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);transition:all var(--tr);white-space:nowrap}
+  #status-pill.saving{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+  #status-pill.saved{background:var(--success-bg);color:var(--success);border-color:var(--success)}
+  #status-pill.error{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all var(--tr);white-space:nowrap;font-family:var(--sans)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn-primary:hover:not(:disabled){background:#6b8fff}
+  .btn-ghost{background:transparent;color:var(--text2);border-color:var(--border)}
+  .btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--text2)}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  /* views */
+  .view{display:none;flex:1;overflow:hidden;flex-direction:column}
+  .view.active{display:flex}
+  /* tab bar */
+  #detail-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;padding:0 14px;background:var(--surface)}
+  .tab-btn{padding:8px 14px;font-size:12px;font-weight:500;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all var(--tr);margin-bottom:-1px;font-family:var(--sans)}
+  .tab-btn:hover{color:var(--text)}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-panel{display:none;flex:1;overflow:hidden;flex-direction:column}
+  .tab-panel.active{display:flex}
+  /* list */
+  #search-bar{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+  #search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:12px;padding:6px 10px}
+  #search-input:focus{outline:none;border-color:var(--accent)}
+  #search-input::placeholder{color:var(--text2);opacity:.6}
+  #sort-select{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text2);font-size:12px;padding:6px 8px;font-family:var(--sans);cursor:pointer}
+  #list-scroll{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:4px}
+  #list-scroll::-webkit-scrollbar{width:4px}
+  #list-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  .wb-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;cursor:pointer;transition:border-color var(--tr),background var(--tr)}
+  .wb-row:hover{border-color:var(--accent);background:var(--surface2)}
+  .wb-row-main{flex:1;min-width:0}
+  .wb-row-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wb-row-meta{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+  .doc-badge.yes{background:var(--success-bg);color:var(--success)}
+  .doc-badge.no{background:var(--surface2);color:var(--text2)}
+  .wb-row-arrow{color:var(--text2);font-size:14px;flex-shrink:0}
+  #list-empty{display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px}
+  /* detail doc tab */
+  #detail-doc-scroll{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  #detail-doc-scroll::-webkit-scrollbar{width:4px}
+  #detail-doc-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  #detail-identity{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  #detail-wb-name{font-size:15px;font-weight:600;margin-bottom:4px}
+  #detail-wb-meta{font-size:11px;color:var(--text2);font-family:var(--mono);line-height:1.8}
+  .detail-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+  .detail-section-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:8px}
+  .detail-field{margin-bottom:10px}
+  .detail-field:last-child{margin-bottom:0}
+  .detail-field-label{font-size:11px;color:var(--text2);font-weight:500;margin-bottom:3px}
+  .detail-field-value{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .detail-field-empty{font-size:12px;color:var(--text2);font-style:italic}
+  .tag-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-dim);color:var(--accent);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:500;margin:2px 2px 2px 0}
+  .tag-chip button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;line-height:1;padding:0;opacity:.7}
+  .tag-chip button:hover{opacity:1}
+  .log-entry{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)}
+  .log-entry:last-child{border-bottom:none;padding-bottom:0}
+  .log-date{font-size:11px;font-family:var(--mono);color:var(--accent);white-space:nowrap;min-width:82px;padding-top:1px}
+  .log-note{font-size:12px;color:var(--text);flex:1;word-break:break-word}
+  .log-delete{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;line-height:1;padding:0;opacity:.4;flex-shrink:0}
+  .log-delete:hover{color:var(--danger);opacity:1}
+  #detail-undocumented{display:none;text-align:center;padding:24px;color:var(--text2);font-size:12px;font-style:italic}
+  /* lineage tab */
+  #lineage-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+  #lineage-hint{font-size:11px;color:var(--text2);flex:1}
+  #lineage-scroll{flex:1;overflow:auto;padding:14px;background:var(--bg)}
+  #lineage-scroll::-webkit-scrollbar{width:6px;height:6px}
+  #lineage-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  #lineage-chart{display:inline-block;min-width:100%}
+  #lineage-loading{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px;color:var(--text2);font-size:12px}
+  #lineage-empty{display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px;font-style:italic}
+  /* edit view */
+  #edit-scroll{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  #edit-scroll::-webkit-scrollbar{width:4px}
+  #edit-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  .edit-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .edit-section-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
+  .field-group{display:flex;flex-direction:column;gap:4px}
+  .field-label{font-size:11px;color:var(--text2);font-weight:500}
+  textarea,input[type="text"],input[type="date"]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;resize:vertical;transition:border-color var(--tr);line-height:1.5}
+  textarea:focus,input[type="text"]:focus,input[type="date"]:focus{outline:none;border-color:var(--accent)}
+  textarea::placeholder,input::placeholder{color:var(--text2);opacity:.6}
+  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
+  #tags-container{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;min-height:36px;cursor:text;transition:border-color var(--tr)}
+  #tags-container:focus-within{border-color:var(--accent)}
+  #tag-input{border:none;background:transparent;color:var(--text);font-size:12px;font-family:var(--sans);outline:none;min-width:80px;flex:1;padding:2px}
+  #tag-input::placeholder{color:var(--text2);opacity:.6}
+  #new-log-row{display:flex;gap:8px;align-items:flex-start}
+  #new-log-date{flex-shrink:0;width:136px;resize:none}
+  #new-log-note{flex:1;resize:none;height:34px}
+  /* loading overlay */
+  #loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;transition:opacity .3s ease}
+  #loading-overlay.hidden{opacity:0;pointer-events:none}
+  .spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:12px;color:var(--text2);font-family:var(--mono)}
+  .error-banner{background:var(--danger-bg);border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius);padding:9px 12px;font-size:12px;display:none;margin:10px 14px 0}
 </style>
 </head>
 <body>
@@ -276,58 +135,74 @@
 </div>
 
 <div id="app">
-
-  <!-- TOP BAR -->
   <div id="topbar">
     <div id="topbar-left">
-      <button id="back-btn" title="Back to list">←</button>
+      <button id="back-btn" title="Back to list">&#8592;</button>
       <div id="topbar-title">Workbook Documentation</div>
     </div>
     <div id="topbar-right">
       <span id="status-pill">Ready</span>
-      <button class="btn btn-ghost btn-sm" id="btn-settings" title="Settings">⚙</button>
+      <button class="btn btn-ghost btn-sm" id="btn-settings" title="Settings">&#9881;</button>
     </div>
   </div>
 
-  <!-- ── LIST VIEW ── -->
+  <!-- LIST VIEW -->
   <div id="view-list" class="view active">
     <div id="search-bar">
       <input id="search-input" type="text" placeholder="Search workbooks…" autocomplete="off" />
       <select id="sort-select">
-        <option value="name">Name A–Z</option>
-        <option value="name-desc">Name Z–A</option>
+        <option value="name">Name A&#8211;Z</option>
+        <option value="name-desc">Name Z&#8211;A</option>
         <option value="project">Project</option>
         <option value="updated">Last Modified</option>
         <option value="doc">Documented first</option>
       </select>
     </div>
     <div class="error-banner" id="list-error"></div>
-    <div id="list-scroll">
-      <div id="list-empty">No workbooks found.</div>
-    </div>
+    <div id="list-scroll"><div id="list-empty">No workbooks found.</div></div>
   </div>
 
-  <!-- ── DETAIL VIEW ── -->
+  <!-- DETAIL VIEW -->
   <div id="view-detail" class="view">
-    <div class="error-banner" id="detail-error"></div>
-    <div id="detail-scroll">
-      <div id="detail-identity">
-        <div>
-          <div id="detail-wb-name">—</div>
-          <div id="detail-wb-meta">—</div>
+    <div id="detail-tabs">
+      <button class="tab-btn active" id="tab-doc"     onclick="switchTab('doc')">Documentation</button>
+      <button class="tab-btn"        id="tab-lineage" onclick="switchTab('lineage')">Lineage</button>
+    </div>
+
+    <!-- Documentation tab -->
+    <div id="panel-doc" class="tab-panel active">
+      <div class="error-banner" id="detail-error"></div>
+      <div id="detail-doc-scroll">
+        <div id="detail-identity">
+          <div>
+            <div id="detail-wb-name">&#8212;</div>
+            <div id="detail-wb-meta">&#8212;</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-edit">Edit</button>
         </div>
-        <button class="btn btn-primary btn-sm" id="btn-edit">Edit</button>
+        <div id="detail-undocumented">No documentation yet. Click Edit to add some.</div>
+        <div id="detail-body"></div>
       </div>
-      <div id="detail-undocumented">No documentation yet. Click Edit to add some.</div>
-      <div id="detail-body"></div>
+    </div>
+
+    <!-- Lineage tab -->
+    <div id="panel-lineage" class="tab-panel">
+      <div id="lineage-toolbar">
+        <span id="lineage-hint">Data flow from source to workbook</span>
+        <button class="btn btn-ghost btn-sm" id="btn-lineage-reset" style="display:none" onclick="resetHiddenNodes()">&#8635; Reset</button>
+      </div>
+      <div id="lineage-scroll">
+        <div id="lineage-loading"><div class="spinner"></div><span>Loading lineage&#8230;</span></div>
+        <div id="lineage-empty">No lineage data available.</div>
+        <div id="lineage-chart"></div>
+      </div>
     </div>
   </div>
 
-  <!-- ── EDIT VIEW ── -->
+  <!-- EDIT VIEW -->
   <div id="view-edit" class="view">
     <div class="error-banner" id="edit-error"></div>
     <div id="edit-scroll">
-
       <div class="edit-section">
         <div class="edit-section-label">Documentation</div>
         <div class="field-group">
@@ -343,7 +218,6 @@
           <textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea>
         </div>
       </div>
-
       <div class="edit-section">
         <div class="edit-section-label">Ownership</div>
         <div class="field-group">
@@ -351,72 +225,62 @@
           <input type="date" id="f-reviewed" />
         </div>
       </div>
-
       <div class="edit-section">
         <div class="edit-section-label">Tags</div>
         <div id="tags-container" onclick="document.getElementById('tag-input').focus()">
-          <input id="tag-input" type="text" placeholder="Add a tag, press Enter…" autocomplete="off" />
+          <input id="tag-input" type="text" placeholder="Add a tag, press Enter&#8230;" autocomplete="off" />
         </div>
       </div>
-
       <div class="edit-section">
         <div class="edit-section-label">Change Log</div>
         <div id="edit-changelog-list"></div>
         <div id="new-log-row">
           <input type="date" id="new-log-date" />
-          <textarea id="new-log-note" placeholder="Describe the change… (Enter to add)"></textarea>
+          <textarea id="new-log-note" placeholder="Describe the change&#8230; (Enter to add)"></textarea>
           <button class="btn btn-ghost btn-sm" id="btn-add-log" style="flex-shrink:0;align-self:flex-start">+ Add</button>
         </div>
       </div>
-
       <div style="display:flex;gap:8px;justify-content:flex-end;padding-bottom:4px">
         <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
         <button class="btn btn-primary" id="btn-save">Save Documentation</button>
       </div>
-
     </div>
   </div>
+</div>
 
-</div><!-- /app -->
-
-<!-- Config popup (rendered when ?config=1) -->
 <script>
-// ── Config popup mode ─────────────────────────────────────────────
+// ── CONFIG POPUP ──────────────────────────────────────────────────────────────
 if (new URLSearchParams(window.location.search).get('config') === '1') {
-  document.body.innerHTML = `
-    <style>
-      body { background:#0f1117; color:#e8eaf6; font-family:Inter,system-ui,sans-serif;
-             padding:24px; font-size:13px; }
-      h2   { font-size:14px; font-weight:600; margin-bottom:16px; }
-      label { display:block; font-size:11px; color:#7b82a8; margin-bottom:4px; font-weight:500; }
-      input { width:100%; background:#1a1d27; border:1px solid #2e3352; border-radius:6px;
-              color:#e8eaf6; padding:7px 10px; font-size:12px; margin-bottom:6px; }
-      input:focus { outline:none; border-color:#4f7cff; }
-      p.hint { font-size:11px; color:#7b82a8; line-height:1.4; margin-bottom:16px; }
-      .row  { display:flex; gap:8px; justify-content:flex-end; }
-      .btn  { padding:6px 16px; border-radius:6px; font-size:12px; font-weight:500;
-              cursor:pointer; border:1px solid transparent; font-family:inherit; }
-      .btn-primary { background:#4f7cff; color:#fff; }
-      .btn-ghost   { background:transparent; color:#7b82a8; border-color:#2e3352; }
-    </style>
-    <h2>Extension Settings</h2>
-    <label>Power Automate Flow URL</label>
-    <input id="cfg-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-    <p class="hint">Paste the HTTP POST trigger URL from your Power Automate flow.<br>
-    This single flow handles both loading (action: "get") and saving (action: "save") documentation.</p>
-    <div class="row">
-      <button class="btn btn-ghost" id="cfg-cancel">Cancel</button>
-      <button class="btn btn-primary" id="cfg-save">Save Settings</button>
-    </div>
-  `;
-  tableau.extensions.initializeDialogAsync().then(() => {
-    const s = tableau.extensions.settings.getAll();
+  document.body.innerHTML = [
+    '<style>',
+    'body{background:#0f1117;color:#e8eaf6;font-family:Inter,system-ui,sans-serif;padding:24px;font-size:13px}',
+    'h2{font-size:14px;font-weight:600;margin-bottom:16px}',
+    'label{display:block;font-size:11px;color:#7b82a8;margin-bottom:4px;font-weight:500}',
+    'input{width:100%;background:#1a1d27;border:1px solid #2e3352;border-radius:6px;color:#e8eaf6;padding:7px 10px;font-size:12px;margin-bottom:6px}',
+    'input:focus{outline:none;border-color:#4f7cff}',
+    'p.hint{font-size:11px;color:#7b82a8;line-height:1.4;margin-bottom:16px}',
+    '.row{display:flex;gap:8px;justify-content:flex-end}',
+    '.btn{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;font-family:inherit}',
+    '.btn-primary{background:#4f7cff;color:#fff}',
+    '.btn-ghost{background:transparent;color:#7b82a8;border-color:#2e3352}',
+    '</style>',
+    '<h2>Extension Settings</h2>',
+    '<label>Power Automate Flow URL</label>',
+    '<input id="cfg-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/&#8230;" />',
+    '<p class="hint">Single flow that handles load, save, list, and lineage via the action field.</p>',
+    '<div class="row">',
+    '<button class="btn btn-ghost" id="cfg-cancel">Cancel</button>',
+    '<button class="btn btn-primary" id="cfg-save">Save Settings</button>',
+    '</div>',
+  ].join('');
+  tableau.extensions.initializeDialogAsync().then(function() {
+    var s = tableau.extensions.settings.getAll();
     document.getElementById('cfg-url').value = s.flowUrl || '';
-    document.getElementById('cfg-save').addEventListener('click', () => {
+    document.getElementById('cfg-save').addEventListener('click', function() {
       tableau.extensions.settings.set('flowUrl', document.getElementById('cfg-url').value.trim());
-      tableau.extensions.settings.saveAsync().then(() => tableau.extensions.ui.closeDialog('saved'));
+      tableau.extensions.settings.saveAsync().then(function() { tableau.extensions.ui.closeDialog('saved'); });
     });
-    document.getElementById('cfg-cancel').addEventListener('click', () => {
+    document.getElementById('cfg-cancel').addEventListener('click', function() {
       tableau.extensions.ui.closeDialog('cancelled');
     });
   });
@@ -426,76 +290,93 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 <script>
 (function () {
   'use strict';
-
   if (new URLSearchParams(window.location.search).get('config') === '1') return;
 
-  // ── State ───────────────────────────────────────────────────────
-  let flowUrl    = '';
-  let workbooks  = [];       // [{luid, name, project, owner, updated}]
-  let docCache   = {};       // luid → doc object (null = no doc)
-  let activeWb   = null;     // currently selected workbook object
-  let editDoc    = {};       // doc being edited
-  let editTags   = [];
-  let editLog    = [];
+  // ── State ──────────────────────────────────────────────────────────────────
+  var flowUrl        = '';
+  var workbooks      = [];
+  var docCache       = {};
+  var lineageCache   = {};
+  var activeWb       = null;
+  var editTags       = [];
+  var editLog        = [];
+  var hiddenNodes    = new Set();
+  var currentGraph   = null;
 
-  // ── DOM ─────────────────────────────────────────────────────────
-  const $ = id => document.getElementById(id);
+  // ── DOM helper ─────────────────────────────────────────────────────────────
+  function $(id) { return document.getElementById(id); }
 
-  // Views
   function showView(name) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    $(`view-${name}`).classList.add('active');
-    const inDetail = name !== 'list';
-    $('back-btn').style.display = inDetail ? 'inline-flex' : 'none';
-    if (name === 'list') {
-      $('topbar-title').textContent = 'Workbook Documentation';
+    document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+    $(('view-' + name)).classList.add('active');
+    $('back-btn').style.display = name !== 'list' ? 'inline-flex' : 'none';
+    if (name === 'list') $('topbar-title').textContent = 'Workbook Documentation';
+  }
+
+  window.switchTab = function(tab) {
+    ['doc','lineage'].forEach(function(t) {
+      $(('tab-' + t)).classList.toggle('active', t === tab);
+      $(('panel-' + t)).classList.toggle('active', t === tab);
+    });
+    if (tab === 'lineage' && activeWb) {
+      if (lineageCache[activeWb.luid]) {
+        renderLineageGraph(lineageCache[activeWb.luid]);
+      } else {
+        loadLineage(activeWb);
+      }
     }
-  }
+  };
 
-  // Status
-  function setStatus(msg, cls = '') {
-    const p = $('status-pill');
+  function setStatus(msg, cls) {
+    var p = $('status-pill');
     p.textContent = msg;
-    p.className   = cls;
+    p.className   = cls || '';
   }
 
-  function showError(bannerId, msg) {
-    const el = $(bannerId);
+  function showError(id, msg) {
+    var el = $(id);
     el.textContent   = msg;
     el.style.display = msg ? 'block' : 'none';
   }
 
-  // ── Flow ────────────────────────────────────────────────────────
-  async function callFlow(payload) {
-    const r = await fetch(flowUrl, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
-    });
-    if (!r.ok) throw new Error(`Flow returned ${r.status}`);
-    const text = await r.text();
-    try { return text ? JSON.parse(text) : {}; } catch { return {}; }
+  function escHtml(str) {
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── List rendering ───────────────────────────────────────────────
+  function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+  // ── Flow call ──────────────────────────────────────────────────────────────
+  async function callFlow(payload) {
+    var r = await fetch(flowUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('Flow returned ' + r.status);
+    var text = await r.text();
+    try { return text ? JSON.parse(text) : {}; } catch(e) { return {}; }
+  }
+
+  // ── List ───────────────────────────────────────────────────────────────────
   function filteredSorted() {
-    const q    = $('search-input').value.toLowerCase();
-    const sort = $('sort-select').value;
-    let list   = workbooks.filter(w =>
-      !q ||
-      (w.name        || '').toLowerCase().includes(q) ||
-      (w.project     || '').toLowerCase().includes(q) ||
-      (w.owner       || '').toLowerCase().includes(q) ||
-      (w.description || '').toLowerCase().includes(q)
-    );
-    list.sort((a, b) => {
+    var q    = $('search-input').value.toLowerCase();
+    var sort = $('sort-select').value;
+    var list = workbooks.filter(function(w) {
+      return !q ||
+        (w.name        || '').toLowerCase().includes(q) ||
+        (w.project     || '').toLowerCase().includes(q) ||
+        (w.owner       || '').toLowerCase().includes(q) ||
+        (w.description || '').toLowerCase().includes(q);
+    });
+    list.sort(function(a, b) {
       if (sort === 'name')      return (a.name    || '').localeCompare(b.name    || '');
       if (sort === 'name-desc') return (b.name    || '').localeCompare(a.name    || '');
       if (sort === 'project')   return (a.project || '').localeCompare(b.project || '');
       if (sort === 'updated')   return (b.updated || '').localeCompare(a.updated || '');
       if (sort === 'doc') {
-        const ad = docCache[a.luid] ? 1 : 0;
-        const bd = docCache[b.luid] ? 1 : 0;
+        var ad = docCache[a.luid] ? 1 : 0, bd = docCache[b.luid] ? 1 : 0;
         return bd - ad || (a.name || '').localeCompare(b.name || '');
       }
       return 0;
@@ -504,32 +385,31 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   function renderList() {
-    const scroll = $('list-scroll');
-    const empty  = $('list-empty');
-    const list   = filteredSorted();
-    scroll.querySelectorAll('.wb-row').forEach(r => r.remove());
+    var scroll = $('list-scroll');
+    var empty  = $('list-empty');
+    var list   = filteredSorted();
+    scroll.querySelectorAll('.wb-row').forEach(function(r) { r.remove(); });
     if (!list.length) { empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-    list.forEach(wb => {
-      const hasDoc = !!docCache[wb.luid];
-      const row = document.createElement('div');
-      row.className = 'wb-row';
+    list.forEach(function(wb) {
+      var hasDoc = !!docCache[wb.luid];
+      var row = document.createElement('div');
+      row.className    = 'wb-row';
       row.dataset.luid = wb.luid;
-      const metaParts = [
-        wb.parentProject && wb.parentProject !== wb.project && `${wb.parentProject}`,
-        wb.project       && `${wb.project}`,
-        wb.owner         && `${wb.owner}`,
-        wb.updated       && wb.updated.substring(0, 10),
-      ].filter(Boolean).join('  ·  ');
-      row.innerHTML = `
-        <div class="wb-row-main">
-          <div class="wb-row-name">${escHtml(wb.name || '—')}</div>
-          <div class="wb-row-meta">${escHtml(metaParts)}</div>
-        </div>
-        <span class="doc-badge ${hasDoc ? 'yes' : 'no'}">${hasDoc ? 'Documented' : 'No docs'}</span>
-        <span class="wb-row-arrow">›</span>
-      `;
-      row.addEventListener('click', () => openDetail(wb));
+      var metaParts = [
+        wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null,
+        wb.project || null,
+        wb.owner   || null,
+        wb.updated ? wb.updated.substring(0, 10) : null,
+      ].filter(Boolean).join('  \u00b7  ');
+      row.innerHTML =
+        '<div class="wb-row-main">' +
+          '<div class="wb-row-name">' + escHtml(wb.name || '\u2014') + '</div>' +
+          '<div class="wb-row-meta">' + escHtml(metaParts) + '</div>' +
+        '</div>' +
+        '<span class="doc-badge ' + (hasDoc ? 'yes' : 'no') + '">' + (hasDoc ? 'Documented' : 'No docs') + '</span>' +
+        '<span class="wb-row-arrow">\u203a</span>';
+      row.addEventListener('click', function() { openDetail(wb); });
       scroll.appendChild(row);
     });
   }
@@ -537,286 +417,497 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   $('search-input').addEventListener('input', renderList);
   $('sort-select').addEventListener('change', renderList);
 
-  // ── Detail view ─────────────────────────────────────────────────
+  // ── Detail ─────────────────────────────────────────────────────────────────
   async function openDetail(wb) {
-    activeWb = wb;
+    activeWb     = wb;
+    hiddenNodes  = new Set();
+    currentGraph = null;
     showView('detail');
+    switchTab('doc');
     showError('detail-error', '');
     $('topbar-title').textContent = wb.name || 'Workbook';
 
-    // Header
-    $('detail-wb-name').textContent = wb.name || '—';
-    $('detail-wb-meta').innerHTML   = [
-      wb.parentProject && wb.parentProject !== wb.project && `Parent Project: <b>${escHtml(wb.parentProject)}</b>`,
-      wb.project       && `Project: <b>${escHtml(wb.project)}</b>`,
-      wb.owner         && `Owner: <b>${escHtml(wb.owner)}</b>`,
-      wb.ownerEmail    && `Email: <b><a href="mailto:${escHtml(wb.ownerEmail)}" style="color:var(--accent)">${escHtml(wb.ownerEmail)}</a></b>`,
-      wb.updated       && `Updated: <b>${wb.updated.substring(0, 10)}</b>`,
-      wb.description   && `<span style="color:var(--text);font-family:var(--sans)">${escHtml(wb.description)}</span>`,
+    $('detail-wb-name').textContent = wb.name || '\u2014';
+    $('detail-wb-meta').innerHTML = [
+      (wb.parentProject && wb.parentProject !== wb.project) ? 'Parent Project: <b>' + escHtml(wb.parentProject) + '</b>' : null,
+      wb.project    ? 'Project: <b>' + escHtml(wb.project) + '</b>' : null,
+      wb.owner      ? 'Owner: <b>' + escHtml(wb.owner) + '</b>' : null,
+      wb.ownerEmail ? 'Email: <b><a href="mailto:' + escHtml(wb.ownerEmail) + '" style="color:var(--accent)">' + escHtml(wb.ownerEmail) + '</a></b>' : null,
+      wb.updated    ? 'Updated: <b>' + wb.updated.substring(0,10) + '</b>' : null,
+      wb.description ? '<span style="color:var(--text);font-family:var(--sans)">' + escHtml(wb.description) + '</span>' : null,
     ].filter(Boolean).join('<br>');
 
-    // Load doc if not cached
     if (!(wb.luid in docCache)) {
-      setStatus('Loading…');
+      setStatus('Loading\u2026');
       try {
-        const res    = await callFlow({ action: 'get', luid: wb.luid });
+        var res = await callFlow({ action: 'get', luid: wb.luid });
         docCache[wb.luid] = (res && res.doc) ? res.doc : null;
         setStatus('Ready');
-      } catch (e) {
-        showError('detail-error', `Could not load documentation: ${e.message}`);
+      } catch(e) {
+        showError('detail-error', 'Could not load documentation: ' + e.message);
         setStatus('Error', 'error');
         docCache[wb.luid] = null;
       }
     }
-
     renderDetail(docCache[wb.luid]);
   }
 
   function renderDetail(doc) {
-    const body        = $('detail-body');
-    const undocumented = $('detail-undocumented');
-    body.innerHTML    = '';
-
-    if (!doc) {
-      undocumented.style.display = 'block';
-      return;
-    }
+    var body         = $('detail-body');
+    var undocumented = $('detail-undocumented');
+    body.innerHTML   = '';
+    if (!doc) { undocumented.style.display = 'block'; return; }
     undocumented.style.display = 'none';
 
     function section(label, fields) {
-      const sec = document.createElement('div');
+      var sec = document.createElement('div');
       sec.className = 'detail-section';
-      sec.innerHTML = `<div class="detail-section-label">${label}</div>`;
-      fields.forEach(([lbl, val, type]) => {
+      sec.innerHTML = '<div class="detail-section-label">' + label + '</div>';
+      fields.forEach(function(f) {
+        var lbl = f[0], val = f[1], type = f[2];
         if (!val && !Array.isArray(val)) return;
-        const d = document.createElement('div');
+        var d = document.createElement('div');
         d.className = 'detail-field';
         if (type === 'tags') {
-          const chips = (val || []).map(t =>
-            `<span class="tag-chip">${escHtml(t)}</span>`
-          ).join('');
-          d.innerHTML = `<div class="detail-field-label">${lbl}</div><div>${chips || '<span class="detail-field-empty">None</span>'}</div>`;
+          var chips = (val || []).map(function(t) { return '<span class="tag-chip">' + escHtml(t) + '</span>'; }).join('');
+          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div><div>' + (chips || '<span class="detail-field-empty">None</span>') + '</div>';
         } else if (type === 'log') {
-          const entries = (val || []);
-          if (!entries.length) return;
-          const rows = [...entries].reverse().map(e =>
-            `<div class="log-entry">
-               <span class="log-date">${escHtml(e.date || '—')}</span>
-               <span class="log-note">${escHtml(e.note || '')}</span>
-             </div>`
-          ).join('');
-          d.innerHTML = `<div class="detail-field-label">${lbl}</div>${rows}`;
+          if (!(val || []).length) return;
+          var rows = [].concat(val).reverse().map(function(e) {
+            return '<div class="log-entry"><span class="log-date">' + escHtml(e.date || '\u2014') + '</span><span class="log-note">' + escHtml(e.note || '') + '</span></div>';
+          }).join('');
+          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div>' + rows;
         } else {
-          d.innerHTML = `<div class="detail-field-label">${lbl}</div>
-            <div class="detail-field-value">${val ? escHtml(val) : '<span class="detail-field-empty">—</span>'}</div>`;
+          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div>' +
+            '<div class="detail-field-value">' + (val ? escHtml(val) : '<span class="detail-field-empty">\u2014</span>') + '</div>';
         }
         sec.appendChild(d);
       });
-      // Only append if has visible fields
       if (sec.querySelectorAll('.detail-field').length) body.appendChild(sec);
     }
 
     section('Documentation', [
-      ['Intended Audience',          doc.audience, 'text'],
-      ['Key Metrics / Fields',       doc.metrics,  'text'],
-      ['Known Limitations / Caveats',doc.caveats,  'text'],
+      ['Intended Audience',           doc.audience, 'text'],
+      ['Key Metrics / Fields',        doc.metrics,  'text'],
+      ['Known Limitations / Caveats', doc.caveats,  'text'],
     ]);
-    section('Ownership', [
-      ['Last Reviewed', doc.reviewed, 'text'],
-    ]);
-    section('Tags',       [['Tags',        doc.tags,      'tags']]);
-    section('Change Log', [['Change Log',  doc.changelog, 'log']]);
-
-    if (!body.children.length) {
-      undocumented.style.display = 'block';
-    }
+    section('Ownership',  [['Last Reviewed', doc.reviewed, 'text']]);
+    section('Tags',       [['Tags',          doc.tags,     'tags']]);
+    section('Change Log', [['Change Log',    doc.changelog,'log']]);
+    if (!body.children.length) undocumented.style.display = 'block';
   }
 
-  // ── Edit view ────────────────────────────────────────────────────
+  // ── Edit ───────────────────────────────────────────────────────────────────
   function openEdit() {
-    const doc  = docCache[activeWb.luid] || {};
-    editDoc    = { ...doc };
-    editTags   = [...(doc.tags      || [])];
-    editLog    = [...(doc.changelog || [])];
-
-    $('f-audience').value = doc.audience || '';
-    $('f-metrics').value  = doc.metrics  || '';
-    $('f-caveats').value  = doc.caveats  || '';
-    $('f-reviewed').value = doc.reviewed || '';
+    var doc = docCache[activeWb.luid] || {};
+    editTags = [].concat(doc.tags      || []);
+    editLog  = [].concat(doc.changelog || []);
+    $('f-audience').value   = doc.audience || '';
+    $('f-metrics').value    = doc.metrics  || '';
+    $('f-caveats').value    = doc.caveats  || '';
+    $('f-reviewed').value   = doc.reviewed || '';
     $('new-log-date').value = todayISO();
     $('new-log-note').value = '';
-
-    renderEditTags();
-    renderEditLog();
+    renderEditTags(); renderEditLog();
     showView('edit');
-    $('topbar-title').textContent = `Editing: ${activeWb.name || ''}`;
+    $('topbar-title').textContent = 'Editing: ' + (activeWb.name || '');
     showError('edit-error', '');
   }
-
   $('btn-edit').addEventListener('click', openEdit);
 
-  // tags
   function renderEditTags() {
-    const container = $('tags-container');
-    container.querySelectorAll('.tag-chip').forEach(c => c.remove());
-    const input = $('tag-input');
-    editTags.forEach((tag, i) => {
-      const chip = document.createElement('span');
+    var container = $('tags-container');
+    container.querySelectorAll('.tag-chip').forEach(function(c) { c.remove(); });
+    var input = $('tag-input');
+    editTags.forEach(function(tag, i) {
+      var chip = document.createElement('span');
       chip.className = 'tag-chip';
-      chip.innerHTML = `${escHtml(tag)}<button data-i="${i}" title="Remove">×</button>`;
-      chip.querySelector('button').addEventListener('click', () => {
-        editTags.splice(i, 1); renderEditTags();
-      });
+      chip.innerHTML = escHtml(tag) + '<button title="Remove">\u00d7</button>';
+      chip.querySelector('button').addEventListener('click', function() { editTags.splice(i,1); renderEditTags(); });
       container.insertBefore(chip, input);
     });
   }
 
-  $('tag-input').addEventListener('keydown', e => {
-    const val = e.target.value.trim();
+  $('tag-input').addEventListener('keydown', function(e) {
+    var val = e.target.value.trim();
     if ((e.key === 'Enter' || e.key === ',') && val) {
       e.preventDefault();
       if (!editTags.includes(val)) editTags.push(val);
-      e.target.value = '';
-      renderEditTags();
+      e.target.value = ''; renderEditTags();
     }
-    if (e.key === 'Backspace' && !val && editTags.length) {
-      editTags.pop(); renderEditTags();
-    }
+    if (e.key === 'Backspace' && !val && editTags.length) { editTags.pop(); renderEditTags(); }
   });
 
-  // changelog edit
   function renderEditLog() {
-    const list = $('edit-changelog-list');
+    var list = $('edit-changelog-list');
     list.innerHTML = '';
     if (!editLog.length) {
       list.innerHTML = '<div style="font-size:12px;color:var(--text2);font-style:italic;margin-bottom:8px">No entries yet.</div>';
       return;
     }
-    [...editLog].reverse().forEach((entry, ri) => {
-      const realIdx = editLog.length - 1 - ri;
-      const row = document.createElement('div');
-      row.className = 'log-entry';
-      row.style.marginBottom = '4px';
-      row.innerHTML = `
-        <span class="log-date">${escHtml(entry.date || '—')}</span>
-        <span class="log-note">${escHtml(entry.note)}</span>
-        <button class="log-delete" data-i="${realIdx}" title="Remove">×</button>
-      `;
-      row.querySelector('.log-delete').addEventListener('click', () => {
-        editLog.splice(realIdx, 1); renderEditLog();
-      });
+    [].concat(editLog).reverse().forEach(function(entry, ri) {
+      var realIdx = editLog.length - 1 - ri;
+      var row = document.createElement('div');
+      row.className = 'log-entry'; row.style.marginBottom = '4px';
+      row.innerHTML = '<span class="log-date">' + escHtml(entry.date || '\u2014') + '</span>' +
+        '<span class="log-note">' + escHtml(entry.note) + '</span>' +
+        '<button class="log-delete" title="Remove">\u00d7</button>';
+      row.querySelector('.log-delete').addEventListener('click', function() { editLog.splice(realIdx,1); renderEditLog(); });
       list.appendChild(row);
     });
   }
 
-  $('btn-add-log').addEventListener('click', () => {
-    const date = $('new-log-date').value;
-    const note = $('new-log-note').value.trim();
+  $('btn-add-log').addEventListener('click', function() {
+    var note = $('new-log-note').value.trim();
     if (!note) { $('new-log-note').focus(); return; }
-    editLog.push({ date, note });
+    editLog.push({ date: $('new-log-date').value, note: note });
     renderEditLog();
-    $('new-log-note').value  = '';
-    $('new-log-date').value  = todayISO();
+    $('new-log-note').value = ''; $('new-log-date').value = todayISO();
   });
 
-  $('new-log-note').addEventListener('keydown', e => {
+  $('new-log-note').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); }
   });
 
-  // save
-  $('btn-save').addEventListener('click', async () => {
+  $('btn-save').addEventListener('click', async function() {
     if (!flowUrl) { showError('edit-error', 'Flow URL not configured.'); return; }
-    setStatus('Saving…', 'saving');
+    setStatus('Saving\u2026', 'saving');
     $('btn-save').disabled = true;
     showError('edit-error', '');
-    const doc = {
-      luid:      activeWb.luid,
-      name:      activeWb.name,
-      project:   activeWb.project,
-      owner:     activeWb.owner,
-      updatedAt: activeWb.updated,
-      audience:  $('f-audience').value.trim(),
-      metrics:   $('f-metrics').value.trim(),
-      caveats:   $('f-caveats').value.trim(),
-      reviewed:  $('f-reviewed').value,
-      tags:      editTags,
-      changelog: editLog,
-      savedAt:   new Date().toISOString(),
+    var doc = {
+      luid: activeWb.luid, name: activeWb.name, project: activeWb.project,
+      owner: activeWb.owner, updatedAt: activeWb.updated,
+      audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(),
+      caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value,
+      tags: editTags, changelog: editLog, savedAt: new Date().toISOString(),
     };
     try {
-      await callFlow({ action: 'save', luid: activeWb.luid, doc });
+      await callFlow({ action: 'save', luid: activeWb.luid, doc: doc });
       docCache[activeWb.luid] = doc;
-      // Update badge in list
-      renderList();
-      setStatus('Saved', 'saved');
-      setTimeout(() => setStatus('Ready'), 2500);
-      // Go back to detail
-      renderDetail(doc);
-      showView('detail');
+      renderList(); setStatus('Saved', 'saved');
+      setTimeout(function() { setStatus('Ready'); }, 2500);
+      renderDetail(doc); showView('detail');
       $('topbar-title').textContent = activeWb.name || 'Workbook';
-    } catch (e) {
-      showError('edit-error', `Save failed: ${e.message}`);
+    } catch(e) {
+      showError('edit-error', 'Save failed: ' + e.message);
       setStatus('Save failed', 'error');
-    } finally {
-      $('btn-save').disabled = false;
-    }
+    } finally { $('btn-save').disabled = false; }
   });
 
-  // cancel
-  $('btn-cancel').addEventListener('click', () => {
-    showView('detail');
-    $('topbar-title').textContent = activeWb.name || 'Workbook';
+  $('btn-cancel').addEventListener('click', function() {
+    showView('detail'); $('topbar-title').textContent = activeWb.name || 'Workbook';
   });
 
-  // back button
-  $('back-btn').addEventListener('click', () => {
-    const current = document.querySelector('.view.active').id;
-    if (current === 'view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name || 'Workbook'; }
-    if (current === 'view-detail') { showView('list');   activeWb = null; }
+  $('back-btn').addEventListener('click', function() {
+    var cur = document.querySelector('.view.active').id;
+    if (cur === 'view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name || 'Workbook'; }
+    if (cur === 'view-detail') { showView('list'); activeWb = null; }
   });
 
-  // settings
-  $('btn-settings').addEventListener('click', () => {
-    const popup = `${window.location.origin}${window.location.pathname}?config=1`;
+  $('btn-settings').addEventListener('click', function() {
+    var popup = window.location.origin + window.location.pathname + '?config=1';
     tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 })
-      .then(() => { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
-      .catch(() => {});
+      .then(function() { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
+      .catch(function() {});
   });
 
-  // ── Helpers ──────────────────────────────────────────────────────
-  function todayISO() { return new Date().toISOString().split('T')[0]; }
-  function escHtml(str) {
-    return String(str || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // ── LINEAGE ────────────────────────────────────────────────────────────────
+
+  async function loadLineage(wb) {
+    var chart   = $('lineage-chart');
+    var loading = $('lineage-loading');
+    var empty   = $('lineage-empty');
+    chart.innerHTML       = '';
+    empty.style.display   = 'none';
+    loading.style.display = 'flex';
+    try {
+      var res = await callFlow({ action: 'lineage', luid: wb.luid });
+      loading.style.display = 'none';
+      if (res && res.graph) {
+        lineageCache[wb.luid] = res.graph;
+        currentGraph = res.graph;
+        renderLineageGraph(res.graph);
+      } else {
+        empty.style.display = 'block';
+      }
+    } catch(e) {
+      loading.style.display = 'none';
+      empty.textContent   = 'Could not load lineage: ' + e.message;
+      empty.style.display = 'block';
+    }
   }
 
-  // ── Init ─────────────────────────────────────────────────────────
-  tableau.extensions.initializeAsync({ configure }).then(async () => {
-    const settings = tableau.extensions.settings.getAll();
+  window.resetHiddenNodes = function() {
+    hiddenNodes = new Set();
+    $('lineage-chart').innerHTML = '';
+    $('btn-lineage-reset').style.display = 'none';
+    if (currentGraph) renderLineageGraph(currentGraph);
+  };
+
+  function hideNode(id) {
+    hiddenNodes.add(id);
+    if (!currentGraph) return;
+    var allEdges     = currentGraph.edges || [];
+    var protectedIds = new Set([currentGraph.workbook.luid].concat(
+      (currentGraph.extra_workbooks || []).map(function(w) { return w.luid; })
+    ));
+    var changed = true;
+    while (changed) {
+      changed = false;
+      var allIds = []
+        .concat((currentGraph.tables      || []).map(function(t) { return t.key; }))
+        .concat((currentGraph.datasources || []).map(function(d) { return d.luid || d.name; }))
+        .concat((currentGraph.flows       || []).map(function(f) { return f.luid || f.name; }));
+      allIds.forEach(function(nid) {
+        if (hiddenNodes.has(nid) || protectedIds.has(nid)) return;
+        var hasDown = allEdges.some(function(e) { return e.from === nid && !hiddenNodes.has(e.to); });
+        if (!hasDown) { hiddenNodes.add(nid); changed = true; }
+      });
+    }
+    $('lineage-chart').innerHTML = '';
+    renderLineageGraph(currentGraph);
+    $('btn-lineage-reset').style.display = hiddenNodes.size ? '' : 'none';
+  }
+
+  function renderLineageGraph(graph) {
+    currentGraph = graph;
+    var container = $('lineage-chart');
+    container.innerHTML = '';
+    $('lineage-empty').style.display = 'none';
+
+    var NODE_W = 180, NODE_H = 44, NODE_W_HERO = 220, NODE_H_HERO = 56;
+    var COL_GAP = 80, ROW_GAP = 16, PAD = 20;
+
+    var edges = (graph.edges || []).filter(function(e) {
+      return !hiddenNodes.has(e.from) && !hiddenNodes.has(e.to);
+    });
+    var nodeMap = {};
+
+    // Register nodes
+    (graph.tables || []).filter(function(t) { return !hiddenNodes.has(t.key); }).forEach(function(t) {
+      var label = t.is_vc
+        ? (t.db + ' \u203a ' + t.name)
+        : [t.db, t.schema, t.name].filter(function(s) { return s && s !== 'Virtual Connection'; }).join('.');
+      nodeMap[t.key] = { id: t.key, label: label, type: t.is_vc ? 'vc_table' : 'table', col: 0, luid: t.vc_luid || null };
+    });
+    (graph.flows || []).filter(function(f) { return !hiddenNodes.has(f.luid || f.name); }).forEach(function(f) {
+      nodeMap[f.luid || f.name] = { id: f.luid || f.name, label: f.name, type: 'flow', col: 1, luid: f.luid };
+    });
+    (graph.datasources || []).filter(function(d) { return !hiddenNodes.has(d.luid || d.name); }).forEach(function(d) {
+      nodeMap[d.luid || d.name] = { id: d.luid || d.name, label: d.name, type: 'datasource', col: 1, luid: d.luid };
+    });
+
+    var wbLuid   = graph.workbook.luid;
+    var heroLuid = graph.hero_luid || wbLuid;
+    var heroType = graph.hero_type || 'workbook';
+    nodeMap[wbLuid] = { id: wbLuid, label: graph.workbook.name, type: 'workbook', col: 0, luid: wbLuid };
+    (graph.extra_workbooks || []).forEach(function(wb) {
+      var wbId = wb.luid || wb.name;
+      if (wbId && !nodeMap[wbId]) nodeMap[wbId] = { id: wbId, label: wb.name, type: 'workbook', col: 0, luid: wb.luid };
+    });
+
+    // Column assignment
+    Object.values(nodeMap).forEach(function(n) {
+      n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.type === 'workbook' ? 0 : 1;
+    });
+
+    var changed = true, iterations = 0;
+    while (changed && iterations < 200) {
+      changed = false; iterations++;
+      edges.forEach(function(e) {
+        var src = nodeMap[e.from], dst = nodeMap[e.to];
+        if (!src || !dst || dst.type === 'workbook') return;
+        if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
+      });
+      var flowCols = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow'; }).map(function(n) { return n.col; }));
+      Object.values(nodeMap).forEach(function(n) {
+        if (n.type === 'datasource' && flowCols.has(n.col)) { n.col++; changed = true; }
+      });
+    }
+
+    edges.forEach(function(e) {
+      if (e.type !== 'flow_to_ds') return;
+      var flow = nodeMap[e.from], ds = nodeMap[e.to];
+      if (!flow || !ds) return;
+      if (ds.col !== flow.col + 1) ds.col = flow.col + 1;
+    });
+
+    changed = true; iterations = 0;
+    while (changed && iterations < 50) {
+      changed = false; iterations++;
+      var fc2 = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow'; }).map(function(n) { return n.col; }));
+      Object.values(nodeMap).forEach(function(n) {
+        if (n.type === 'datasource' && fc2.has(n.col)) { n.col++; changed = true; }
+      });
+      edges.forEach(function(e) {
+        var src = nodeMap[e.from], dst = nodeMap[e.to];
+        if (!src || !dst || dst.type === 'workbook') return;
+        if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
+      });
+    }
+
+    var maxNonWb = Object.values(nodeMap).filter(function(n) { return n.type !== 'workbook'; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
+    Object.values(nodeMap).forEach(function(n) { if (n.type === 'workbook') n.col = maxNonWb + 1; });
+    var wbCol = maxNonWb + 1;
+
+    var wbDsIds = new Set(edges.filter(function(e) {
+      return e.to === wbLuid && nodeMap[e.from] && nodeMap[e.from].type === 'datasource';
+    }).map(function(e) { return e.from; }));
+    wbDsIds.forEach(function(id) { nodeMap[id].col = wbCol - 1; });
+    Object.values(nodeMap).forEach(function(n) {
+      if (n.type === 'flow' && n.id !== wbLuid && n.col >= wbCol - 1) n.col = wbCol - 2;
+    });
+    wbDsIds.forEach(function(id) { nodeMap[id].col = wbCol - 1; });
+
+    // Compact
+    var allVals  = Object.values(nodeMap);
+    var usedCols = Array.from(new Set(allVals.map(function(n) { return n.col; }))).sort(function(a,b) { return a-b; });
+    var colRemap = {};
+    usedCols.forEach(function(c, i) { colRemap[c] = i; });
+    allVals.forEach(function(n) { n.col = colRemap[n.col]; });
+    var maxCol = usedCols.length - 1;
+
+    var cols = [];
+    for (var ci = 0; ci <= maxCol; ci++) cols.push([]);
+    Object.values(nodeMap).forEach(function(n) { cols[n.col].push(n); });
+    var allNodes = Object.values(nodeMap);
+
+    // Positions
+    var colX = [PAD];
+    for (var i = 1; i <= maxCol; i++) colX[i] = colX[i-1] + NODE_W + COL_GAP;
+
+    cols.forEach(function(col, ci) {
+      col.forEach(function(n) {
+        var isHero = n.id === heroLuid && n.type === heroType;
+        n.w = isHero ? NODE_W_HERO : NODE_W;
+        n.h = isHero ? NODE_H_HERO : NODE_H;
+        n.x = colX[ci];
+      });
+      var yOff = PAD;
+      col.forEach(function(n) { n.y = yOff; yOff += n.h + ROW_GAP; });
+    });
+
+    var maxY   = Math.max.apply(null, allNodes.map(function(n) { return n.y + n.h; })) + PAD;
+    var maxX   = Math.max.apply(null, allNodes.map(function(n) { return n.x + n.w; })) + PAD;
+    var topPad = 40;
+
+    var colors = {
+      table:      { fill: 'rgba(139,148,158,.1)', stroke: '#30363d',             icon: '#8b949e' },
+      vc_table:   { fill: 'rgba(163,113,247,.1)', stroke: 'rgba(163,113,247,.4)', icon: '#a371f7' },
+      flow:       { fill: 'rgba(227,179,65,.1)',  stroke: 'rgba(227,179,65,.4)', icon: '#e3b341' },
+      datasource: { fill: 'rgba(46,160,67,.1)',   stroke: 'rgba(46,160,67,.4)',  icon: '#2ea043' },
+      workbook:   { fill: 'rgba(56,139,253,.1)',  stroke: 'rgba(56,139,253,.4)', icon: '#388bfd' },
+    };
+
+    function svgEl(tag, attrs, inner) {
+      var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.entries(attrs || {}).forEach(function(kv) { el.setAttribute(kv[0], kv[1]); });
+      if (inner !== undefined) el.innerHTML = inner;
+      return el;
+    }
+
+    var svg = svgEl('svg', {
+      width: maxX, height: maxY + topPad,
+      viewBox: '0 -' + topPad + ' ' + maxX + ' ' + (maxY + topPad),
+      style: 'font-family:Inter,system-ui,sans-serif;display:block;',
+    });
+
+    // Arrowhead
+    var defs   = svgEl('defs');
+    var marker = svgEl('marker', { id: 'arr', markerWidth: '8', markerHeight: '8', refX: '6', refY: '3', orient: 'auto' });
+    marker.appendChild(svgEl('path', { d: 'M0,0 L0,6 L8,3 z', fill: '#30363d' }));
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+
+    // Edges
+    var edgeGroup = svgEl('g');
+    edges.forEach(function(e) {
+      var src = nodeMap[e.from], dst = nodeMap[e.to];
+      if (!src || !dst) return;
+      var x1 = src.x + (src.w || NODE_W), y1 = src.y + (src.h || NODE_H) / 2;
+      var x2 = dst.x,                     y2 = dst.y + (dst.h || NODE_H) / 2;
+      var mx = (x1 + x2) / 2;
+      edgeGroup.appendChild(svgEl('path', {
+        d: 'M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2,
+        fill: 'none', stroke: '#30363d', 'stroke-width': '1.5',
+        'marker-end': 'url(#arr)', opacity: '0.7',
+      }));
+    });
+    svg.appendChild(edgeGroup);
+
+    // Nodes
+    allNodes.forEach(function(n) {
+      var c      = colors[n.type] || colors.table;
+      var isHero = n.id === heroLuid && n.type === heroType;
+      var nw = n.w || NODE_W, nh = n.h || NODE_H;
+      var g  = svgEl('g', { 'data-node-id': n.id });
+
+      g.appendChild(svgEl('rect', {
+        x: n.x, y: n.y, width: nw, height: nh, rx: 7,
+        fill: c.fill,
+        stroke: isHero ? c.icon : c.stroke,
+        'stroke-width': isHero ? '2' : '1',
+      }));
+
+      var badgeLabels = { table: 'TABLE', vc_table: 'VC', flow: 'FLOW', datasource: 'DS', workbook: 'WB' };
+      g.appendChild(svgEl('text', { x: n.x + 10, y: n.y + 14, fill: c.icon, 'font-size': '8', 'font-weight': '700', 'letter-spacing': '0.05em' }, badgeLabels[n.type] || ''));
+
+      var maxChars = isHero ? 24 : 20;
+      var label = n.label.length > maxChars ? n.label.slice(0, maxChars) + '\u2026' : n.label;
+      g.appendChild(svgEl('text', { x: n.x + 10, y: n.y + 29, fill: '#e6edf3', 'font-size': '11', 'font-weight': isHero ? '600' : '400' }, label));
+      g.appendChild(svgEl('title', {}, n.label));
+
+      // Hide button (non-hero, non-workbook)
+      if (!isHero && n.type !== 'workbook') {
+        var hb = svgEl('g', { style: 'cursor:pointer;opacity:0;transition:opacity .15s' });
+        var bx = n.x + nw - 18, by = n.y + 4;
+        hb.appendChild(svgEl('rect', { x: bx, y: by, width: 14, height: 14, rx: 3, fill: 'rgba(248,81,73,.15)', stroke: 'rgba(248,81,73,.4)', 'stroke-width': '1' }));
+        hb.appendChild(svgEl('text', { x: bx + 7, y: by + 10, fill: '#f85149', 'font-size': '10', 'text-anchor': 'middle', 'font-weight': '700' }, '\u00d7'));
+        hb.addEventListener('click', function(ev) { ev.stopPropagation(); hideNode(n.id); });
+        g.appendChild(hb);
+        g.addEventListener('mouseenter', function() { hb.style.opacity = '1'; });
+        g.addEventListener('mouseleave', function() { hb.style.opacity = '0'; });
+      }
+
+      svg.appendChild(g);
+    });
+
+    // Column headers
+    cols.forEach(function(col, ci) {
+      if (!col.length) return;
+      var types = Array.from(new Set(col.map(function(n) { return n.type; })));
+      var label = types.includes('workbook') ? 'Workbook' : types.includes('datasource') ? 'Datasource' : types.includes('flow') ? 'Flow' : 'Tables';
+      svg.insertBefore(svgEl('text', {
+        x: colX[ci] + NODE_W / 2, y: 10, fill: '#8b949e',
+        'font-size': '10', 'font-weight': '600', 'text-anchor': 'middle', 'letter-spacing': '0.05em',
+      }, label.toUpperCase()), svg.firstChild);
+    });
+
+    container.appendChild(svg);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  tableau.extensions.initializeAsync({ configure: configure }).then(async function() {
+    var settings = tableau.extensions.settings.getAll();
     flowUrl = settings.flowUrl || '';
 
     if (!flowUrl) {
-      showError('list-error', 'No Flow URL configured. Click ⚙ to add your Power Automate URL.');
+      showError('list-error', 'No Flow URL configured. Click \u2699 to add your Power Automate URL.');
       setStatus('Setup needed', 'error');
     }
 
-    // Read all workbooks from worksheet
     try {
-      const ws        = tableau.extensions.worksheetContent.worksheet;
-      const dataTable = await ws.getSummaryDataAsync();
-      const cols      = dataTable.columns;
-      const rows      = dataTable.data;
+      var ws        = tableau.extensions.worksheetContent.worksheet;
+      var dataTable = await ws.getSummaryDataAsync();
+      var cols      = dataTable.columns;
+      var rows      = dataTable.data;
 
       function colIdx(name) {
-        return cols.findIndex(c => c.fieldName.toLowerCase().includes(name.toLowerCase()));
+        return cols.findIndex(function(c) { return c.fieldName.toLowerCase().includes(name.toLowerCase()); });
       }
 
-      workbooks = rows.map(row => {
-        const get = name => {
-          const i = colIdx(name);
-          return (i >= 0 && row[i]) ? row[i].formattedValue : '';
-        };
+      workbooks = rows.map(function(row) {
+        function get(name) { var i = colIdx(name); return (i >= 0 && row[i]) ? row[i].formattedValue : ''; }
         return {
           luid:          get('luid') || get('id'),
           name:          get('name'),
@@ -827,54 +918,43 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           description:   get('description'),
           updated:       get('updated') || get('modified'),
         };
-      }).filter(w => w.luid || w.name);
+      }).filter(function(w) { return w.luid || w.name; });
 
-      // Deduplicate by luid
-      const seen = new Set();
-      workbooks = workbooks.filter(w => {
-        const key = w.luid || w.name;
+      var seen = new Set();
+      workbooks = workbooks.filter(function(w) {
+        var key = w.luid || w.name;
         if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
+        seen.add(key); return true;
       });
-
-    } catch (e) {
-      showError('list-error', `Could not read worksheet data: ${e.message}`);
+    } catch(e) {
+      showError('list-error', 'Could not read worksheet data: ' + e.message);
     }
 
-    // Bulk-load doc status (get all doc keys that exist) if flow is configured
-    // This lets us show Documented/No docs badges without fetching every doc
     if (flowUrl && workbooks.length) {
-      setStatus('Checking docs…');
+      setStatus('Checking docs\u2026');
       try {
-        const res = await callFlow({ action: 'list' });
-        const documented = new Set((res && res.luids) ? res.luids : []);
-        workbooks.forEach(w => {
-          if (documented.has(w.luid)) docCache[w.luid] = true; // truthy placeholder
-        });
+        var res = await callFlow({ action: 'list' });
+        var documented = new Set((res && res.luids) ? res.luids : []);
+        workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
         setStatus('Ready');
-      } catch {
-        // Non-fatal — badges just show "No docs" until individually loaded
-        setStatus('Ready');
-      }
+      } catch(e) { setStatus('Ready'); }
     }
 
     renderList();
-
-    const overlay = $('loading-overlay');
+    var overlay = $('loading-overlay');
     overlay.classList.add('hidden');
-    setTimeout(() => overlay.style.display = 'none', 300);
+    setTimeout(function() { overlay.style.display = 'none'; }, 300);
 
-  }).catch(e => {
+  }).catch(function(e) {
     $('loading-overlay').classList.add('hidden');
-    showError('list-error', `Extension failed to initialize: ${e.message}`);
+    showError('list-error', 'Extension failed to initialize: ' + e.message);
   });
 
   function configure() {
-    const popup = `${window.location.origin}${window.location.pathname}?config=1`;
+    var popup = window.location.origin + window.location.pathname + '?config=1';
     tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 })
-      .then(() => { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
-      .catch(() => {});
+      .then(function() { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
+      .catch(function() {});
   }
 
 })();
