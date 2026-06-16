@@ -346,15 +346,9 @@
 
       <div class="edit-section">
         <div class="edit-section-label">Ownership</div>
-        <div class="two-col">
-          <div class="field-group">
-            <div class="field-label">SME / Owner Contact</div>
-            <input type="text" id="f-sme" placeholder="Name or email" />
-          </div>
-          <div class="field-group">
-            <div class="field-label">Last Reviewed</div>
-            <input type="date" id="f-reviewed" />
-          </div>
+        <div class="field-group">
+          <div class="field-label">Last Reviewed</div>
+          <input type="date" id="f-reviewed" />
         </div>
       </div>
 
@@ -551,9 +545,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Header
     $('detail-wb-name').textContent = wb.name || '—';
     $('detail-wb-meta').innerHTML   = [
-      wb.project && `Project: <b>${escHtml(wb.project)}</b>`,
-      wb.owner   && `Owner: <b>${escHtml(wb.owner)}</b>`,
-      wb.updated && `Updated: <b>${wb.updated.substring(0, 10)}</b>`,
+      wb.project     && `Project: <b>${escHtml(wb.project)}</b>`,
+      wb.owner       && `Owner: <b>${escHtml(wb.owner)}</b>`,
+      wb.ownerEmail  && `Email: <b><a href="mailto:${escHtml(wb.ownerEmail)}" style="color:var(--accent)">${escHtml(wb.ownerEmail)}</a></b>`,
+      wb.updated     && `Updated: <b>${wb.updated.substring(0, 10)}</b>`,
+      wb.description && `<span style="color:var(--text);font-family:var(--sans)">${escHtml(wb.description)}</span>`,
     ].filter(Boolean).join('<br>');
 
     // Load doc if not cached
@@ -623,8 +619,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       ['Known Limitations / Caveats',doc.caveats,  'text'],
     ]);
     section('Ownership', [
-      ['SME / Owner Contact', doc.sme,      'text'],
-      ['Last Reviewed',       doc.reviewed, 'text'],
+      ['Last Reviewed', doc.reviewed, 'text'],
     ]);
     section('Tags',       [['Tags',        doc.tags,      'tags']]);
     section('Change Log', [['Change Log',  doc.changelog, 'log']]);
@@ -644,7 +639,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('f-audience').value = doc.audience || '';
     $('f-metrics').value  = doc.metrics  || '';
     $('f-caveats').value  = doc.caveats  || '';
-    $('f-sme').value      = doc.sme      || '';
     $('f-reviewed').value = doc.reviewed || '';
     $('new-log-date').value = todayISO();
     $('new-log-note').value = '';
@@ -741,7 +735,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       audience:  $('f-audience').value.trim(),
       metrics:   $('f-metrics').value.trim(),
       caveats:   $('f-caveats').value.trim(),
-      sme:       $('f-sme').value.trim(),
       reviewed:  $('f-reviewed').value,
       tags:      editTags,
       changelog: editLog,
@@ -822,11 +815,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           return (i >= 0 && row[i]) ? row[i].formattedValue : '';
         };
         return {
-          luid:    get('luid') || get('id'),
-          name:    get('name'),
-          project: get('project'),
-          owner:   get('owner'),
-          updated: get('updated') || get('modified'),
+          luid:        get('luid') || get('id'),
+          name:        get('name'),
+          project:     get('project'),
+          owner:       get('owner'),
+          ownerEmail:  get('email') || get('owner email'),
+          description: get('description'),
+          updated:     get('updated') || get('modified'),
         };
       }).filter(w => w.luid || w.name);
 
