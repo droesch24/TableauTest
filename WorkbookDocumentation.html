@@ -483,9 +483,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     const sort = $('sort-select').value;
     let list   = workbooks.filter(w =>
       !q ||
-      (w.name    || '').toLowerCase().includes(q) ||
-      (w.project || '').toLowerCase().includes(q) ||
-      (w.owner   || '').toLowerCase().includes(q)
+      (w.name        || '').toLowerCase().includes(q) ||
+      (w.project     || '').toLowerCase().includes(q) ||
+      (w.owner       || '').toLowerCase().includes(q) ||
+      (w.description || '').toLowerCase().includes(q)
     );
     list.sort((a, b) => {
       if (sort === 'name')      return (a.name    || '').localeCompare(b.name    || '');
