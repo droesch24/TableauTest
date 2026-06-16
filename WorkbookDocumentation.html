@@ -515,7 +515,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       row.className = 'wb-row';
       row.dataset.luid = wb.luid;
       const metaParts = [
-        wb.parentProject && `${wb.parentProject}`,
+        wb.parentProject && wb.parentProject !== wb.project && `${wb.parentProject}`,
         wb.project       && `${wb.project}`,
         wb.owner         && `${wb.owner}`,
         wb.updated       && wb.updated.substring(0, 10),
@@ -546,7 +546,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Header
     $('detail-wb-name').textContent = wb.name || '—';
     $('detail-wb-meta').innerHTML   = [
-      wb.parentProject && `Parent Project: <b>${escHtml(wb.parentProject)}</b>`,
+      wb.parentProject && wb.parentProject !== wb.project && `Parent Project: <b>${escHtml(wb.parentProject)}</b>`,
       wb.project       && `Project: <b>${escHtml(wb.project)}</b>`,
       wb.owner         && `Owner: <b>${escHtml(wb.owner)}</b>`,
       wb.ownerEmail    && `Email: <b><a href="mailto:${escHtml(wb.ownerEmail)}" style="color:var(--accent)">${escHtml(wb.ownerEmail)}</a></b>`,
