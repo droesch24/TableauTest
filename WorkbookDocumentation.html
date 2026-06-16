@@ -6,558 +6,669 @@
 <title>Workbook Documentation</title>
 <script src="tableau.extensions.1.latest.js"></script>
 <style>
-  /* ── Reset & base ─────────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #0f1117;
-    --surface:   #1a1d27;
-    --surface2:  #22263a;
-    --border:    #2e3352;
-    --accent:    #4f7cff;
-    --accent-dim:#2a3f80;
-    --success:   #22c55e;
-    --warn:      #f59e0b;
-    --danger:    #ef4444;
-    --text:      #e8eaf6;
-    --text2:     #7b82a8;
-    --mono:      'JetBrains Mono', 'Fira Mono', monospace;
-    --sans:      'Inter', system-ui, sans-serif;
-    --radius:    6px;
-    --transition: 150ms ease;
+    --bg:         #0f1117;
+    --surface:    #1a1d27;
+    --surface2:   #22263a;
+    --border:     #2e3352;
+    --accent:     #4f7cff;
+    --accent-dim: #2a3f80;
+    --success:    #22c55e;
+    --success-bg: #14532d;
+    --warn:       #f59e0b;
+    --danger:     #ef4444;
+    --danger-bg:  #450a0a;
+    --text:       #e8eaf6;
+    --text2:      #7b82a8;
+    --mono:       'JetBrains Mono', 'Fira Mono', monospace;
+    --sans:       'Inter', system-ui, sans-serif;
+    --radius:     6px;
+    --tr:         150ms ease;
   }
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    line-height: 1.5;
-  }
+  html, body { height: 100%; background: var(--bg); color: var(--text);
+               font-family: var(--sans); font-size: 13px; line-height: 1.5; }
 
-  /* ── Layout ───────────────────────────────────────────────────── */
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-  }
+  /* ── App shell ─────────────────────────────────────────────────── */
+  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-  /* ── Top bar ──────────────────────────────────────────────────── */
+  /* ── Top bar ───────────────────────────────────────────────────── */
   #topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    gap: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 14px; background: var(--surface);
+    border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 10px;
   }
-
-  #wb-identity {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
+  #topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  #back-btn {
+    display: none; background: none; border: none; color: var(--text2);
+    cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 4px;
+    border-radius: 4px; transition: color var(--tr);
   }
+  #back-btn:hover { color: var(--text); }
+  #topbar-title { font-size: 13px; font-weight: 600; color: var(--text);
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-  #wb-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  #wb-meta {
-    font-size: 11px;
-    color: var(--text2);
-    font-family: var(--mono);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  #topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  /* ── Status pill ──────────────────────────────────────────────── */
+  /* ── Status pill ───────────────────────────────────────────────── */
   #status-pill {
-    font-size: 11px;
-    font-family: var(--mono);
-    padding: 3px 8px;
-    border-radius: 20px;
-    background: var(--surface2);
-    color: var(--text2);
-    border: 1px solid var(--border);
-    transition: all var(--transition);
-    white-space: nowrap;
+    font-size: 11px; font-family: var(--mono); padding: 3px 8px;
+    border-radius: 20px; background: var(--surface2); color: var(--text2);
+    border: 1px solid var(--border); transition: all var(--tr); white-space: nowrap;
   }
   #status-pill.saving  { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  #status-pill.saved   { background: #14532d; color: var(--success); border-color: var(--success); }
-  #status-pill.error   { background: #450a0a; color: var(--danger); border-color: var(--danger); }
-  #status-pill.loading { background: var(--surface2); color: var(--text2); }
+  #status-pill.saved   { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+  #status-pill.error   { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger); }
 
-  /* ── Buttons ──────────────────────────────────────────────────── */
+  /* ── Buttons ───────────────────────────────────────────────────── */
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    border-radius: var(--radius);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all var(--transition);
-    white-space: nowrap;
-    font-family: var(--sans);
+    display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px;
+    border-radius: var(--radius); font-size: 12px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; transition: all var(--tr);
+    white-space: nowrap; font-family: var(--sans);
   }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
+  .btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary:hover:not(:disabled) { background: #6b8fff; }
-  .btn-ghost {
-    background: transparent;
-    color: var(--text2);
-    border-color: var(--border);
-  }
-  .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text2); }
+  .btn-ghost    { background: transparent; color: var(--text2); border-color: var(--border); }
+  .btn-ghost:hover:not(:disabled)   { color: var(--text); border-color: var(--text2); }
+  .btn-danger   { background: transparent; color: var(--danger); border-color: var(--danger); }
+  .btn-danger:hover:not(:disabled)  { background: var(--danger-bg); }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
 
-  /* ── Scroll area ──────────────────────────────────────────────── */
-  #scroll-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+  /* ── Views ─────────────────────────────────────────────────────── */
+  .view { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+  .view.active { display: flex; }
 
-  #scroll-area::-webkit-scrollbar { width: 5px; }
-  #scroll-area::-webkit-scrollbar-track { background: transparent; }
-  #scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  /* ── Section cards ────────────────────────────────────────────── */
-  .section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  /* ── LIST VIEW ─────────────────────────────────────────────────── */
+  #search-bar {
+    display: flex; gap: 8px; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-
-  .section-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text2);
+  #search-input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-family: var(--sans);
+    font-size: 12px; padding: 6px 10px;
   }
+  #search-input:focus { outline: none; border-color: var(--accent); }
+  #search-input::placeholder { color: var(--text2); opacity: 0.6; }
 
-  /* ── Form fields ──────────────────────────────────────────────── */
-  .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .field-label {
-    font-size: 11px;
-    color: var(--text2);
-    font-weight: 500;
-  }
-
-  textarea, input[type="text"], input[type="date"] {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 12px;
-    padding: 7px 10px;
-    resize: vertical;
-    transition: border-color var(--transition);
-    line-height: 1.5;
-  }
-  textarea:focus, input[type="text"]:focus, input[type="date"]:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  textarea::placeholder, input::placeholder { color: var(--text2); opacity: 0.6; }
-
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.5);
+  #sort-select {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text2); font-size: 12px; padding: 6px 8px; font-family: var(--sans);
     cursor: pointer;
   }
+  #sort-select:focus { outline: none; border-color: var(--accent); }
 
-  /* ── Two-column layout for short fields ──────────────────────── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  #list-scroll { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+  #list-scroll::-webkit-scrollbar { width: 4px; }
+  #list-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-  /* ── Tags ─────────────────────────────────────────────────────── */
-  #tags-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 6px 8px;
-    min-height: 36px;
-    cursor: text;
-    transition: border-color var(--transition);
+  .wb-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px;
+    cursor: pointer; transition: border-color var(--tr), background var(--tr);
   }
-  #tags-container:focus-within { border-color: var(--accent); }
+  .wb-row:hover { border-color: var(--accent); background: var(--surface2); }
+
+  .wb-row-main { flex: 1; min-width: 0; }
+  .wb-row-name { font-size: 13px; font-weight: 500; color: var(--text);
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wb-row-meta { font-size: 11px; color: var(--text2); margin-top: 2px;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .doc-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .doc-badge.yes { background: var(--success-bg); color: var(--success); }
+  .doc-badge.no  { background: var(--surface2);   color: var(--text2);   }
+
+  .wb-row-arrow { color: var(--text2); font-size: 14px; flex-shrink: 0; }
+
+  #list-empty { display: none; padding: 32px; text-align: center; color: var(--text2); font-size: 12px; }
+
+  /* ── DETAIL VIEW ───────────────────────────────────────────────── */
+  #detail-scroll {
+    flex: 1; overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  #detail-scroll::-webkit-scrollbar { width: 4px; }
+  #detail-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* workbook identity card */
+  #detail-identity {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  }
+  #detail-wb-name   { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  #detail-wb-meta   { font-size: 11px; color: var(--text2); font-family: var(--mono); line-height: 1.8; }
+
+  .detail-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+  }
+  .detail-section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text2); margin-bottom: 8px;
+  }
+  .detail-field { margin-bottom: 10px; }
+  .detail-field:last-child { margin-bottom: 0; }
+  .detail-field-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 3px; }
+  .detail-field-value { font-size: 12px; color: var(--text); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .detail-field-empty { font-size: 12px; color: var(--text2); font-style: italic; }
 
   .tag-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--accent-dim);
-    color: var(--accent);
-    border-radius: 4px;
-    padding: 2px 7px;
-    font-size: 11px;
-    font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--accent-dim); color: var(--accent);
+    border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 500;
+    margin: 2px 2px 2px 0;
   }
   .tag-chip button {
-    background: none;
-    border: none;
-    color: var(--accent);
-    cursor: pointer;
-    font-size: 13px;
-    line-height: 1;
-    padding: 0;
-    opacity: 0.7;
+    background: none; border: none; color: var(--accent);
+    cursor: pointer; font-size: 13px; line-height: 1; padding: 0; opacity: 0.7;
   }
   .tag-chip button:hover { opacity: 1; }
 
-  #tag-input {
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font-size: 12px;
-    font-family: var(--sans);
-    outline: none;
-    min-width: 80px;
-    flex: 1;
-    padding: 2px 2px;
-  }
-  #tag-input::placeholder { color: var(--text2); opacity: 0.6; }
-
-  /* ── Change log ───────────────────────────────────────────────── */
-  #changelog-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
+  /* change log read view */
   .log-entry {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px 10px;
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 7px 0; border-bottom: 1px solid var(--border);
   }
-
-  .log-date {
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--accent);
-    white-space: nowrap;
-    padding-top: 1px;
-    min-width: 80px;
-  }
-
-  .log-note {
-    font-size: 12px;
-    color: var(--text);
-    flex: 1;
-    word-break: break-word;
-  }
-
+  .log-entry:last-child { border-bottom: none; padding-bottom: 0; }
+  .log-date  { font-size: 11px; font-family: var(--mono); color: var(--accent);
+               white-space: nowrap; min-width: 82px; padding-top: 1px; }
+  .log-note  { font-size: 12px; color: var(--text); flex: 1; word-break: break-word; }
   .log-delete {
-    background: none;
-    border: none;
-    color: var(--text2);
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
-    flex-shrink: 0;
-    opacity: 0.5;
+    background: none; border: none; color: var(--text2); cursor: pointer;
+    font-size: 14px; line-height: 1; padding: 0; opacity: 0.4; flex-shrink: 0;
   }
   .log-delete:hover { color: var(--danger); opacity: 1; }
 
-  .log-empty {
-    font-size: 12px;
-    color: var(--text2);
-    font-style: italic;
-    padding: 4px 0;
+  #detail-undocumented {
+    display: none; text-align: center; padding: 24px;
+    color: var(--text2); font-size: 12px; font-style: italic;
   }
 
-  /* New log entry row */
-  #new-log-row {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    margin-top: 4px;
+  /* ── EDIT VIEW ─────────────────────────────────────────────────── */
+  #edit-scroll {
+    flex: 1; overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 12px;
   }
+  #edit-scroll::-webkit-scrollbar { width: 4px; }
+  #edit-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-  #new-log-date {
-    flex-shrink: 0;
-    width: 136px;
+  .edit-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px;
   }
-
-  #new-log-note {
-    flex: 1;
-    resize: none;
-    height: 34px;
+  .edit-section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text2);
   }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 11px; color: var(--text2); font-weight: 500; }
 
-  .btn-add-log {
-    flex-shrink: 0;
-    align-self: flex-start;
-    padding: 6px 10px;
+  textarea, input[type="text"], input[type="date"] {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-family: var(--sans);
+    font-size: 12px; padding: 7px 10px; resize: vertical; transition: border-color var(--tr);
+    line-height: 1.5;
   }
+  textarea:focus, input[type="text"]:focus, input[type="date"]:focus {
+    outline: none; border-color: var(--accent);
+  }
+  textarea::placeholder, input::placeholder { color: var(--text2); opacity: 0.6; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
 
-  /* ── Loading overlay ──────────────────────────────────────────── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Tags edit */
+  #tags-container {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 6px 8px; min-height: 36px; cursor: text; transition: border-color var(--tr);
+  }
+  #tags-container:focus-within { border-color: var(--accent); }
+  #tag-input {
+    border: none; background: transparent; color: var(--text); font-size: 12px;
+    font-family: var(--sans); outline: none; min-width: 80px; flex: 1; padding: 2px;
+  }
+  #tag-input::placeholder { color: var(--text2); opacity: 0.6; }
+
+  /* new log row */
+  #new-log-row { display: flex; gap: 8px; align-items: flex-start; }
+  #new-log-date { flex-shrink: 0; width: 136px; resize: none; }
+  #new-log-note { flex: 1; resize: none; height: 34px; }
+
+  /* ── Loading overlay ────────────────────────────────────────────── */
   #loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    z-index: 100;
-    transition: opacity 0.3s ease;
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px; z-index: 100; transition: opacity 0.3s ease;
   }
-
-  #loading-overlay.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
+  #loading-overlay.hidden { opacity: 0; pointer-events: none; }
   .spinner {
-    width: 28px;
-    height: 28px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
+    width: 26px; height: 26px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
-
   @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 12px; color: var(--text2); font-family: var(--mono); }
 
-  .loading-text {
-    font-size: 12px;
-    color: var(--text2);
-    font-family: var(--mono);
+  /* ── Error banner ───────────────────────────────────────────────── */
+  .error-banner {
+    background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger);
+    border-radius: var(--radius); padding: 9px 12px; font-size: 12px; display: none;
+    margin: 10px 14px 0;
   }
-
-  /* ── Error state ──────────────────────────────────────────────── */
-  #error-banner {
-    display: none;
-    background: #450a0a;
-    border: 1px solid var(--danger);
-    color: var(--danger);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-size: 12px;
-  }
-
-  /* ── Unsaved indicator ────────────────────────────────────────── */
-  #unsaved-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--warn);
-    border-radius: 50%;
-    margin-right: 4px;
-    opacity: 0;
-    transition: opacity var(--transition);
-  }
-  #unsaved-dot.visible { opacity: 1; }
 </style>
 </head>
 <body>
 
 <div id="loading-overlay">
   <div class="spinner"></div>
-  <div class="loading-text">Loading documentation…</div>
+  <div class="loading-text">Loading workbooks…</div>
 </div>
 
 <div id="app">
 
-  <!-- Top bar -->
+  <!-- TOP BAR -->
   <div id="topbar">
-    <div id="wb-identity">
-      <div id="wb-name">—</div>
-      <div id="wb-meta">—</div>
+    <div id="topbar-left">
+      <button id="back-btn" title="Back to list">←</button>
+      <div id="topbar-title">Workbook Documentation</div>
     </div>
-    <div id="topbar-actions">
+    <div id="topbar-right">
       <span id="status-pill">Ready</span>
-      <button class="btn btn-ghost" id="btn-reload" title="Reload saved doc">↺</button>
-      <button class="btn btn-primary" id="btn-save" disabled>
-        <span id="unsaved-dot"></span>Save
-      </button>
+      <button class="btn btn-ghost btn-sm" id="btn-settings" title="Settings">⚙</button>
     </div>
   </div>
 
-  <!-- Main scroll area -->
-  <div id="scroll-area">
-
-    <div id="error-banner"></div>
-
-    <!-- Core fields -->
-    <div class="section">
-      <div class="section-label">Documentation</div>
-
-      <div class="field-group">
-        <div class="field-label">Intended Audience</div>
-        <textarea id="field-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea>
-      </div>
-
-      <div class="field-group">
-        <div class="field-label">Key Metrics / Fields</div>
-        <textarea id="field-metrics" rows="3" placeholder="The most important measures, dimensions, or calculated fields — what they mean and any caveats about their definitions."></textarea>
-      </div>
-
-      <div class="field-group">
-        <div class="field-label">Known Limitations / Caveats</div>
-        <textarea id="field-caveats" rows="3" placeholder="Filter interactions, data freshness assumptions, edge cases, or anything that could mislead a reader."></textarea>
-      </div>
+  <!-- ── LIST VIEW ── -->
+  <div id="view-list" class="view active">
+    <div id="search-bar">
+      <input id="search-input" type="text" placeholder="Search workbooks…" autocomplete="off" />
+      <select id="sort-select">
+        <option value="name">Name A–Z</option>
+        <option value="name-desc">Name Z–A</option>
+        <option value="project">Project</option>
+        <option value="updated">Last Modified</option>
+        <option value="doc">Documented first</option>
+      </select>
     </div>
+    <div class="error-banner" id="list-error"></div>
+    <div id="list-scroll">
+      <div id="list-empty">No workbooks found.</div>
+    </div>
+  </div>
 
-    <!-- Owner / review -->
-    <div class="section">
-      <div class="section-label">Ownership</div>
-      <div class="two-col">
+  <!-- ── DETAIL VIEW ── -->
+  <div id="view-detail" class="view">
+    <div class="error-banner" id="detail-error"></div>
+    <div id="detail-scroll">
+      <div id="detail-identity">
+        <div>
+          <div id="detail-wb-name">—</div>
+          <div id="detail-wb-meta">—</div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-edit">Edit</button>
+      </div>
+      <div id="detail-undocumented">No documentation yet. Click Edit to add some.</div>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ── EDIT VIEW ── -->
+  <div id="view-edit" class="view">
+    <div class="error-banner" id="edit-error"></div>
+    <div id="edit-scroll">
+
+      <div class="edit-section">
+        <div class="edit-section-label">Documentation</div>
         <div class="field-group">
-          <div class="field-label">SME / Owner Contact</div>
-          <input type="text" id="field-sme" placeholder="Name or email" />
+          <div class="field-label">Intended Audience</div>
+          <textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea>
         </div>
         <div class="field-group">
-          <div class="field-label">Last Reviewed</div>
-          <input type="date" id="field-reviewed" />
+          <div class="field-label">Key Metrics / Fields</div>
+          <textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Known Limitations / Caveats</div>
+          <textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea>
         </div>
       </div>
-    </div>
 
-    <!-- Tags -->
-    <div class="section">
-      <div class="section-label">Tags</div>
-      <div id="tags-container" onclick="document.getElementById('tag-input').focus()">
-        <!-- chips render here -->
-        <input id="tag-input" type="text" placeholder="Add a tag, press Enter…" autocomplete="off" />
+      <div class="edit-section">
+        <div class="edit-section-label">Ownership</div>
+        <div class="two-col">
+          <div class="field-group">
+            <div class="field-label">SME / Owner Contact</div>
+            <input type="text" id="f-sme" placeholder="Name or email" />
+          </div>
+          <div class="field-group">
+            <div class="field-label">Last Reviewed</div>
+            <input type="date" id="f-reviewed" />
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Change log -->
-    <div class="section">
-      <div class="section-label">Change Log</div>
-      <div id="changelog-list">
-        <div class="log-empty">No entries yet.</div>
+      <div class="edit-section">
+        <div class="edit-section-label">Tags</div>
+        <div id="tags-container" onclick="document.getElementById('tag-input').focus()">
+          <input id="tag-input" type="text" placeholder="Add a tag, press Enter…" autocomplete="off" />
+        </div>
       </div>
-      <div id="new-log-row">
-        <input type="date" id="new-log-date" />
-        <textarea id="new-log-note" placeholder="Describe the change…"></textarea>
-        <button class="btn btn-ghost btn-add-log" id="btn-add-log">+ Add</button>
-      </div>
-    </div>
 
-  </div><!-- /scroll-area -->
+      <div class="edit-section">
+        <div class="edit-section-label">Change Log</div>
+        <div id="edit-changelog-list"></div>
+        <div id="new-log-row">
+          <input type="date" id="new-log-date" />
+          <textarea id="new-log-note" placeholder="Describe the change… (Enter to add)"></textarea>
+          <button class="btn btn-ghost btn-sm" id="btn-add-log" style="flex-shrink:0;align-self:flex-start">+ Add</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-bottom:4px">
+        <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
+        <button class="btn btn-primary" id="btn-save">Save Documentation</button>
+      </div>
+
+    </div>
+  </div>
+
 </div><!-- /app -->
+
+<!-- Config popup (rendered when ?config=1) -->
+<script>
+// ── Config popup mode ─────────────────────────────────────────────
+if (new URLSearchParams(window.location.search).get('config') === '1') {
+  document.body.innerHTML = `
+    <style>
+      body { background:#0f1117; color:#e8eaf6; font-family:Inter,system-ui,sans-serif;
+             padding:24px; font-size:13px; }
+      h2   { font-size:14px; font-weight:600; margin-bottom:16px; }
+      label { display:block; font-size:11px; color:#7b82a8; margin-bottom:4px; font-weight:500; }
+      input { width:100%; background:#1a1d27; border:1px solid #2e3352; border-radius:6px;
+              color:#e8eaf6; padding:7px 10px; font-size:12px; margin-bottom:6px; }
+      input:focus { outline:none; border-color:#4f7cff; }
+      p.hint { font-size:11px; color:#7b82a8; line-height:1.4; margin-bottom:16px; }
+      .row  { display:flex; gap:8px; justify-content:flex-end; }
+      .btn  { padding:6px 16px; border-radius:6px; font-size:12px; font-weight:500;
+              cursor:pointer; border:1px solid transparent; font-family:inherit; }
+      .btn-primary { background:#4f7cff; color:#fff; }
+      .btn-ghost   { background:transparent; color:#7b82a8; border-color:#2e3352; }
+    </style>
+    <h2>Extension Settings</h2>
+    <label>Power Automate Flow URL</label>
+    <input id="cfg-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/…" />
+    <p class="hint">Paste the HTTP POST trigger URL from your Power Automate flow.<br>
+    This single flow handles both loading (action: "get") and saving (action: "save") documentation.</p>
+    <div class="row">
+      <button class="btn btn-ghost" id="cfg-cancel">Cancel</button>
+      <button class="btn btn-primary" id="cfg-save">Save Settings</button>
+    </div>
+  `;
+  tableau.extensions.initializeDialogAsync().then(() => {
+    const s = tableau.extensions.settings.getAll();
+    document.getElementById('cfg-url').value = s.flowUrl || '';
+    document.getElementById('cfg-save').addEventListener('click', () => {
+      tableau.extensions.settings.set('flowUrl', document.getElementById('cfg-url').value.trim());
+      tableau.extensions.settings.saveAsync().then(() => tableau.extensions.ui.closeDialog('saved'));
+    });
+    document.getElementById('cfg-cancel').addEventListener('click', () => {
+      tableau.extensions.ui.closeDialog('cancelled');
+    });
+  });
+}
+</script>
 
 <script>
 (function () {
   'use strict';
 
-  // ── State ──────────────────────────────────────────────────────
-  let workbookLuid    = '';
-  let workbookName    = '';
-  let workbookProject = '';
-  let workbookOwner   = '';
-  let workbookUpdated = '';
-  let flowUrl         = '';
-  let tags            = [];
-  let changelog       = [];   // [{date, note}]
-  let isDirty         = false;
+  if (new URLSearchParams(window.location.search).get('config') === '1') return;
 
-  // ── DOM refs ───────────────────────────────────────────────────
+  // ── State ───────────────────────────────────────────────────────
+  let flowUrl    = '';
+  let workbooks  = [];       // [{luid, name, project, owner, updated}]
+  let docCache   = {};       // luid → doc object (null = no doc)
+  let activeWb   = null;     // currently selected workbook object
+  let editDoc    = {};       // doc being edited
+  let editTags   = [];
+  let editLog    = [];
+
+  // ── DOM ─────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
-  const loadingOverlay = $('loading-overlay');
-  const statusPill     = $('status-pill');
-  const errorBanner    = $('error-banner');
-  const btnSave        = $('btn-save');
-  const btnReload      = $('btn-reload');
-  const unsavedDot     = $('unsaved-dot');
 
-  // ── Helpers ────────────────────────────────────────────────────
-  function setStatus(msg, cls = '') {
-    statusPill.textContent = msg;
-    statusPill.className   = cls ? `${cls}` : '';
-  }
-
-  function showError(msg) {
-    errorBanner.style.display = 'block';
-    errorBanner.textContent   = msg;
-  }
-
-  function clearError() {
-    errorBanner.style.display = 'none';
-    errorBanner.textContent   = '';
-  }
-
-  function markDirty() {
-    if (!isDirty) {
-      isDirty = true;
-      unsavedDot.classList.add('visible');
-      setStatus('Unsaved changes');
+  // Views
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    $(`view-${name}`).classList.add('active');
+    const inDetail = name !== 'list';
+    $('back-btn').style.display = inDetail ? 'inline-flex' : 'none';
+    if (name === 'list') {
+      $('topbar-title').textContent = 'Workbook Documentation';
     }
   }
 
-  function markClean() {
-    isDirty = false;
-    unsavedDot.classList.remove('visible');
+  // Status
+  function setStatus(msg, cls = '') {
+    const p = $('status-pill');
+    p.textContent = msg;
+    p.className   = cls;
   }
 
-  // ── Tags ───────────────────────────────────────────────────────
-  function renderTags() {
+  function showError(bannerId, msg) {
+    const el = $(bannerId);
+    el.textContent   = msg;
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  // ── Flow ────────────────────────────────────────────────────────
+  async function callFlow(payload) {
+    const r = await fetch(flowUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(`Flow returned ${r.status}`);
+    const text = await r.text();
+    try { return text ? JSON.parse(text) : {}; } catch { return {}; }
+  }
+
+  // ── List rendering ───────────────────────────────────────────────
+  function filteredSorted() {
+    const q    = $('search-input').value.toLowerCase();
+    const sort = $('sort-select').value;
+    let list   = workbooks.filter(w =>
+      !q ||
+      (w.name    || '').toLowerCase().includes(q) ||
+      (w.project || '').toLowerCase().includes(q) ||
+      (w.owner   || '').toLowerCase().includes(q)
+    );
+    list.sort((a, b) => {
+      if (sort === 'name')      return (a.name    || '').localeCompare(b.name    || '');
+      if (sort === 'name-desc') return (b.name    || '').localeCompare(a.name    || '');
+      if (sort === 'project')   return (a.project || '').localeCompare(b.project || '');
+      if (sort === 'updated')   return (b.updated || '').localeCompare(a.updated || '');
+      if (sort === 'doc') {
+        const ad = docCache[a.luid] ? 1 : 0;
+        const bd = docCache[b.luid] ? 1 : 0;
+        return bd - ad || (a.name || '').localeCompare(b.name || '');
+      }
+      return 0;
+    });
+    return list;
+  }
+
+  function renderList() {
+    const scroll = $('list-scroll');
+    const empty  = $('list-empty');
+    const list   = filteredSorted();
+    scroll.querySelectorAll('.wb-row').forEach(r => r.remove());
+    if (!list.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    list.forEach(wb => {
+      const hasDoc = !!docCache[wb.luid];
+      const row = document.createElement('div');
+      row.className = 'wb-row';
+      row.dataset.luid = wb.luid;
+      const metaParts = [
+        wb.project && `${wb.project}`,
+        wb.owner   && `${wb.owner}`,
+        wb.updated && wb.updated.substring(0, 10),
+      ].filter(Boolean).join('  ·  ');
+      row.innerHTML = `
+        <div class="wb-row-main">
+          <div class="wb-row-name">${escHtml(wb.name || '—')}</div>
+          <div class="wb-row-meta">${escHtml(metaParts)}</div>
+        </div>
+        <span class="doc-badge ${hasDoc ? 'yes' : 'no'}">${hasDoc ? 'Documented' : 'No docs'}</span>
+        <span class="wb-row-arrow">›</span>
+      `;
+      row.addEventListener('click', () => openDetail(wb));
+      scroll.appendChild(row);
+    });
+  }
+
+  $('search-input').addEventListener('input', renderList);
+  $('sort-select').addEventListener('change', renderList);
+
+  // ── Detail view ─────────────────────────────────────────────────
+  async function openDetail(wb) {
+    activeWb = wb;
+    showView('detail');
+    showError('detail-error', '');
+    $('topbar-title').textContent = wb.name || 'Workbook';
+
+    // Header
+    $('detail-wb-name').textContent = wb.name || '—';
+    $('detail-wb-meta').innerHTML   = [
+      wb.project && `Project: <b>${escHtml(wb.project)}</b>`,
+      wb.owner   && `Owner: <b>${escHtml(wb.owner)}</b>`,
+      wb.updated && `Updated: <b>${wb.updated.substring(0, 10)}</b>`,
+    ].filter(Boolean).join('<br>');
+
+    // Load doc if not cached
+    if (!(wb.luid in docCache)) {
+      setStatus('Loading…');
+      try {
+        const res    = await callFlow({ action: 'get', luid: wb.luid });
+        docCache[wb.luid] = (res && res.doc) ? res.doc : null;
+        setStatus('Ready');
+      } catch (e) {
+        showError('detail-error', `Could not load documentation: ${e.message}`);
+        setStatus('Error', 'error');
+        docCache[wb.luid] = null;
+      }
+    }
+
+    renderDetail(docCache[wb.luid]);
+  }
+
+  function renderDetail(doc) {
+    const body        = $('detail-body');
+    const undocumented = $('detail-undocumented');
+    body.innerHTML    = '';
+
+    if (!doc) {
+      undocumented.style.display = 'block';
+      return;
+    }
+    undocumented.style.display = 'none';
+
+    function section(label, fields) {
+      const sec = document.createElement('div');
+      sec.className = 'detail-section';
+      sec.innerHTML = `<div class="detail-section-label">${label}</div>`;
+      fields.forEach(([lbl, val, type]) => {
+        if (!val && !Array.isArray(val)) return;
+        const d = document.createElement('div');
+        d.className = 'detail-field';
+        if (type === 'tags') {
+          const chips = (val || []).map(t =>
+            `<span class="tag-chip">${escHtml(t)}</span>`
+          ).join('');
+          d.innerHTML = `<div class="detail-field-label">${lbl}</div><div>${chips || '<span class="detail-field-empty">None</span>'}</div>`;
+        } else if (type === 'log') {
+          const entries = (val || []);
+          if (!entries.length) return;
+          const rows = [...entries].reverse().map(e =>
+            `<div class="log-entry">
+               <span class="log-date">${escHtml(e.date || '—')}</span>
+               <span class="log-note">${escHtml(e.note || '')}</span>
+             </div>`
+          ).join('');
+          d.innerHTML = `<div class="detail-field-label">${lbl}</div>${rows}`;
+        } else {
+          d.innerHTML = `<div class="detail-field-label">${lbl}</div>
+            <div class="detail-field-value">${val ? escHtml(val) : '<span class="detail-field-empty">—</span>'}</div>`;
+        }
+        sec.appendChild(d);
+      });
+      // Only append if has visible fields
+      if (sec.querySelectorAll('.detail-field').length) body.appendChild(sec);
+    }
+
+    section('Documentation', [
+      ['Intended Audience',          doc.audience, 'text'],
+      ['Key Metrics / Fields',       doc.metrics,  'text'],
+      ['Known Limitations / Caveats',doc.caveats,  'text'],
+    ]);
+    section('Ownership', [
+      ['SME / Owner Contact', doc.sme,      'text'],
+      ['Last Reviewed',       doc.reviewed, 'text'],
+    ]);
+    section('Tags',       [['Tags',        doc.tags,      'tags']]);
+    section('Change Log', [['Change Log',  doc.changelog, 'log']]);
+
+    if (!body.children.length) {
+      undocumented.style.display = 'block';
+    }
+  }
+
+  // ── Edit view ────────────────────────────────────────────────────
+  function openEdit() {
+    const doc  = docCache[activeWb.luid] || {};
+    editDoc    = { ...doc };
+    editTags   = [...(doc.tags      || [])];
+    editLog    = [...(doc.changelog || [])];
+
+    $('f-audience').value = doc.audience || '';
+    $('f-metrics').value  = doc.metrics  || '';
+    $('f-caveats').value  = doc.caveats  || '';
+    $('f-sme').value      = doc.sme      || '';
+    $('f-reviewed').value = doc.reviewed || '';
+    $('new-log-date').value = todayISO();
+    $('new-log-note').value = '';
+
+    renderEditTags();
+    renderEditLog();
+    showView('edit');
+    $('topbar-title').textContent = `Editing: ${activeWb.name || ''}`;
+    showError('edit-error', '');
+  }
+
+  $('btn-edit').addEventListener('click', openEdit);
+
+  // tags
+  function renderEditTags() {
     const container = $('tags-container');
-    // Remove existing chips
     container.querySelectorAll('.tag-chip').forEach(c => c.remove());
     const input = $('tag-input');
-    tags.forEach((tag, i) => {
+    editTags.forEach((tag, i) => {
       const chip = document.createElement('span');
       chip.className = 'tag-chip';
-      chip.innerHTML = `${tag}<button title="Remove tag" data-i="${i}">×</button>`;
+      chip.innerHTML = `${escHtml(tag)}<button data-i="${i}" title="Remove">×</button>`;
       chip.querySelector('button').addEventListener('click', () => {
-        tags.splice(i, 1);
-        renderTags();
-        markDirty();
+        editTags.splice(i, 1); renderEditTags();
       });
       container.insertBefore(chip, input);
     });
@@ -567,290 +678,204 @@
     const val = e.target.value.trim();
     if ((e.key === 'Enter' || e.key === ',') && val) {
       e.preventDefault();
-      if (!tags.includes(val)) { tags.push(val); markDirty(); }
+      if (!editTags.includes(val)) editTags.push(val);
       e.target.value = '';
-      renderTags();
+      renderEditTags();
     }
-    if (e.key === 'Backspace' && !val && tags.length) {
-      tags.pop();
-      renderTags();
-      markDirty();
+    if (e.key === 'Backspace' && !val && editTags.length) {
+      editTags.pop(); renderEditTags();
     }
   });
 
-  // ── Change log ─────────────────────────────────────────────────
-  function renderChangelog() {
-    const list = $('changelog-list');
+  // changelog edit
+  function renderEditLog() {
+    const list = $('edit-changelog-list');
     list.innerHTML = '';
-    if (!changelog.length) {
-      list.innerHTML = '<div class="log-empty">No entries yet.</div>';
+    if (!editLog.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text2);font-style:italic;margin-bottom:8px">No entries yet.</div>';
       return;
     }
-    // Most recent first
-    [...changelog].reverse().forEach((entry, ri) => {
-      const realIdx = changelog.length - 1 - ri;
+    [...editLog].reverse().forEach((entry, ri) => {
+      const realIdx = editLog.length - 1 - ri;
       const row = document.createElement('div');
       row.className = 'log-entry';
+      row.style.marginBottom = '4px';
       row.innerHTML = `
-        <span class="log-date">${entry.date || '—'}</span>
+        <span class="log-date">${escHtml(entry.date || '—')}</span>
         <span class="log-note">${escHtml(entry.note)}</span>
-        <button class="log-delete" title="Remove entry" data-i="${realIdx}">×</button>
+        <button class="log-delete" data-i="${realIdx}" title="Remove">×</button>
       `;
       row.querySelector('.log-delete').addEventListener('click', () => {
-        changelog.splice(realIdx, 1);
-        renderChangelog();
-        markDirty();
+        editLog.splice(realIdx, 1); renderEditLog();
       });
       list.appendChild(row);
     });
   }
 
-  // Set today as default for new log entry date
-  function todayISO() {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  $('new-log-date').value = todayISO();
-
   $('btn-add-log').addEventListener('click', () => {
     const date = $('new-log-date').value;
     const note = $('new-log-note').value.trim();
     if (!note) { $('new-log-note').focus(); return; }
-    changelog.push({ date, note });
-    renderChangelog();
-    $('new-log-note').value = '';
-    $('new-log-date').value = todayISO();
-    markDirty();
+    editLog.push({ date, note });
+    renderEditLog();
+    $('new-log-note').value  = '';
+    $('new-log-date').value  = todayISO();
   });
 
-  // Also allow Enter in the note textarea to add
   $('new-log-note').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      $('btn-add-log').click();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); }
   });
 
-  // ── Populate form from doc object ──────────────────────────────
-  function populateForm(doc) {
-    $('field-audience').value = doc.audience  || '';
-    $('field-metrics').value  = doc.metrics   || '';
-    $('field-caveats').value  = doc.caveats   || '';
-    $('field-sme').value      = doc.sme       || '';
-    $('field-reviewed').value = doc.reviewed  || '';
-    tags      = doc.tags      || [];
-    changelog = doc.changelog || [];
-    renderTags();
-    renderChangelog();
-  }
-
-  // ── Collect form into doc object ───────────────────────────────
-  function collectForm() {
-    return {
-      luid:      workbookLuid,
-      name:      workbookName,
-      project:   workbookProject,
-      owner:     workbookOwner,
-      updatedAt: workbookUpdated,
-      audience:  $('field-audience').value.trim(),
-      metrics:   $('field-metrics').value.trim(),
-      caveats:   $('field-caveats').value.trim(),
-      sme:       $('field-sme').value.trim(),
-      reviewed:  $('field-reviewed').value,
-      tags,
-      changelog,
+  // save
+  $('btn-save').addEventListener('click', async () => {
+    if (!flowUrl) { showError('edit-error', 'Flow URL not configured.'); return; }
+    setStatus('Saving…', 'saving');
+    $('btn-save').disabled = true;
+    showError('edit-error', '');
+    const doc = {
+      luid:      activeWb.luid,
+      name:      activeWb.name,
+      project:   activeWb.project,
+      owner:     activeWb.owner,
+      updatedAt: activeWb.updated,
+      audience:  $('f-audience').value.trim(),
+      metrics:   $('f-metrics').value.trim(),
+      caveats:   $('f-caveats').value.trim(),
+      sme:       $('f-sme').value.trim(),
+      reviewed:  $('f-reviewed').value,
+      tags:      editTags,
+      changelog: editLog,
       savedAt:   new Date().toISOString(),
     };
-  }
-
-  // ── Flow call ──────────────────────────────────────────────────
-  async function callFlow(payload) {
-    const resp = await fetch(flowUrl, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
-    });
-    if (!resp.ok) throw new Error(`Flow returned ${resp.status}`);
-    const text = await resp.text();
-    try { return text ? JSON.parse(text) : {}; }
-    catch { return {}; }
-  }
-
-  // ── Load existing doc ──────────────────────────────────────────
-  async function loadDoc() {
-    if (!workbookLuid || !flowUrl) return;
-    setStatus('Loading…', 'loading');
-    clearError();
     try {
-      const result = await callFlow({ action: 'get', luid: workbookLuid });
-      if (result && result.doc) {
-        populateForm(result.doc);
-      } else {
-        populateForm({});
-      }
-      markClean();
-      setStatus('Ready');
-    } catch (err) {
-      showError(`Could not load documentation: ${err.message}`);
-      setStatus('Load failed', 'error');
-    }
-  }
-
-  // ── Save doc ───────────────────────────────────────────────────
-  async function saveDoc() {
-    if (!flowUrl) { showError('Flow URL not configured in extension settings.'); return; }
-    setStatus('Saving…', 'saving');
-    clearError();
-    btnSave.disabled = true;
-    try {
-      await callFlow({ action: 'save', luid: workbookLuid, doc: collectForm() });
-      markClean();
+      await callFlow({ action: 'save', luid: activeWb.luid, doc });
+      docCache[activeWb.luid] = doc;
+      // Update badge in list
+      renderList();
       setStatus('Saved', 'saved');
       setTimeout(() => setStatus('Ready'), 2500);
-    } catch (err) {
-      showError(`Save failed: ${err.message}`);
+      // Go back to detail
+      renderDetail(doc);
+      showView('detail');
+      $('topbar-title').textContent = activeWb.name || 'Workbook';
+    } catch (e) {
+      showError('edit-error', `Save failed: ${e.message}`);
       setStatus('Save failed', 'error');
     } finally {
-      btnSave.disabled = false;
+      $('btn-save').disabled = false;
     }
-  }
-
-  // ── Dirty tracking on all inputs ───────────────────────────────
-  ['field-audience','field-metrics','field-caveats','field-sme','field-reviewed'].forEach(id => {
-    $(id).addEventListener('input', markDirty);
   });
 
-  btnSave.addEventListener('click', saveDoc);
-  btnReload.addEventListener('click', loadDoc);
+  // cancel
+  $('btn-cancel').addEventListener('click', () => {
+    showView('detail');
+    $('topbar-title').textContent = activeWb.name || 'Workbook';
+  });
 
-  // ── Escape HTML ────────────────────────────────────────────────
+  // back button
+  $('back-btn').addEventListener('click', () => {
+    const current = document.querySelector('.view.active').id;
+    if (current === 'view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name || 'Workbook'; }
+    if (current === 'view-detail') { showView('list');   activeWb = null; }
+  });
+
+  // settings
+  $('btn-settings').addEventListener('click', () => {
+    const popup = `${window.location.origin}${window.location.pathname}?config=1`;
+    tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 })
+      .then(() => { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
+      .catch(() => {});
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────
+  function todayISO() { return new Date().toISOString().split('T')[0]; }
   function escHtml(str) {
-    return String(str)
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
+    return String(str || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── Init ───────────────────────────────────────────────────────
+  // ── Init ─────────────────────────────────────────────────────────
   tableau.extensions.initializeAsync({ configure }).then(async () => {
-
-    // Read settings
     const settings = tableau.extensions.settings.getAll();
     flowUrl = settings.flowUrl || '';
 
-    // Read worksheet data
+    if (!flowUrl) {
+      showError('list-error', 'No Flow URL configured. Click ⚙ to add your Power Automate URL.');
+      setStatus('Setup needed', 'error');
+    }
+
+    // Read all workbooks from worksheet
     try {
-      const ws      = tableau.extensions.worksheetContent.worksheet;
-      const dataTable = await ws.getSummaryDataAsync({ maxRows: 1 });
-      const cols    = dataTable.columns;
-      const rows    = dataTable.data;
+      const ws        = tableau.extensions.worksheetContent.worksheet;
+      const dataTable = await ws.getSummaryDataAsync();
+      const cols      = dataTable.columns;
+      const rows      = dataTable.data;
 
-      if (rows.length === 0) throw new Error('No worksheet data');
-
-      // Detect columns by name (case-insensitive)
       function colIdx(name) {
         return cols.findIndex(c => c.fieldName.toLowerCase().includes(name.toLowerCase()));
       }
 
-      const row = rows[0];
-      const getVal = name => {
-        const i = colIdx(name);
-        return (i >= 0 && row[i]) ? row[i].formattedValue : '';
-      };
+      workbooks = rows.map(row => {
+        const get = name => {
+          const i = colIdx(name);
+          return (i >= 0 && row[i]) ? row[i].formattedValue : '';
+        };
+        return {
+          luid:    get('luid') || get('id'),
+          name:    get('name'),
+          project: get('project'),
+          owner:   get('owner'),
+          updated: get('updated') || get('modified'),
+        };
+      }).filter(w => w.luid || w.name);
 
-      workbookLuid    = getVal('luid') || getVal('id');
-      workbookName    = getVal('name');
-      workbookProject = getVal('project');
-      workbookOwner   = getVal('owner');
-      workbookUpdated = getVal('updated') || getVal('modified');
+      // Deduplicate by luid
+      const seen = new Set();
+      workbooks = workbooks.filter(w => {
+        const key = w.luid || w.name;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
-      // Update header
-      $('wb-name').textContent = workbookName || 'Unknown Workbook';
-      $('wb-meta').textContent = [
-        workbookProject && `Project: ${workbookProject}`,
-        workbookOwner   && `Owner: ${workbookOwner}`,
-        workbookUpdated && `Updated: ${workbookUpdated.substring(0,10)}`,
-      ].filter(Boolean).join('  ·  ');
-
-      btnSave.disabled = false;
-
-    } catch (err) {
-      showError(`Could not read worksheet data: ${err.message}. Check that luid, name, project, owner, and updated fields are in the view.`);
+    } catch (e) {
+      showError('list-error', `Could not read worksheet data: ${e.message}`);
     }
 
-    // Hide loading overlay
-    loadingOverlay.classList.add('hidden');
-    setTimeout(() => loadingOverlay.style.display = 'none', 300);
-
-    // Load existing doc if flow is configured
-    if (flowUrl && workbookLuid) {
-      await loadDoc();
-    } else if (!flowUrl) {
-      setStatus('Flow URL not set', 'error');
-      showError('No Flow URL configured. Open extension settings and paste your Power Automate POST trigger URL.');
+    // Bulk-load doc status (get all doc keys that exist) if flow is configured
+    // This lets us show Documented/No docs badges without fetching every doc
+    if (flowUrl && workbooks.length) {
+      setStatus('Checking docs…');
+      try {
+        const res = await callFlow({ action: 'list' });
+        const documented = new Set((res && res.luids) ? res.luids : []);
+        workbooks.forEach(w => {
+          if (documented.has(w.luid)) docCache[w.luid] = true; // truthy placeholder
+        });
+        setStatus('Ready');
+      } catch {
+        // Non-fatal — badges just show "No docs" until individually loaded
+        setStatus('Ready');
+      }
     }
 
-  }).catch(err => {
-    loadingOverlay.classList.add('hidden');
-    showError(`Extension failed to initialize: ${err.message}`);
+    renderList();
+
+    const overlay = $('loading-overlay');
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.style.display = 'none', 300);
+
+  }).catch(e => {
+    $('loading-overlay').classList.add('hidden');
+    showError('list-error', `Extension failed to initialize: ${e.message}`);
   });
 
-  // ── Settings dialog ────────────────────────────────────────────
   function configure() {
-    const popupUrl = `${window.location.origin}${window.location.pathname}?config=1`;
-    tableau.extensions.ui.displayDialogAsync(popupUrl, '', { height: 240, width: 440 })
-      .then(() => {
-        const settings = tableau.extensions.settings.getAll();
-        flowUrl = settings.flowUrl || '';
-        if (flowUrl && workbookLuid) loadDoc();
-      })
+    const popup = `${window.location.origin}${window.location.pathname}?config=1`;
+    tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 })
+      .then(() => { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
       .catch(() => {});
-  }
-
-  // ── Config popup mode ──────────────────────────────────────────
-  if (new URLSearchParams(window.location.search).get('config') === '1') {
-    document.body.innerHTML = `
-      <style>
-        body { background:#0f1117; color:#e8eaf6; font-family:Inter,system-ui,sans-serif;
-               padding:24px; font-size:13px; }
-        h2 { font-size:14px; font-weight:600; margin-bottom:16px; }
-        label { display:block; font-size:11px; color:#7b82a8; margin-bottom:4px; font-weight:500; }
-        input { width:100%; background:#1a1d27; border:1px solid #2e3352; border-radius:6px;
-                color:#e8eaf6; padding:7px 10px; font-size:12px; margin-bottom:14px; }
-        input:focus { outline:none; border-color:#4f7cff; }
-        .row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
-        .btn { padding:6px 16px; border-radius:6px; font-size:12px; font-weight:500;
-               cursor:pointer; border:1px solid transparent; font-family:inherit; }
-        .btn-primary { background:#4f7cff; color:#fff; border-color:#4f7cff; }
-        .btn-ghost { background:transparent; color:#7b82a8; border-color:#2e3352; }
-        p.hint { font-size:11px; color:#7b82a8; margin-top:-10px; margin-bottom:14px; line-height:1.4; }
-      </style>
-      <h2>Extension Settings</h2>
-      <label>Power Automate Flow URL</label>
-      <input id="cfg-flow-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/…" />
-      <p class="hint">Paste the HTTP POST trigger URL from your Power Automate flow. This handles both loading and saving documentation.</p>
-      <div class="row">
-        <button class="btn btn-ghost" id="cfg-cancel">Cancel</button>
-        <button class="btn btn-primary" id="cfg-save">Save Settings</button>
-      </div>
-    `;
-
-    tableau.extensions.initializeDialogAsync().then(() => {
-      const settings = tableau.extensions.settings.getAll();
-      document.getElementById('cfg-flow-url').value = settings.flowUrl || '';
-
-      document.getElementById('cfg-save').addEventListener('click', () => {
-        tableau.extensions.settings.set('flowUrl', document.getElementById('cfg-flow-url').value.trim());
-        tableau.extensions.settings.saveAsync().then(() => {
-          tableau.extensions.ui.closeDialog('saved');
-        });
-      });
-
-      document.getElementById('cfg-cancel').addEventListener('click', () => {
-        tableau.extensions.ui.closeDialog('cancelled');
-      });
-    });
   }
 
 })();
