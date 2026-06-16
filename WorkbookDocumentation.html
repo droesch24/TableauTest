@@ -444,7 +444,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       setStatus('Loading\u2026');
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
-        docCache[wb.luid] = (res && res.doc) ? res.doc : null;
+        var doc = null;
+        if (res && res.doc) {
+          doc = typeof res.doc === 'string' ? JSON.parse(res.doc) : res.doc;
+        }
+        docCache[wb.luid] = doc;
         setStatus('Ready');
       } catch(e) {
         showError('detail-error', 'Could not load documentation: ' + e.message);
@@ -522,14 +526,20 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   $('btn-reload-doc').addEventListener('click', async function() {
     if (!activeWb) return;
     delete docCache[activeWb.luid];
-    setStatus('Reloading\u2026');
+    setStatus('Loading\u2026');
+    showError('detail-error', '');
     try {
       var res = await callFlow({ action: 'get', luid: activeWb.luid });
-      docCache[activeWb.luid] = (res && res.doc) ? res.doc : null;
-      renderDetail(docCache[activeWb.luid]);
+      var doc = null;
+      if (res && res.doc) {
+        doc = typeof res.doc === 'string' ? JSON.parse(res.doc) : res.doc;
+      }
+      docCache[activeWb.luid] = doc;
+      renderDetail(doc);
+      renderList();
       setStatus('Ready');
     } catch(e) {
-      showError('detail-error', 'Reload failed: ' + e.message);
+      showError('detail-error', 'Load failed: ' + e.message);
       setStatus('Error', 'error');
     }
   });
