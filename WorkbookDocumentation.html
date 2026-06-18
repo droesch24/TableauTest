@@ -656,8 +656,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       edges.push({ from: from, to: to, type: type });
     }
 
+    // Build set of datasource luids actually used by this workbook
+    var wbDsIds = new Set();
+    (raw.upstreamDatasources || []).forEach(function(ds) {
+      wbDsIds.add(ds.luid || ds.name);
+    });
+
     // Build sets of datasource luids that feed INTO flows
-    // and datasource luids that are OUTPUT of flows
+    // and datasource luids that are OUTPUT of flows AND used by this workbook
     var flowInputDsIds  = new Set();
     var flowOutputDsIds = new Set();
 
@@ -666,7 +672,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         flowInputDsIds.add(ds.luid || ds.name);
       });
       (fl.downstreamDatasources || []).forEach(function(ds) {
-        flowOutputDsIds.add(ds.luid || ds.name);
+        var dsId = ds.luid || ds.name;
+        // Only count as a flow output if this workbook actually uses it
+        if (wbDsIds.has(dsId)) {
+          flowOutputDsIds.add(dsId);
+        }
       });
     });
 
@@ -688,9 +698,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         addEdge(ds.luid || ds.name, flId, 'ds_to_flow');
       });
 
-      // flow → downstream datasources
-      var hasDownstream = (fl.downstreamDatasources || []).length > 0;
-      (fl.downstreamDatasources || []).forEach(function(ds) {
+      // flow → downstream datasources (only those used by this workbook)
+      var relevantDownstream = (fl.downstreamDatasources || []).filter(function(ds) {
+        return wbDsIds.has(ds.luid || ds.name);
+      });
+      var hasDownstream = relevantDownstream.length > 0;
+      relevantDownstream.forEach(function(ds) {
         var dsId = ds.luid || ds.name;
         addEdge(flId, dsId, 'flow_to_ds');
         addEdge(dsId, wbLuid, 'ds_to_wb');
@@ -702,17 +715,25 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       }
     });
 
-    // ── Collect all datasources for node registry ──────────────────
+    // ── Collect only workbook-relevant datasources for node registry ──
     var dsMap = {};
     (raw.upstreamDatasources || []).forEach(function(ds) {
       dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
     });
     (raw.upstreamFlows || []).forEach(function(fl) {
+      // Only include flow input datasources that are used by this workbook
       (fl.upstreamDatasources || []).forEach(function(ds) {
-        dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
+        var dsId = ds.luid || ds.name;
+        if (wbDsIds.has(dsId) || flowInputDsIds.has(dsId)) {
+          dsMap[dsId] = { luid: ds.luid, name: ds.name };
+        }
       });
+      // Only include flow output datasources used by this workbook
       (fl.downstreamDatasources || []).forEach(function(ds) {
-        dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
+        var dsId = ds.luid || ds.name;
+        if (wbDsIds.has(dsId)) {
+          dsMap[dsId] = { luid: ds.luid, name: ds.name };
+        }
       });
     });
 
