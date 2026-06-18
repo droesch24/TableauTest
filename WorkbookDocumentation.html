@@ -721,21 +721,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (key) addEdge(key, wbLuid, 'vc_table_to_wb');
     });
 
-    // Reroute vc_table → ds/flow/wb through VC node
-    Object.keys(vcMap).forEach(function(vcId) {
-      var myTables = tables.filter(function(t) { return t.vc_luid === vcId; });
-      myTables.forEach(function(t) {
-        for (var i = 0; i < edges.length; i++) {
-          var e = edges[i];
-          if (e.from === t.key && e.type !== 'vc_table_to_vc') {
-            addEdge(vcId, e.to, 'vc_to_node');
-            e.to   = vcId;
-            e.type = 'vc_table_to_vc';
-          }
-        }
-      });
-    });
-
     // Deduplicate
     var finalEdges = [];
     var finalSeen  = new Set();
@@ -754,16 +739,15 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     });
 
     return {
-      workbook:            { luid: wbLuid, name: wbName },
-      extra_workbooks:     [],
-      hero_luid:           wbLuid,
-      hero_type:           'workbook',
-      central_type:        'workbook',
-      tables:              tables,
-      datasources:         allDs,
-      flows:               allFlows,
-      virtual_connections: Object.values(vcMap),
-      edges:               finalEdges,
+      workbook:        { luid: wbLuid, name: wbName },
+      extra_workbooks: [],
+      hero_luid:       wbLuid,
+      hero_type:       'workbook',
+      central_type:    'workbook',
+      tables:          tables,
+      datasources:     allDs,
+      flows:           allFlows,
+      edges:           finalEdges,
     };
   }
 
@@ -845,9 +829,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         ? (t.db + ' \u203a ' + t.name)
         : [t.db, t.schema, t.name].filter(function(s) { return s && s !== 'Virtual Connection'; }).join('.');
       nodeMap[t.key] = { id: t.key, label: label, type: t.is_vc ? 'vc_table' : 'table', col: 0, luid: t.vc_luid || null };
-    });
-    (graph.virtual_connections || []).filter(function(vc) { return !hiddenNodes.has(vc.luid || vc.name); }).forEach(function(vc) {
-      nodeMap[vc.luid || vc.name] = { id: vc.luid || vc.name, label: vc.name, type: 'vc', col: 1, luid: vc.luid };
     });
     (graph.flows || []).filter(function(f) { return !hiddenNodes.has(f.luid || f.name); }).forEach(function(f) {
       nodeMap[f.luid || f.name] = { id: f.luid || f.name, label: f.name, type: 'flow', col: 1, luid: f.luid };
