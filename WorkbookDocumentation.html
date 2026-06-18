@@ -433,6 +433,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var sort = $('sort-select').value;
     var list = workbooks.filter(function(w) {
       if (w.itemType !== activeType) return false;
+      if (w.itemType === 'Datasource' && w.contentType && w.contentType.toLowerCase() !== 'published') return false;
       return !q ||
         (w.name        || '').toLowerCase().includes(q) ||
         (w.project     || '').toLowerCase().includes(q) ||
@@ -1201,6 +1202,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           luid:          get('luid') || get('id'),
           name:          get('name'),
           itemType:      get('item type') || get('type') || 'Workbook',
+          contentType:   get('data source content type') || get('content type') || '',
           project:       get('project'),
           parentProject: get('parent project') || get('parent'),
           owner:         get('owner'),
