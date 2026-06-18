@@ -714,10 +714,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       });
 
       // flow → downstream datasources
-      // Only include datasources that are direct outputs of THIS flow:
-      // - they must be in wbDsIds (used by workbook)
-      // - they must NOT be flow inputs (bridge DS — output of this flow, input of next)
-      // - they must NOT be outputs of a downstream flow (transitive via another flow)
+      // Split into two groups:
+      // 1. Direct outputs (connect flow → ds → workbook)
+      // 2. Bridge outputs (connect flow → ds → next flow, no direct wb edge)
       var downstreamFlowOutputIds = new Set();
       (fl.downstreamFlows || []).forEach(function(df) {
         var dfFull = flowMap[df.luid || df.name];
@@ -734,6 +733,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           && !flowInputDsIds.has(dsId)
           && !downstreamFlowOutputIds.has(dsId);
       });
+
+      // Bridge datasources — output of this flow, input of next flow
+      // Draw flow → ds edge but NOT ds → workbook
+      var bridgeDownstream = (fl.downstreamDatasources || []).filter(function(ds) {
+        var dsId = ds.luid || ds.name;
+        return flowInputDsIds.has(dsId);
+      });
+      bridgeDownstream.forEach(function(ds) {
+        addEdge(flId, ds.luid || ds.name, 'flow_to_ds');
+      });
       var hasDownstream = relevantDownstream.length > 0;
       relevantDownstream.forEach(function(ds) {
         var dsId = ds.luid || ds.name;
@@ -741,8 +750,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         addEdge(dsId, wbLuid, 'ds_to_wb');
       });
 
-      // if no downstream datasources, flow connects directly to workbook
-      if (!hasDownstream) {
+      // if no relevant downstream datasources, connect directly to workbook
+      // BUT only if this flow has no downstream flows — if it does, the chain
+      // continues through those flows and we don't want a direct wb edge
+      var hasDownstreamFlows = (fl.downstreamFlows || []).length > 0;
+      if (!hasDownstream && !hasDownstreamFlows) {
         addEdge(flId, wbLuid, 'flow_to_wb');
       }
     });
