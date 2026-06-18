@@ -679,37 +679,45 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       return key;
     }
 
-    function processDs(ds, targetId, targetType) {
+    function processDs(ds, targetId, targetType, addVcEdges) {
       var dsId = ds.luid || ds.name;
       if (!dsId) return;
       if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
       if (targetType === 'workbook') addEdge(dsId, wbLuid, 'ds_to_wb');
       else addEdge(dsId, targetId, 'ds_to_flow');
-      (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-        var key = addVcTable(vct);
-        if (key) addEdge(key, dsId, 'vc_table_to_ds');
-      });
-      (ds.upstreamFlows || []).forEach(function(fl) { processFlow(fl, dsId, 'datasource'); });
+      // Only add VC table edges at the direct consumer level
+      if (addVcEdges !== false) {
+        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+          var key = addVcTable(vct);
+          if (key) addEdge(key, dsId, 'vc_table_to_ds');
+        });
+      }
+      // upstream flows → ds (don't re-add VC edges from nested levels)
+      (ds.upstreamFlows || []).forEach(function(fl) { processFlow(fl, dsId, 'datasource', false); });
     }
 
-    function processFlow(fl, targetId, targetType) {
+    function processFlow(fl, targetId, targetType, addVcEdges) {
       var flId = fl.luid || fl.name;
       if (!flId) return;
       if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({ name: fl.name, luid: fl.luid }); }
       if (targetType === 'workbook') addEdge(flId, wbLuid, 'flow_to_wb');
       else addEdge(flId, targetId, 'flow_to_ds');
       var upDs = fl.upstreamDatasources || [];
-      upDs.forEach(function(ds) { processDs(ds, flId, 'flow'); });
-      var dsVcKeys = new Set();
-      upDs.forEach(function(ds) {
-        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-          var k = addVcTable(vct); if (k) dsVcKeys.add(k);
+      // Don't re-add VC edges from nested DS levels
+      upDs.forEach(function(ds) { processDs(ds, flId, 'flow', false); });
+      // Only add VC table edges at the direct consumer level
+      if (addVcEdges !== false) {
+        var dsVcKeys = new Set();
+        upDs.forEach(function(ds) {
+          (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+            var k = addVcTable(vct); if (k) dsVcKeys.add(k);
+          });
         });
-      });
-      (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-        var key = addVcTable(vct);
-        if (key && !dsVcKeys.has(key)) addEdge(key, flId, 'vc_table_to_flow');
-      });
+        (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+          var key = addVcTable(vct);
+          if (key && !dsVcKeys.has(key)) addEdge(key, flId, 'vc_table_to_flow');
+        });
+      }
     }
 
     (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, wbLuid, 'workbook'); });
@@ -794,10 +802,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     while (changed) {
       changed = false;
       var allIds = []
-        .concat((currentGraph.tables              || []).map(function(t) { return t.key; }))
-        .concat((currentGraph.datasources         || []).map(function(d) { return d.luid || d.name; }))
-        .concat((currentGraph.flows               || []).map(function(f) { return f.luid || f.name; }))
-        .concat((currentGraph.virtual_connections || []).map(function(vc) { return vc.luid || vc.name; }));
+        .concat((currentGraph.tables      || []).map(function(t) { return t.key; }))
+        .concat((currentGraph.datasources || []).map(function(d) { return d.luid || d.name; }))
+        .concat((currentGraph.flows       || []).map(function(f) { return f.luid || f.name; }));
       allIds.forEach(function(nid) {
         if (hiddenNodes.has(nid) || protectedIds.has(nid)) return;
         var hasDown = allEdges.some(function(e) { return e.from === nid && !hiddenNodes.has(e.to); });
@@ -1017,7 +1024,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     cols.forEach(function(col, ci) {
       if (!col.length) return;
       var types = Array.from(new Set(col.map(function(n) { return n.type; })));
-      var label = types.includes('workbook') ? 'Workbook' : types.includes('datasource') ? 'Datasource' : types.includes('flow') ? 'Flow' : types.includes('vc') ? 'Virtual Connection' : types.includes('vc_table') ? 'VC Tables' : 'Tables';
+      var label = types.includes('workbook') ? 'Workbook' : types.includes('datasource') ? 'Datasource' : types.includes('flow') ? 'Flow' : types.includes('vc_table') ? 'VC Tables' : 'Tables';
       svg.insertBefore(svgEl('text', {
         x: colX[ci] + NODE_W / 2, y: 10, fill: '#8b949e',
         'font-size': '10', 'font-weight': '600', 'text-anchor': 'middle', 'letter-spacing': '0.05em',
