@@ -664,6 +664,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       edges.push({ from: from, to: to, type: type });
     }
 
+    var vcTableEdged = new Set(); // track VC tables that already have an edge
+
     function addVcTable(vct) {
       if (!vct) return null;
       var vc   = vct.virtualConnection || {};
@@ -679,20 +681,27 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       return key;
     }
 
+    function addVcEdge(vct, targetId, type) {
+      var key = addVcTable(vct);
+      if (!key) return;
+      // Only add edge if this VC table hasn't been connected yet
+      if (!vcTableEdged.has(key)) {
+        vcTableEdged.add(key);
+        addEdge(key, targetId, type);
+      }
+    }
+
     function processDs(ds, targetId, targetType, addVcEdges) {
       var dsId = ds.luid || ds.name;
       if (!dsId) return;
       if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
       if (targetType === 'workbook') addEdge(dsId, wbLuid, 'ds_to_wb');
       else addEdge(dsId, targetId, 'ds_to_flow');
-      // Only add VC table edges at the direct consumer level
       if (addVcEdges !== false) {
         (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-          var key = addVcTable(vct);
-          if (key) addEdge(key, dsId, 'vc_table_to_ds');
+          addVcEdge(vct, dsId, 'vc_table_to_ds');
         });
       }
-      // upstream flows → ds (don't re-add VC edges from nested levels)
       (ds.upstreamFlows || []).forEach(function(fl) { processFlow(fl, dsId, 'datasource', false); });
     }
 
@@ -703,9 +712,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (targetType === 'workbook') addEdge(flId, wbLuid, 'flow_to_wb');
       else addEdge(flId, targetId, 'flow_to_ds');
       var upDs = fl.upstreamDatasources || [];
-      // Don't re-add VC edges from nested DS levels
       upDs.forEach(function(ds) { processDs(ds, flId, 'flow', false); });
-      // Only add VC table edges at the direct consumer level
       if (addVcEdges !== false) {
         var dsVcKeys = new Set();
         upDs.forEach(function(ds) {
@@ -715,7 +722,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         });
         (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
           var key = addVcTable(vct);
-          if (key && !dsVcKeys.has(key)) addEdge(key, flId, 'vc_table_to_flow');
+          if (key && !dsVcKeys.has(key)) addVcEdge(vct, flId, 'vc_table_to_flow');
         });
       }
     }
@@ -725,8 +732,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
     // Direct workbook → VC table connections (no DS or flow in between)
     (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-      var key = addVcTable(vct);
-      if (key) addEdge(key, wbLuid, 'vc_table_to_wb');
+      addVcEdge(vct, wbLuid, 'vc_table_to_wb');
     });
 
     // Deduplicate
