@@ -925,7 +925,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     Object.values(nodeMap).forEach(function(n) {
       n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.type === 'workbook' ? 0 : 1;
     });
-    });
 
     var changed = true, iterations = 0;
     while (changed && iterations < 200) {
