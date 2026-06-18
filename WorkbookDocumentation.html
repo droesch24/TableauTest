@@ -667,13 +667,24 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var flowInputDsIds  = new Set();
     var flowOutputDsIds = new Set();
 
+    // Build a map of all flows by luid for quick lookup
+    var flowMap = {};
     (raw.upstreamFlows || []).forEach(function(fl) {
+      flowMap[fl.luid || fl.name] = fl;
+    });
+
+    // Build set of flow luids that are upstream of another flow
+    // These are "parent flows" — they feed into another flow directly
+    var upstreamFlowIds = new Set();
+    (raw.upstreamFlows || []).forEach(function(fl) {
+      (fl.upstreamFlows || []).forEach(function(uf) {
+        upstreamFlowIds.add(uf.luid || uf.name);
+      });
       (fl.upstreamDatasources || []).forEach(function(ds) {
         flowInputDsIds.add(ds.luid || ds.name);
       });
       (fl.downstreamDatasources || []).forEach(function(ds) {
         var dsId = ds.luid || ds.name;
-        // Only count as a flow output if this workbook actually uses it
         if (wbDsIds.has(dsId)) {
           flowOutputDsIds.add(dsId);
         }
@@ -683,10 +694,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // ── Direct datasources → workbook ──────────────────────────────
     (raw.upstreamDatasources || []).forEach(function(ds) {
       var dsId = ds.luid || ds.name;
-      var isFlowInvolved = flowInputDsIds.has(dsId) || flowOutputDsIds.has(dsId);
-      if (!isFlowInvolved) {
+      var isFlowInput  = flowInputDsIds.has(dsId);
+      var isFlowOutput = flowOutputDsIds.has(dsId);
+      // Only connect directly to workbook if not involved in any flow
+      if (!isFlowInput && !isFlowOutput) {
         addEdge(dsId, wbLuid, 'ds_to_wb');
       }
+      // If it's a flow output but also a flow input (bridge DS between two flows)
+      // it gets its edges from the flow loops — no direct wb edge needed
     });
 
     // ── Flows ──────────────────────────────────────────────────────
@@ -695,7 +710,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
       // upstream datasources → flow
       (fl.upstreamDatasources || []).forEach(function(ds) {
-        addEdge(ds.luid || ds.name, flId, 'ds_to_flow');
+        var dsId = ds.luid || ds.name;
+        addEdge(dsId, flId, 'ds_to_flow');
       });
 
       // flow → downstream datasources (only those used by this workbook)
@@ -721,14 +737,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
     });
     (raw.upstreamFlows || []).forEach(function(fl) {
-      // Only include flow input datasources that are used by this workbook
+      // Register all flow input datasources — includes bridge DS between flows
       (fl.upstreamDatasources || []).forEach(function(ds) {
         var dsId = ds.luid || ds.name;
-        if (wbDsIds.has(dsId) || flowInputDsIds.has(dsId)) {
+        if (wbDsIds.has(dsId) || flowInputDsIds.has(dsId) || flowOutputDsIds.has(dsId)) {
           dsMap[dsId] = { luid: ds.luid, name: ds.name };
         }
       });
-      // Only include flow output datasources used by this workbook
+      // Register flow output datasources used by this workbook
       (fl.downstreamDatasources || []).forEach(function(ds) {
         var dsId = ds.luid || ds.name;
         if (wbDsIds.has(dsId)) {
