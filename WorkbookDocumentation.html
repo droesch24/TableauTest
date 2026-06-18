@@ -688,11 +688,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // connect directly to the workbook
     (raw.upstreamDatasources || []).forEach(function(ds) {
       var dsId = ds.luid || ds.name;
-      (ds.upstreamTables || []).forEach(function(t) {
-        var key = addTable(t);
-        if (key) addEdge(key, dsId, 'table_to_ds');
-      });
-      if (!flowInputDsIds.has(dsId) && !flowOutputDsIds.has(dsId)) {
+      var isFlowInvolved = flowInputDsIds.has(dsId) || flowOutputDsIds.has(dsId);
+      // Only draw table → ds edges for datasources not involved in any flow
+      if (!isFlowInvolved) {
+        (ds.upstreamTables || []).forEach(function(t) {
+          var key = addTable(t);
+          if (key) addEdge(key, dsId, 'table_to_ds');
+        });
         addEdge(dsId, wbLuid, 'ds_to_wb');
       }
     });
