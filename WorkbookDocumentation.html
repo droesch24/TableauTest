@@ -125,6 +125,16 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-text{font-size:12px;color:var(--text2);font-family:var(--mono)}
   .error-banner{background:var(--danger-bg);border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius);padding:9px 12px;font-size:12px;display:none;margin:10px 14px 0}
+
+  /* ── Type selector cards ── */
+  .btn-type-card {
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;padding:28px 16px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);cursor:pointer;transition:all var(--tr);font-family:var(--sans);
+  }
+  .btn-type-card:hover { border-color:var(--accent);background:var(--surface2); }
+  .btn-type-icon { font-size:28px;line-height:1; }
+  .btn-type-label { font-size:13px;font-weight:600;color:var(--text); }
 </style>
 </head>
 <body>
@@ -146,10 +156,27 @@
     </div>
   </div>
 
+  <!-- HOME VIEW -->
+  <div id="view-home" class="view active">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;padding:32px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Select a content type to browse</div>
+      <div style="display:flex;gap:16px;width:100%;max-width:420px">
+        <button id="btn-type-workbook" class="btn-type-card" onclick="selectType('Workbook')">
+          <div class="btn-type-icon">&#128202;</div>
+          <div class="btn-type-label">Workbooks</div>
+        </button>
+        <button id="btn-type-datasource" class="btn-type-card" onclick="selectType('Datasource')">
+          <div class="btn-type-icon">&#128194;</div>
+          <div class="btn-type-label">Data Sources</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- LIST VIEW -->
-  <div id="view-list" class="view active">
+  <div id="view-list" class="view">
     <div id="search-bar">
-      <input id="search-input" type="text" placeholder="Search workbooks…" autocomplete="off" />
+      <input id="search-input" type="text" placeholder="Search&#8230;" autocomplete="off" />
       <select id="sort-select">
         <option value="name">Name A&#8211;Z</option>
         <option value="name-desc">Name Z&#8211;A</option>
@@ -159,10 +186,10 @@
       </select>
     </div>
     <div class="error-banner" id="list-error"></div>
-    <div id="list-scroll"><div id="list-empty">No workbooks found.</div></div>
+    <div id="list-scroll"><div id="list-empty">No items found.</div></div>
   </div>
 
-  <!-- DETAIL VIEW -->
+    <!-- DETAIL VIEW -->
   <div id="view-detail" class="view">
     <div id="detail-tabs">
       <button class="tab-btn active" id="tab-doc"     onclick="switchTab('doc')">Documentation</button>
@@ -301,6 +328,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   var docCache       = {};
   var lineageCache   = {};
   var activeWb       = null;
+  var activeType     = 'Workbook'; // 'Workbook' or 'Datasource'
   var editTags       = [];
   var editLog        = [];
   var hiddenNodes    = new Set();
@@ -312,9 +340,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   function showView(name) {
     document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
     $(('view-' + name)).classList.add('active');
-    $('back-btn').style.display = name !== 'list' ? 'inline-flex' : 'none';
-    if (name === 'list') $('topbar-title').textContent = 'Workbook Documentation';
+    $('back-btn').style.display = (name !== 'home') ? 'inline-flex' : 'none';
+    if (name === 'home') $('topbar-title').textContent = 'Workbook Documentation';
+    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : 'Data Sources';
   }
+
+  window.selectType = function(type) {
+    activeType = type;
+    $('search-input').placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : 'Search data sources\u2026';
+    renderList();
+    showView('list');
+  };
 
   window.switchTab = function(tab) {
     ['doc','lineage'].forEach(function(t) {
@@ -367,6 +403,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var q    = $('search-input').value.toLowerCase();
     var sort = $('sort-select').value;
     var list = workbooks.filter(function(w) {
+      if (w.itemType !== activeType) return false;
       return !q ||
         (w.name        || '').toLowerCase().includes(q) ||
         (w.project     || '').toLowerCase().includes(q) ||
@@ -428,7 +465,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     showView('detail');
     switchTab('doc');
     showError('detail-error', '');
-    $('topbar-title').textContent = wb.name || 'Workbook';
+    $('topbar-title').textContent = wb.name || 'Item';
+
+    // Show/hide lineage tab based on type
+    $('tab-lineage').style.display = wb.itemType === 'Workbook' ? '' : 'none';
 
     $('detail-wb-name').textContent = wb.name || '\u2014';
     $('detail-wb-meta').innerHTML = [
@@ -507,6 +547,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   function openEdit() {
+    var isDs = activeWb && activeWb.itemType === 'Datasource';
+    $('f-audience').placeholder = isDs ? 'Who consumes this data source and for what purpose?' : 'Who uses this workbook and for what decisions?';
+    $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables — what they mean and any definition caveats.' : 'Important measures and dimensions — what they mean and any definition caveats.';
+    $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = docCache[activeWb.luid] || {};
     editTags = [].concat(doc.tags      || []);
     editLog  = [].concat(doc.changelog || []);
@@ -616,7 +660,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       renderList(); setStatus('Saved', 'saved');
       setTimeout(function() { setStatus('Ready'); }, 2500);
       renderDetail(doc); showView('detail');
-      $('topbar-title').textContent = activeWb.name || 'Workbook';
+      $('topbar-title').textContent = activeWb.name || 'Item';
     } catch(e) {
       showError('edit-error', 'Save failed: ' + e.message);
       setStatus('Save failed', 'error');
@@ -624,13 +668,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   });
 
   $('btn-cancel').addEventListener('click', function() {
-    showView('detail'); $('topbar-title').textContent = activeWb.name || 'Workbook';
+    showView('detail'); $('topbar-title').textContent = activeWb.name || 'Item';
   });
 
   $('back-btn').addEventListener('click', function() {
     var cur = document.querySelector('.view.active').id;
-    if (cur === 'view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name || 'Workbook'; }
+    if (cur === 'view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name || 'Item'; }
     if (cur === 'view-detail') { showView('list'); activeWb = null; }
+    if (cur === 'view-list')   { showView('home'); activeType = 'Workbook'; }
   });
 
   $('btn-settings').addEventListener('click', function() {
@@ -1088,6 +1133,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         return {
           luid:          get('luid') || get('id'),
           name:          get('name'),
+          itemType:      get('item type') || get('type') || 'Workbook',
           project:       get('project'),
           parentProject: get('parent project') || get('parent'),
           owner:         get('owner'),
@@ -1119,7 +1165,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       } catch(e) { setStatus('Ready'); }
     }
 
-    renderList();
     var overlay = $('loading-overlay');
     overlay.classList.add('hidden');
     setTimeout(function() { overlay.style.display = 'none'; }, 300);
