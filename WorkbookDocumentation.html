@@ -715,7 +715,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, wbLuid, 'workbook'); });
     (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, wbLuid, 'workbook'); });
 
-    // Reroute vc_table → ds/flow through VC node
+    // Direct workbook → VC table connections (no DS or flow in between)
+    (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+      var key = addVcTable(vct);
+      if (key) addEdge(key, wbLuid, 'vc_table_to_wb');
+    });
+
+    // Reroute vc_table → ds/flow/wb through VC node
     Object.keys(vcMap).forEach(function(vcId) {
       var myTables = tables.filter(function(t) { return t.vc_luid === vcId; });
       myTables.forEach(function(t) {
@@ -861,7 +867,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
     // Column assignment
     Object.values(nodeMap).forEach(function(n) {
-      n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.type === 'workbook' ? 0 : 1;
+      n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.type === 'workbook' ? 0 : n.type === 'vc' ? 1 : 1;
     });
 
     var changed = true, iterations = 0;
