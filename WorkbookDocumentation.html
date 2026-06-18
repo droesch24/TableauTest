@@ -646,19 +646,21 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var wbLuid = raw.luid;
     var wbName = raw.name;
 
-    var tableMap = {};
+    var tableMap  = {};
+    var edges     = [];
+    var seenEdges = new Set();
+
     function addTable(t) {
-      if (!t || !t.name) return;
+      if (!t || !t.name) return null;
       var dbName = (t.database && t.database.name) ? t.database.name : '';
       var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
-      if (!key) return;
+      if (!key) return null;
       if (!tableMap[key]) {
         tableMap[key] = { key: key, name: t.name, db: dbName, schema: t.schema || '', is_vc: false };
       }
+      return key;
     }
 
-    var edges     = [];
-    var seenEdges = new Set();
     function addEdge(from, to, type) {
       var key = from + '|' + to;
       if (seenEdges.has(key)) return;
@@ -666,25 +668,31 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       edges.push({ from: from, to: to, type: type });
     }
 
-    // Collect all datasource luids that are outputs of flows
-    // so we can correctly route ds → flow vs ds → workbook
+    // Build sets of datasource luids that feed INTO flows
+    // and datasource luids that are OUTPUT of flows
+    // These should NOT get direct ds_to_wb edges
+    var flowInputDsIds  = new Set();
     var flowOutputDsIds = new Set();
+
     (raw.upstreamFlows || []).forEach(function(fl) {
+      (fl.upstreamDatasources || []).forEach(function(ds) {
+        flowInputDsIds.add(ds.luid || ds.name);
+      });
       (fl.downstreamDatasources || []).forEach(function(ds) {
         flowOutputDsIds.add(ds.luid || ds.name);
       });
     });
 
-    // ── Direct datasources (not flow outputs) → workbook ──────────
+    // ── Direct datasources → workbook ──────────────────────────────
+    // Only datasources that are NOT flow inputs and NOT flow outputs
+    // connect directly to the workbook
     (raw.upstreamDatasources || []).forEach(function(ds) {
       var dsId = ds.luid || ds.name;
       (ds.upstreamTables || []).forEach(function(t) {
-        if (!t || !t.name) return;
-        var dbName = (t.database && t.database.name) ? t.database.name : '';
-        var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
-        if (key) { addTable(t); addEdge(key, dsId, 'table_to_ds'); }
+        var key = addTable(t);
+        if (key) addEdge(key, dsId, 'table_to_ds');
       });
-      if (!flowOutputDsIds.has(dsId)) {
+      if (!flowInputDsIds.has(dsId) && !flowOutputDsIds.has(dsId)) {
         addEdge(dsId, wbLuid, 'ds_to_wb');
       }
     });
@@ -695,35 +703,29 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
       // tables → flow
       (fl.upstreamTables || []).forEach(function(t) {
-        if (!t || !t.name) return;
-        var dbName = (t.database && t.database.name) ? t.database.name : '';
-        var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
-        if (key) { addTable(t); addEdge(key, flId, 'table_to_flow'); }
+        var key = addTable(t);
+        if (key) addEdge(key, flId, 'table_to_flow');
       });
 
-      // upstream datasources → flow
+      // upstream datasources → flow (ds feeds INTO flow)
       (fl.upstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        addEdge(dsId, flId, 'ds_to_flow');
+        addEdge(ds.luid || ds.name, flId, 'ds_to_flow');
       });
 
-      // flow → downstream datasources
+      // flow → downstream datasources (flow publishes these)
+      var hasDownstream = (fl.downstreamDatasources || []).length > 0;
       (fl.downstreamDatasources || []).forEach(function(ds) {
         var dsId = ds.luid || ds.name;
-        // add tables for this output DS
         (ds.upstreamTables || []).forEach(function(t) {
-          if (!t || !t.name) return;
-          var dbName = (t.database && t.database.name) ? t.database.name : '';
-          var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
-          if (key) { addTable(t); addEdge(key, dsId, 'table_to_ds'); }
+          var key = addTable(t);
+          if (key) addEdge(key, dsId, 'table_to_ds');
         });
         addEdge(flId, dsId, 'flow_to_ds');
-        // flow output DS → workbook
         addEdge(dsId, wbLuid, 'ds_to_wb');
       });
 
-      // if flow has no downstream datasources, connect directly to workbook
-      if (!(fl.downstreamDatasources || []).length) {
+      // if no downstream datasources, flow connects directly to workbook
+      if (!hasDownstream) {
         addEdge(flId, wbLuid, 'flow_to_wb');
       }
     });
@@ -734,10 +736,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
     });
     (raw.upstreamFlows || []).forEach(function(fl) {
-      (fl.downstreamDatasources || []).forEach(function(ds) {
+      (fl.upstreamDatasources || []).forEach(function(ds) {
         dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
       });
-      (fl.upstreamDatasources || []).forEach(function(ds) {
+      (fl.downstreamDatasources || []).forEach(function(ds) {
         dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
       });
     });
