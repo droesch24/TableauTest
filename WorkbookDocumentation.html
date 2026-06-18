@@ -646,7 +646,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var wbLuid = raw.luid;
     var wbName = raw.name;
 
-    // ── Collect unique tables ──────────────────────────────────────
     var tableMap = {};
     function addTable(t) {
       if (!t || !t.name) return;
@@ -658,6 +657,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       }
     }
 
+    // Collect all tables from datasources and flows
     (raw.upstreamDatasources || []).forEach(function(ds) {
       (ds.upstreamTables || []).forEach(function(t) { addTable(t); });
     });
@@ -665,8 +665,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       (fl.upstreamTables || []).forEach(function(t) { addTable(t); });
     });
 
-    // ── Build edges ────────────────────────────────────────────────
-    var edges = [];
+    var edges   = [];
     var seenEdges = new Set();
     function addEdge(from, to, type) {
       var key = from + '|' + to;
@@ -675,7 +674,20 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       edges.push({ from: from, to: to, type: type });
     }
 
-    // table → datasource
+    // Collect all datasource luids that are outputs of flows
+    // so we can distinguish flow-output DS from direct-to-WB DS
+    var flowOutputDsIds = new Set();
+    (raw.upstreamFlows || []).forEach(function(fl) {
+      var flId = fl.luid || fl.name;
+      (fl.upstreamDatasources || []).forEach(function(ds) {
+        var dsId = ds.luid || ds.name;
+        flowOutputDsIds.add(dsId);
+        // datasource feeds INTO the flow
+        addEdge(dsId, flId, 'ds_to_flow');
+      });
+    });
+
+    // table → datasource edges (for direct datasources)
     (raw.upstreamDatasources || []).forEach(function(ds) {
       var dsId = ds.luid || ds.name;
       (ds.upstreamTables || []).forEach(function(t) {
@@ -684,11 +696,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
         if (key) addEdge(key, dsId, 'table_to_ds');
       });
-      // datasource → workbook
-      addEdge(dsId, wbLuid, 'ds_to_wb');
+      // datasource → workbook (only if not a flow output)
+      if (!flowOutputDsIds.has(dsId)) {
+        addEdge(dsId, wbLuid, 'ds_to_wb');
+      }
     });
 
-    // table → flow, flow → datasource, flow → workbook
+    // table → flow edges, flow → ds edges, flow → workbook edges
     (raw.upstreamFlows || []).forEach(function(fl) {
       var flId = fl.luid || fl.name;
       (fl.upstreamTables || []).forEach(function(t) {
@@ -697,10 +711,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
         if (key) addEdge(key, flId, 'table_to_flow');
       });
-      (fl.upstreamDatasources || []).forEach(function(ds) {
-        addEdge(ds.luid || ds.name, flId, 'ds_to_flow');
-      });
+      // flow → workbook (direct, if no output DS)
       addEdge(flId, wbLuid, 'flow_to_wb');
+    });
+
+    // Now handle flow-output datasources → workbook
+    // These are DS in upstreamDatasources that ARE in flowOutputDsIds
+    (raw.upstreamDatasources || []).forEach(function(ds) {
+      var dsId = ds.luid || ds.name;
+      if (flowOutputDsIds.has(dsId)) {
+        addEdge(dsId, wbLuid, 'ds_to_wb');
+      }
     });
 
     return {
