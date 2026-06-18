@@ -646,180 +646,118 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var wbLuid = raw.luid;
     var wbName = raw.name;
 
-    var edges     = [];
-    var seenEdges = new Set();
+    var tablesSeen = new Set();
+    var tables     = [];
+    var flowsSeen  = new Set();
+    var allFlows   = [];
+    var dsSeen     = new Set();
+    var allDs      = [];
+    var vcMap      = {};
+    var edges      = [];
+    var edgesSeen  = new Set();
 
     function addEdge(from, to, type) {
+      if (!from || !to) return;
       var key = from + '|' + to;
-      if (seenEdges.has(key)) return;
-      seenEdges.add(key);
+      if (edgesSeen.has(key)) return;
+      edgesSeen.add(key);
       edges.push({ from: from, to: to, type: type });
     }
 
-    // Build set of datasource luids actually used by this workbook
-    var wbDsIds = new Set();
-    (raw.upstreamDatasources || []).forEach(function(ds) {
-      wbDsIds.add(ds.luid || ds.name);
-    });
-
-    // Build sets of datasource luids that feed INTO flows
-    // and datasource luids that are OUTPUT of flows AND used by this workbook
-    var flowInputDsIds  = new Set();
-    var flowOutputDsIds    = new Set(); // flow outputs used by this workbook
-    var allFlowOutputDsIds = new Set(); // ALL flow outputs for bridge detection
-
-    // Build a map of all flows by luid for quick lookup
-    var flowMap = {};
-    (raw.upstreamFlows || []).forEach(function(fl) {
-      flowMap[fl.luid || fl.name] = fl;
-    });
-
-    // Build sets
-    var upstreamFlowIds = new Set();
-    (raw.upstreamFlows || []).forEach(function(fl) {
-      (fl.upstreamFlows || []).forEach(function(uf) {
-        upstreamFlowIds.add(uf.luid || uf.name);
-      });
-      (fl.upstreamDatasources || []).forEach(function(ds) {
-        flowInputDsIds.add(ds.luid || ds.name);
-      });
-      (fl.downstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        allFlowOutputDsIds.add(dsId);
-        if (wbDsIds.has(dsId)) {
-          flowOutputDsIds.add(dsId);
-        }
-      });
-    });
-
-    // ── Direct datasources → workbook ──────────────────────────────
-    (raw.upstreamDatasources || []).forEach(function(ds) {
-      var dsId = ds.luid || ds.name;
-      var isFlowInput  = flowInputDsIds.has(dsId);
-      var isFlowOutput = allFlowOutputDsIds.has(dsId); // use ALL flow outputs for bridge detection
-      if (!isFlowInput && !isFlowOutput) {
-        addEdge(dsId, wbLuid, 'ds_to_wb');
-      }
-      // Flow outputs and bridge DS get their edges from the flow loop
-    });
-
-    // ── Flows ──────────────────────────────────────────────────────
-    (raw.upstreamFlows || []).forEach(function(fl) {
-      var flId = fl.luid || fl.name;
-
-      // upstream datasources → flow
-      (fl.upstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        addEdge(dsId, flId, 'ds_to_flow');
-      });
-
-      // flow → downstream datasources
-      // Split into two groups:
-      // 1. Direct outputs (connect flow → ds → workbook)
-      // 2. Bridge outputs (connect flow → ds → next flow, no direct wb edge)
-      var downstreamFlowOutputIds = new Set();
-      (fl.downstreamFlows || []).forEach(function(df) {
-        var dfFull = flowMap[df.luid || df.name];
-        if (dfFull) {
-          (dfFull.downstreamDatasources || []).forEach(function(ds) {
-            downstreamFlowOutputIds.add(ds.luid || ds.name);
-          });
-        }
-      });
-
-      var relevantDownstream = (fl.downstreamDatasources || []).filter(function(ds) {
-        var dsId = ds.luid || ds.name;
-        return wbDsIds.has(dsId)
-          && !flowInputDsIds.has(dsId)
-          && !downstreamFlowOutputIds.has(dsId);
-      });
-
-      // Bridge datasources — output of this flow, input of next flow
-      // Draw flow → ds edge but NOT ds → workbook
-      var bridgeDownstream = (fl.downstreamDatasources || []).filter(function(ds) {
-        var dsId = ds.luid || ds.name;
-        return flowInputDsIds.has(dsId);
-      });
-      bridgeDownstream.forEach(function(ds) {
-        addEdge(flId, ds.luid || ds.name, 'flow_to_ds');
-      });
-      var hasDownstream = relevantDownstream.length > 0;
-      relevantDownstream.forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        addEdge(flId, dsId, 'flow_to_ds');
-        addEdge(dsId, wbLuid, 'ds_to_wb');
-      });
-
-      // if no relevant downstream datasources, connect directly to workbook
-      // BUT only if this flow has no downstream flows — if it does, the chain
-      // continues through those flows and we don't want a direct wb edge
-      var hasDownstreamFlows = (fl.downstreamFlows || []).length > 0;
-      if (!hasDownstream && !hasDownstreamFlows) {
-        addEdge(flId, wbLuid, 'flow_to_wb');
-      }
-    });
-
-    // ── Collect only workbook-relevant datasources for node registry ──
-    var dsMap = {};
-    (raw.upstreamDatasources || []).forEach(function(ds) {
-      dsMap[ds.luid || ds.name] = { luid: ds.luid, name: ds.name };
-    });
-    (raw.upstreamFlows || []).forEach(function(fl) {
-      // Register all flow input datasources — includes bridge DS between flows
-      (fl.upstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        if (wbDsIds.has(dsId) || flowInputDsIds.has(dsId) || flowOutputDsIds.has(dsId)) {
-          dsMap[dsId] = { luid: ds.luid, name: ds.name };
-        }
-      });
-      // Register flow output datasources used by this workbook
-      (fl.downstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        if (wbDsIds.has(dsId)) {
-          dsMap[dsId] = { luid: ds.luid, name: ds.name };
-        }
-      });
-    });
-
-    // ── Virtual Connections ────────────────────────────────────────
-    var vcMap   = {};
-    var vcTables = [];
-    (raw.upstreamVirtualConnections || []).forEach(function(vc) {
+    function addVcTable(vct) {
+      if (!vct) return null;
+      var vc   = vct.virtualConnection || {};
       var vcId = vc.luid || vc.name;
-      vcMap[vcId] = { luid: vc.luid, name: vc.name };
+      var nm   = vct.name || '';
+      if (!nm || !vcId) return null;
+      if (!vcMap[vcId]) vcMap[vcId] = { luid: vc.luid, name: vc.name };
+      var key = 'vc:' + vcId + '.' + nm;
+      if (!tablesSeen.has(key)) {
+        tablesSeen.add(key);
+        tables.push({ key: key, name: nm, db: vc.name || '', schema: 'Virtual Connection', is_vc: true, vc_luid: vcId });
+      }
+      return key;
+    }
 
-      // VC → workbook edge
-      addEdge(vcId, wbLuid, 'vc_to_wb');
-
-      // VC tables → VC edges
-      (vc.upstreamTables || []).forEach(function(t) {
-        var dbName = (t.database && t.database.name) ? t.database.name : '';
-        // Use vc luid as db name if the db name is a guid (the vc's own luid)
-        var displayDb = (dbName === vcId) ? vc.name : dbName;
-        var key = vcId + '.' + t.name;
-        vcTables.push({
-          key:    key,
-          name:   t.name,
-          db:     displayDb,
-          schema: t.schema || '',
-          is_vc:  true,
-          vc_luid: vcId,
-        });
-        addEdge(key, vcId, 'table_to_vc');
+    function processDs(ds, targetId, targetType) {
+      var dsId = ds.luid || ds.name;
+      if (!dsId) return;
+      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
+      if (targetType === 'workbook') addEdge(dsId, wbLuid, 'ds_to_wb');
+      else addEdge(dsId, targetId, 'ds_to_flow');
+      (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+        var key = addVcTable(vct);
+        if (key) addEdge(key, dsId, 'vc_table_to_ds');
       });
+      (ds.upstreamFlows || []).forEach(function(fl) { processFlow(fl, dsId, 'datasource'); });
+    }
+
+    function processFlow(fl, targetId, targetType) {
+      var flId = fl.luid || fl.name;
+      if (!flId) return;
+      if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({ name: fl.name, luid: fl.luid }); }
+      if (targetType === 'workbook') addEdge(flId, wbLuid, 'flow_to_wb');
+      else addEdge(flId, targetId, 'flow_to_ds');
+      var upDs = fl.upstreamDatasources || [];
+      upDs.forEach(function(ds) { processDs(ds, flId, 'flow'); });
+      var dsVcKeys = new Set();
+      upDs.forEach(function(ds) {
+        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+          var k = addVcTable(vct); if (k) dsVcKeys.add(k);
+        });
+      });
+      (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+        var key = addVcTable(vct);
+        if (key && !dsVcKeys.has(key)) addEdge(key, flId, 'vc_table_to_flow');
+      });
+    }
+
+    (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, wbLuid, 'workbook'); });
+    (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, wbLuid, 'workbook'); });
+
+    // Reroute vc_table → ds/flow through VC node
+    Object.keys(vcMap).forEach(function(vcId) {
+      var myTables = tables.filter(function(t) { return t.vc_luid === vcId; });
+      myTables.forEach(function(t) {
+        for (var i = 0; i < edges.length; i++) {
+          var e = edges[i];
+          if (e.from === t.key && e.type !== 'vc_table_to_vc') {
+            addEdge(vcId, e.to, 'vc_to_node');
+            e.to   = vcId;
+            e.type = 'vc_table_to_vc';
+          }
+        }
+      });
+    });
+
+    // Deduplicate
+    var finalEdges = [];
+    var finalSeen  = new Set();
+    edges.forEach(function(e) {
+      var key = e.from + '|' + e.to;
+      if (!finalSeen.has(key)) { finalSeen.add(key); finalEdges.push(e); }
+    });
+
+    // Remove redundant direct edges
+    var dsViaFlow     = new Set(finalEdges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
+    var flowWithDsOut = new Set(finalEdges.filter(function(e) { return e.type === 'flow_to_ds'; }).map(function(e) { return e.from; }));
+    finalEdges = finalEdges.filter(function(e) {
+      if (e.type === 'ds_to_wb'   && dsViaFlow.has(e.from))     return false;
+      if (e.type === 'flow_to_wb' && flowWithDsOut.has(e.from)) return false;
+      return true;
     });
 
     return {
-      workbook:        { luid: wbLuid, name: wbName },
-      extra_workbooks: [],
-      hero_luid:       wbLuid,
-      hero_type:       'workbook',
-      central_type:    'workbook',
-      tables:          vcTables,
-      datasources:     Object.values(dsMap),
-      flows:           (raw.upstreamFlows || []).map(function(fl) { return { luid: fl.luid, name: fl.name }; }),
+      workbook:            { luid: wbLuid, name: wbName },
+      extra_workbooks:     [],
+      hero_luid:           wbLuid,
+      hero_type:           'workbook',
+      central_type:        'workbook',
+      tables:              tables,
+      datasources:         allDs,
+      flows:               allFlows,
       virtual_connections: Object.values(vcMap),
-      edges:           edges,
+      edges:               finalEdges,
     };
   }
 
