@@ -64,6 +64,7 @@
   .doc-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
   .doc-badge.yes{background:var(--success-bg);color:var(--success)}
   .doc-badge.no{background:var(--surface2);color:var(--text2)}
+  .cert-badge{font-size:14px;flex-shrink:0;line-height:1;title:'Certified'}
   .wb-row-arrow{color:var(--text2);font-size:14px;flex-shrink:0}
   #list-empty{display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px}
   /* detail doc tab */
@@ -248,6 +249,34 @@
           <textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea>
         </div>
       </div>
+
+      <!-- Datasource-only fields -->
+      <div class="edit-section" id="ds-fields" style="display:none">
+        <div class="edit-section-label">Data Source Details</div>
+        <div class="field-group">
+          <div class="field-label">Source System</div>
+          <input type="text" id="f-source-system" placeholder="e.g. Agvance, SAP, SharePoint, Excel" />
+        </div>
+        <div class="field-group">
+          <div class="field-label">Refresh Schedule</div>
+          <input type="text" id="f-refresh" placeholder="e.g. Daily at 6am, Manual, Live connection" />
+        </div>
+        <div class="field-group">
+          <div class="field-label">Data Owner / Steward</div>
+          <input type="text" id="f-steward" placeholder="Name or email of the person responsible for this data" />
+        </div>
+        <div class="field-group">
+          <div class="field-label" style="margin-bottom:8px">Row-Level Security</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" id="f-rls-enabled" style="width:auto;padding:0;accent-color:var(--accent)" />
+              Row-level security is applied to this data source
+            </label>
+          </div>
+          <textarea id="f-rls-desc" rows="2" placeholder="Describe how row-level security works — who sees what and why&#8230;" style="display:none"></textarea>
+        </div>
+      </div>
+
       <div class="edit-section">
         <div class="edit-section-label">Ownership</div>
         <div class="field-group">
@@ -447,6 +476,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           '<div class="wb-row-name">' + escHtml(wb.name || '\u2014') + '</div>' +
           '<div class="wb-row-meta">' + escHtml(metaParts) + '</div>' +
         '</div>' +
+        (wb.certified ? '<span class="cert-badge" title="Certified">\ud83c\udfc5</span>' : '') +
         '<span class="doc-badge ' + (hasDoc ? 'yes' : 'no') + '">' + (hasDoc ? 'Documented' : 'No docs') + '</span>' +
         '<span class="wb-row-arrow">\u203a</span>';
       row.addEventListener('click', function() { openDetail(wb); });
@@ -470,7 +500,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Show/hide lineage tab based on type
     $('tab-lineage').style.display = wb.itemType === 'Workbook' ? '' : 'none';
 
-    $('detail-wb-name').textContent = wb.name || '\u2014';
+    $('detail-wb-name').innerHTML = escHtml(wb.name || '\u2014') +
+      (wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '');
     $('detail-wb-meta').innerHTML = [
       (wb.parentProject && wb.parentProject !== wb.project) ? 'Parent Project: <b>' + escHtml(wb.parentProject) + '</b>' : null,
       wb.project    ? 'Project: <b>' + escHtml(wb.project) + '</b>' : null,
@@ -534,11 +565,23 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (sec.querySelectorAll('.detail-field').length) body.appendChild(sec);
     }
 
+    var isDs = activeWb && activeWb.itemType === 'Datasource';
+    var audienceLabel = isDs ? 'Intended Audience' : 'Intended Audience';
+    var metricsLabel  = isDs ? 'Key Fields / Tables' : 'Key Metrics / Fields';
+
     section('Documentation', [
-      ['Intended Audience',           doc.audience, 'text'],
-      ['Key Metrics / Fields',        doc.metrics,  'text'],
+      [audienceLabel,                 doc.audience, 'text'],
+      [metricsLabel,                  doc.metrics,  'text'],
       ['Known Limitations / Caveats', doc.caveats,  'text'],
     ]);
+    if (isDs) {
+      section('Data Source Details', [
+        ['Source System',       doc.sourceSystem, 'text'],
+        ['Refresh Schedule',    doc.refresh,      'text'],
+        ['Data Owner / Steward',doc.steward,      'text'],
+        ['Row-Level Security',  doc.rlsEnabled ? ('Yes \u2014 ' + (doc.rlsDesc || 'No description provided.')) : 'No', 'text'],
+      ]);
+    }
     section('Ownership',  [['Last Reviewed', doc.reviewed, 'text']]);
     section('Tags',       [['Tags',          doc.tags,     'tags']]);
     section('Change Log', [['Change Log',    doc.changelog,'log']]);
@@ -552,6 +595,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables — what they mean and any definition caveats.' : 'Important measures and dimensions — what they mean and any definition caveats.';
     $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = docCache[activeWb.luid] || {};
+
+    // Show/hide datasource-specific fields
+    $('ds-fields').style.display = isDs ? '' : 'none';
+    if (isDs) {
+      $('f-source-system').value = doc.sourceSystem || '';
+      $('f-refresh').value       = doc.refresh       || '';
+      $('f-steward').value       = doc.steward       || '';
+      $('f-rls-enabled').checked = !!doc.rlsEnabled;
+      $('f-rls-desc').value      = doc.rlsDesc       || '';
+      $('f-rls-desc').style.display = doc.rlsEnabled ? '' : 'none';
+    }
     editTags = [].concat(doc.tags      || []);
     editLog  = [].concat(doc.changelog || []);
     $('f-audience').value   = doc.audience || '';
@@ -566,6 +620,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     showError('edit-error', '');
   }
   $('btn-edit').addEventListener('click', openEdit);
+
+  $('f-rls-enabled').addEventListener('change', function() {
+    $('f-rls-desc').style.display = this.checked ? '' : 'none';
+    if (!this.checked) $('f-rls-desc').value = '';
+  });
 
   $('btn-reload-doc').addEventListener('click', async function() {
     if (!activeWb) return;
@@ -647,13 +706,21 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     setStatus('Saving\u2026', 'saving');
     $('btn-save').disabled = true;
     showError('edit-error', '');
+    var isDs = activeWb && activeWb.itemType === 'Datasource';
     var doc = {
       luid: activeWb.luid, name: activeWb.name, project: activeWb.project,
-      owner: activeWb.owner, updatedAt: activeWb.updated,
+      owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType,
       audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(),
       caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value,
       tags: editTags, changelog: editLog, savedAt: new Date().toISOString(),
     };
+    if (isDs) {
+      doc.sourceSystem = $('f-source-system').value.trim();
+      doc.refresh      = $('f-refresh').value.trim();
+      doc.steward      = $('f-steward').value.trim();
+      doc.rlsEnabled   = $('f-rls-enabled').checked;
+      doc.rlsDesc      = $('f-rls-desc').value.trim();
+    }
     try {
       await callFlow({ action: 'save', luid: activeWb.luid, doc: doc });
       docCache[activeWb.luid] = doc;
@@ -1140,6 +1207,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           ownerEmail:    get('email') || get('owner email'),
           description:   get('description'),
           updated:       get('updated') || get('modified'),
+          certified:     (get('data source is certified') || '').toLowerCase() === 'true',
         };
       }).filter(function(w) { return w.luid || w.name; });
 
