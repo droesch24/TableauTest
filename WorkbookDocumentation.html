@@ -664,6 +664,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       edges.push({ from: from, to: to, type: type });
     }
 
+    // Build set of datasource luids actually used by this workbook
+    var wbDsIds = new Set();
+    (raw.upstreamDatasources || []).forEach(function(ds) {
+      wbDsIds.add(ds.luid || ds.name);
+    });
+
     var vcTableEdged = new Set(); // track VC tables that already have an edge
 
     function addVcTable(vct) {
@@ -725,15 +731,32 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           if (key && !dsVcKeys.has(key)) addVcEdge(vct, flId, 'vc_table_to_flow');
         });
       }
+      // For flows called from top level, use downstreamDatasources filtered to wbDsIds
+      // to add flow→ds→wb edges for relevant outputs only
+      if (targetType === 'workbook') {
+        var relevantDown = (fl.downstreamDatasources || []).filter(function(ds) {
+          return wbDsIds.has(ds.luid || ds.name);
+        });
+        relevantDown.forEach(function(ds) {
+          var dsId = ds.luid || ds.name;
+          if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
+          addEdge(flId, dsId, 'flow_to_ds');
+          addEdge(dsId, wbLuid, 'ds_to_wb');
+        });
+      }
     }
 
     (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, wbLuid, 'workbook'); });
     (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, wbLuid, 'workbook'); });
 
-    // Direct workbook → VC table connections (no DS or flow in between)
-    (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-      addVcEdge(vct, wbLuid, 'vc_table_to_wb');
-    });
+    // Only add direct workbook VC table edges if the workbook has NO upstream datasources or flows
+    // (pure VC workbook — connects directly to a VC without any DS or flow in between)
+    var hasUpstreamDsOrFlow = (raw.upstreamDatasources || []).length > 0 || (raw.upstreamFlows || []).length > 0;
+    if (!hasUpstreamDsOrFlow) {
+      (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+        addVcEdge(vct, wbLuid, 'vc_table_to_wb');
+      });
+    }
 
     // Deduplicate
     var finalEdges = [];
