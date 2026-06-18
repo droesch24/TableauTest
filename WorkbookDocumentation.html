@@ -713,10 +713,26 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         addEdge(dsId, flId, 'ds_to_flow');
       });
 
-      // flow → downstream datasources (only those used by this workbook and not bridge DS)
+      // flow → downstream datasources
+      // Only include datasources that are direct outputs of THIS flow:
+      // - they must be in wbDsIds (used by workbook)
+      // - they must NOT be flow inputs (bridge DS — output of this flow, input of next)
+      // - they must NOT be outputs of a downstream flow (transitive via another flow)
+      var downstreamFlowOutputIds = new Set();
+      (fl.downstreamFlows || []).forEach(function(df) {
+        var dfFull = flowMap[df.luid || df.name];
+        if (dfFull) {
+          (dfFull.downstreamDatasources || []).forEach(function(ds) {
+            downstreamFlowOutputIds.add(ds.luid || ds.name);
+          });
+        }
+      });
+
       var relevantDownstream = (fl.downstreamDatasources || []).filter(function(ds) {
         var dsId = ds.luid || ds.name;
-        return wbDsIds.has(dsId) && !flowInputDsIds.has(dsId);
+        return wbDsIds.has(dsId)
+          && !flowInputDsIds.has(dsId)
+          && !downstreamFlowOutputIds.has(dsId);
       });
       var hasDownstream = relevantDownstream.length > 0;
       relevantDownstream.forEach(function(ds) {
