@@ -665,7 +665,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Build sets of datasource luids that feed INTO flows
     // and datasource luids that are OUTPUT of flows AND used by this workbook
     var flowInputDsIds  = new Set();
-    var flowOutputDsIds = new Set();
+    var flowOutputDsIds    = new Set(); // flow outputs used by this workbook
+    var allFlowOutputDsIds = new Set(); // ALL flow outputs for bridge detection
 
     // Build a map of all flows by luid for quick lookup
     var flowMap = {};
@@ -673,8 +674,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       flowMap[fl.luid || fl.name] = fl;
     });
 
-    // Build set of flow luids that are upstream of another flow
-    // These are "parent flows" — they feed into another flow directly
+    // Build sets
     var upstreamFlowIds = new Set();
     (raw.upstreamFlows || []).forEach(function(fl) {
       (fl.upstreamFlows || []).forEach(function(uf) {
@@ -685,6 +685,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       });
       (fl.downstreamDatasources || []).forEach(function(ds) {
         var dsId = ds.luid || ds.name;
+        allFlowOutputDsIds.add(dsId);
         if (wbDsIds.has(dsId)) {
           flowOutputDsIds.add(dsId);
         }
@@ -695,13 +696,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     (raw.upstreamDatasources || []).forEach(function(ds) {
       var dsId = ds.luid || ds.name;
       var isFlowInput  = flowInputDsIds.has(dsId);
-      var isFlowOutput = flowOutputDsIds.has(dsId);
-      // Only connect directly to workbook if not involved in any flow
+      var isFlowOutput = allFlowOutputDsIds.has(dsId); // use ALL flow outputs for bridge detection
       if (!isFlowInput && !isFlowOutput) {
         addEdge(dsId, wbLuid, 'ds_to_wb');
       }
-      // If it's a flow output but also a flow input (bridge DS between two flows)
-      // it gets its edges from the flow loops — no direct wb edge needed
+      // Flow outputs and bridge DS get their edges from the flow loop
     });
 
     // ── Flows ──────────────────────────────────────────────────────
@@ -714,9 +713,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         addEdge(dsId, flId, 'ds_to_flow');
       });
 
-      // flow → downstream datasources (only those used by this workbook)
+      // flow → downstream datasources (only those used by this workbook and not bridge DS)
       var relevantDownstream = (fl.downstreamDatasources || []).filter(function(ds) {
-        return wbDsIds.has(ds.luid || ds.name);
+        var dsId = ds.luid || ds.name;
+        return wbDsIds.has(dsId) && !flowInputDsIds.has(dsId);
       });
       var hasDownstream = relevantDownstream.length > 0;
       relevantDownstream.forEach(function(ds) {
