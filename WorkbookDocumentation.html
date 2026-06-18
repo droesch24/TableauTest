@@ -642,6 +642,80 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
   // ── LINEAGE ────────────────────────────────────────────────────────────────
 
+  function transformGraphQLToGraph(raw) {
+    var wbLuid = raw.luid;
+    var wbName = raw.name;
+
+    // ── Collect unique tables ──────────────────────────────────────
+    var tableMap = {};
+    function addTable(t) {
+      if (!t || !t.name) return;
+      var dbName = (t.database && t.database.name) ? t.database.name : '';
+      var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
+      if (!key) return;
+      if (!tableMap[key]) {
+        tableMap[key] = { key: key, name: t.name, db: dbName, schema: t.schema || '', is_vc: false };
+      }
+    }
+
+    (raw.upstreamDatasources || []).forEach(function(ds) {
+      (ds.upstreamTables || []).forEach(function(t) { addTable(t); });
+    });
+    (raw.upstreamFlows || []).forEach(function(fl) {
+      (fl.upstreamTables || []).forEach(function(t) { addTable(t); });
+    });
+
+    // ── Build edges ────────────────────────────────────────────────
+    var edges = [];
+    var seenEdges = new Set();
+    function addEdge(from, to, type) {
+      var key = from + '|' + to;
+      if (seenEdges.has(key)) return;
+      seenEdges.add(key);
+      edges.push({ from: from, to: to, type: type });
+    }
+
+    // table → datasource
+    (raw.upstreamDatasources || []).forEach(function(ds) {
+      var dsId = ds.luid || ds.name;
+      (ds.upstreamTables || []).forEach(function(t) {
+        if (!t || !t.name) return;
+        var dbName = (t.database && t.database.name) ? t.database.name : '';
+        var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
+        if (key) addEdge(key, dsId, 'table_to_ds');
+      });
+      // datasource → workbook
+      addEdge(dsId, wbLuid, 'ds_to_wb');
+    });
+
+    // table → flow, flow → datasource, flow → workbook
+    (raw.upstreamFlows || []).forEach(function(fl) {
+      var flId = fl.luid || fl.name;
+      (fl.upstreamTables || []).forEach(function(t) {
+        if (!t || !t.name) return;
+        var dbName = (t.database && t.database.name) ? t.database.name : '';
+        var key    = [dbName, t.schema || '', t.name].filter(Boolean).join('.');
+        if (key) addEdge(key, flId, 'table_to_flow');
+      });
+      (fl.upstreamDatasources || []).forEach(function(ds) {
+        addEdge(ds.luid || ds.name, flId, 'ds_to_flow');
+      });
+      addEdge(flId, wbLuid, 'flow_to_wb');
+    });
+
+    return {
+      workbook:        { luid: wbLuid, name: wbName },
+      extra_workbooks: [],
+      hero_luid:       wbLuid,
+      hero_type:       'workbook',
+      central_type:    'workbook',
+      tables:          Object.values(tableMap),
+      datasources:     (raw.upstreamDatasources || []).map(function(ds) { return { luid: ds.luid, name: ds.name }; }),
+      flows:           (raw.upstreamFlows || []).map(function(fl) { return { luid: fl.luid, name: fl.name }; }),
+      edges:           edges,
+    };
+  }
+
   async function loadLineage(wb) {
     var chart   = $('lineage-chart');
     var loading = $('lineage-loading');
@@ -653,9 +727,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var res = await callFlow({ action: 'lineage', luid: wb.luid });
       loading.style.display = 'none';
       if (res && res.graph) {
-        lineageCache[wb.luid] = res.graph;
-        currentGraph = res.graph;
-        renderLineageGraph(res.graph);
+        var graph = transformGraphQLToGraph(res.graph);
+        lineageCache[wb.luid] = graph;
+        currentGraph = graph;
+        renderLineageGraph(graph);
       } else {
         empty.style.display = 'block';
       }
