@@ -440,7 +440,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       wb.description ? '<span style="color:var(--text);font-family:var(--sans)">' + escHtml(wb.description) + '</span>' : null,
     ].filter(Boolean).join('<br>');
 
-    if (!docCache[wb.luid] || typeof docCache[wb.luid] !== 'object') {
+    if (docCache[wb.luid] === undefined || docCache[wb.luid] === true || docCache[wb.luid] === null) {
       setStatus('Loading\u2026');
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
