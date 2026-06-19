@@ -1223,6 +1223,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Identify datasources that FEED a flow (inputs) — these sit left of flows
     // and must not be pushed right by the flow/ds separation step
     var inputDsIds = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
+    console.log('inputDsIds:', Array.from(inputDsIds));
+    console.log('all nodes before prop:', Object.values(nodeMap).map(function(n){ return n.id.substring(0,8)+' type='+n.type+' col='+n.col; }));
+    console.log('edges:', edges.map(function(e){ return e.from.substring(0,8)+'->'+e.to.substring(0,8)+' '+e.type; }));
 
     var changed = true, iterations = 0;
     while (changed && iterations < 200) {
