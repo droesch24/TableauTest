@@ -1013,25 +1013,63 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Add hero datasource as a node in allDs so it renders
     allDs.push({ name: heroName, luid: heroLuid });
 
-    // Downstream workbooks — consumers of this datasource (rendered to the right)
-    var downWbs = [];
-    (raw.downstreamWorkbooks || []).forEach(function(wb) {
+    // ── Downstream side ────────────────────────────────────────────
+    var downWbs   = [];
+    var downWbIds = new Set();
+    var downDs    = [];
+    var downDsIds = new Set();
+    var downFlows = [];
+
+    function addDownWb(wb) {
       var wbId = wb.luid || wb.name;
-      if (!wbId) return;
+      if (!wbId || downWbIds.has(wbId)) return wbId;
+      downWbIds.add(wbId);
       downWbs.push({ luid: wb.luid, name: wb.name });
-      addEdge(heroLuid, wbId, 'ds_to_wb');
+      return wbId;
+    }
+
+    // Direct downstream workbooks (consume hero directly)
+    (raw.downstreamWorkbooks || []).forEach(function(wb) {
+      var wbId = addDownWb(wb);
+      if (wbId) addEdge(heroLuid, wbId, 'ds_to_wb');
+    });
+
+    // Downstream flows → their output datasources → those datasources' workbooks
+    (raw.downstreamFlows || []).forEach(function(fl) {
+      var flId = fl.luid || fl.name;
+      if (!flId) return;
+      downFlows.push({ luid: fl.luid, name: fl.name });
+      addEdge(heroLuid, flId, 'ds_to_downflow');
+
+      var dsOutputs = fl.downstreamDatasources || [];
+      dsOutputs.forEach(function(ds) {
+        var dsId = ds.luid || ds.name;
+        if (!dsId) return;
+        if (!downDsIds.has(dsId)) {
+          downDsIds.add(dsId);
+          downDs.push({ luid: ds.luid, name: ds.name });
+        }
+        addEdge(flId, dsId, 'downflow_to_ds');
+        // Workbooks that consume this produced datasource
+        (ds.downstreamWorkbooks || []).forEach(function(wb) {
+          var wbId = addDownWb(wb);
+          if (wbId) addEdge(dsId, wbId, 'downds_to_wb');
+        });
+      });
     });
 
     return {
-      workbook:        { luid: heroLuid, name: heroName },
-      extra_workbooks: downWbs,
-      hero_luid:       heroLuid,
-      hero_type:       'datasource',
-      central_type:    'datasource',
-      tables:          tables,
-      datasources:     allDs,
-      flows:           allFlows,
-      edges:           edges,
+      workbook:          { luid: heroLuid, name: heroName },
+      extra_workbooks:   downWbs,
+      downstream_ds:     downDs,
+      downstream_flows:  downFlows,
+      hero_luid:         heroLuid,
+      hero_type:         'datasource',
+      central_type:      'datasource',
+      tables:            tables,
+      datasources:       allDs,
+      flows:             allFlows,
+      edges:             edges,
     };
   }
 
@@ -1137,6 +1175,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var wbId = wb.luid || wb.name;
       if (wbId && !nodeMap[wbId]) nodeMap[wbId] = { id: wbId, label: wb.name, type: 'workbook', col: 0, luid: wb.luid, isDownstream: isDsHero };
     });
+    (graph.downstream_flows || []).forEach(function(fl) {
+      var flId = fl.luid || fl.name;
+      if (flId && !nodeMap[flId] && !hiddenNodes.has(flId)) nodeMap[flId] = { id: flId, label: fl.name, type: 'flow', col: 0, luid: fl.luid, isDownstream: true };
+    });
+    (graph.downstream_ds || []).forEach(function(ds) {
+      var dsId = ds.luid || ds.name;
+      if (dsId && !nodeMap[dsId] && !hiddenNodes.has(dsId)) nodeMap[dsId] = { id: dsId, label: ds.name, type: 'datasource', col: 0, luid: ds.luid, isDownstream: true };
+    });
 
     // Column assignment
     Object.values(nodeMap).forEach(function(n) {
@@ -1181,8 +1227,19 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var maxNonWb = Object.values(nodeMap).filter(function(n) { return !n.isHero && !n.isDownstream; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
     Object.values(nodeMap).forEach(function(n) { if (n.isHero) n.col = maxNonWb + 1; });
     var wbCol = maxNonWb + 1;
-    // Downstream workbooks (datasource consumers) go one column right of the hero
+    // Downstream nodes: start one column right of hero, then propagate through downstream edges
     Object.values(nodeMap).forEach(function(n) { if (n.isDownstream) n.col = wbCol + 1; });
+    var downTypes = { 'ds_to_downflow': 1, 'downflow_to_ds': 1, 'downds_to_wb': 1, 'ds_to_wb': 1 };
+    var dchanged = true, diter = 0;
+    while (dchanged && diter < 50) {
+      dchanged = false; diter++;
+      edges.forEach(function(e) {
+        if (!downTypes[e.type]) return;
+        var src = nodeMap[e.from], dst = nodeMap[e.to];
+        if (!src || !dst || !dst.isDownstream) return;
+        if (dst.col < src.col + 1) { dst.col = src.col + 1; dchanged = true; }
+      });
+    }
 
     var wbDsIds = new Set(edges.filter(function(e) {
       return e.to === wbLuid && nodeMap[e.from] && nodeMap[e.from].type === 'datasource';
