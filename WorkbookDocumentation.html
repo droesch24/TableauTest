@@ -923,7 +923,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     empty.style.display   = 'none';
     loading.style.display = 'flex';
     try {
-      var res = await callFlow({ action: 'lineage', luid: wb.luid });
+      var res = await callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType });
       loading.style.display = 'none';
       if (res && res.graph) {
         var graph = transformGraphQLToGraph(res.graph);
