@@ -1226,6 +1226,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.isHero ? 0 : n.type === 'workbook' ? 0 : n.type === 'vc' ? 1 : 1;
     });
 
+    // Identify datasources that FEED a flow (inputs) — these sit left of flows
+    // and must not be pushed right by the flow/ds separation step
+    var inputDsIds = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
+
     var changed = true, iterations = 0;
     while (changed && iterations < 200) {
       changed = false; iterations++;
@@ -1236,14 +1240,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       });
       var flowCols = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow'; }).map(function(n) { return n.col; }));
       Object.values(nodeMap).forEach(function(n) {
-        if (n.type === 'datasource' && !n.isHero && flowCols.has(n.col)) { n.col++; changed = true; }
+        if (n.type === 'datasource' && !n.isHero && !inputDsIds.has(n.id) && flowCols.has(n.col)) { n.col++; changed = true; }
       });
     }
 
     edges.forEach(function(e) {
       if (e.type !== 'flow_to_ds') return;
       var flow = nodeMap[e.from], ds = nodeMap[e.to];
-      if (!flow || !ds || ds.isHero) return;
+      if (!flow || !ds || ds.isHero || inputDsIds.has(ds.id)) return;
       if (ds.col !== flow.col + 1) ds.col = flow.col + 1;
     });
 
@@ -1252,7 +1256,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       changed = false; iterations++;
       var fc2 = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow'; }).map(function(n) { return n.col; }));
       Object.values(nodeMap).forEach(function(n) {
-        if (n.type === 'datasource' && !n.isHero && fc2.has(n.col)) { n.col++; changed = true; }
+        if (n.type === 'datasource' && !n.isHero && !inputDsIds.has(n.id) && fc2.has(n.col)) { n.col++; changed = true; }
       });
       edges.forEach(function(e) {
         var src = nodeMap[e.from], dst = nodeMap[e.to];
