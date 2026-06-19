@@ -1232,78 +1232,33 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (dsId && !nodeMap[dsId] && !hiddenNodes.has(dsId)) nodeMap[dsId] = { id: dsId, label: ds.name, type: 'datasource', col: 0, luid: ds.luid, isDownstream: true };
     });
 
-    // Step 1: initialise — tables/vc_tables at 0, workbooks at 0, everything else at 1
+    // Step 1: initialise all upstream nodes at col 0
     Object.values(nodeMap).forEach(function(n) {
-      if (n.isHero) return; // already set
-      if (n.type === 'table' || n.type === 'vc_table') n.col = 0;
-      else if (n.type === 'workbook') n.col = 0;
-      else n.col = 1;
+      if (n.isHero || n.isDownstream) return;
+      n.col = 0;
     });
 
-    // Step 2: forward propagation until stable (skip workbook/hero as targets)
+    // Step 2: pure forward propagation — no type separation, just follow edges
+    // Nodes with no incoming edges stay at col 0 (leftmost)
+    // Everything else gets pushed right by its sources
     var changed = true, iterations = 0;
     while (changed && iterations < 200) {
       changed = false; iterations++;
       edges.forEach(function(e) {
         var src = nodeMap[e.from], dst = nodeMap[e.to];
-        if (!src || !dst || dst.type === 'workbook' || dst.isHero) return;
-        if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
-      });
-      // Flows and DS must not share a column — bump DS right
-      var flowCols = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow' && !n.isDownstream; }).map(function(n) { return n.col; }));
-      Object.values(nodeMap).forEach(function(n) {
-        if (n.type === 'datasource' && !n.isHero && !n.isDownstream && flowCols.has(n.col)) { n.col++; changed = true; }
-      });
-    }
-
-    // Step 3: pin flow-output DS to flow.col + 1
-    edges.forEach(function(e) {
-      if (e.type !== 'flow_to_ds') return;
-      var flow = nodeMap[e.from], ds = nodeMap[e.to];
-      if (!flow || !ds || ds.isHero || ds.isDownstream) return;
-      if (ds.col !== flow.col + 1) ds.col = flow.col + 1;
-    });
-
-    // Step 4: re-run flow/DS separation after pinning
-    changed = true; iterations = 0;
-    while (changed && iterations < 50) {
-      changed = false; iterations++;
-      var fc2 = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow' && !n.isDownstream; }).map(function(n) { return n.col; }));
-      Object.values(nodeMap).forEach(function(n) {
-        if (n.type === 'datasource' && !n.isHero && !n.isDownstream && fc2.has(n.col)) { n.col++; changed = true; }
-      });
-      edges.forEach(function(e) {
-        var src = nodeMap[e.from], dst = nodeMap[e.to];
-        if (!src || !dst || dst.type === 'workbook' || dst.isHero) return;
+        if (!src || !dst || dst.isHero || dst.isDownstream || dst.type === 'workbook') return;
         if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
       });
     }
 
-    // Step 5: place hero at max upstream col + 1
-    var maxUpstreamCol = Object.values(nodeMap).filter(function(n) { return !n.isHero && !n.isDownstream && n.type !== 'workbook'; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
+    // Step 3: hero sits at max upstream col + 1
+    var maxUpstreamCol = Object.values(nodeMap).filter(function(n) {
+      return !n.isHero && !n.isDownstream && n.type !== 'workbook';
+    }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
     nodeMap[wbLuid].col = maxUpstreamCol + 1;
     var wbCol = maxUpstreamCol + 1;
 
-    // Step 6: pin direct-to-hero datasources to wbCol-1
-    var wbDsIds = new Set(edges.filter(function(e) {
-      return (e.to === wbLuid) && nodeMap[e.from] && nodeMap[e.from].type === 'datasource' && !nodeMap[e.from].isDownstream;
-    }).map(function(e) { return e.from; }));
-    wbDsIds.forEach(function(id) { nodeMap[id].col = wbCol - 1; });
-
-    // Step 7: ensure no flow shares wbCol-1
-    Object.values(nodeMap).forEach(function(n) {
-      if (n.type === 'flow' && !n.isDownstream && n.id !== wbLuid && n.col >= wbCol - 1) n.col = wbCol - 2;
-    });
-
-    // Step 8: re-pin wbDs
-    wbDsIds.forEach(function(id) { nodeMap[id].col = wbCol - 1; });
-
-    // Step 9: pin flows that produce wbCol-1 DS to wbCol-2
-    edges.filter(function(e) { return e.type === 'flow_to_ds' && wbDsIds.has(e.to) && nodeMap[e.from] && nodeMap[e.from].id !== wbLuid; }).forEach(function(e) {
-      if (nodeMap[e.from].col < wbCol - 2) nodeMap[e.from].col = wbCol - 2;
-    });
-
-    // Step 10: downstream nodes propagate right of hero
+    // Step 4: downstream nodes propagate right of hero
     Object.values(nodeMap).forEach(function(n) { if (n.isDownstream) n.col = wbCol + 1; });
     var downTypes = { 'ds_to_downflow': 1, 'downflow_to_ds': 1, 'downds_to_wb': 1, 'ds_to_wb': 1 };
     var dchanged = true, diter = 0;
