@@ -927,6 +927,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var dsSeen     = new Set();
     var allDs      = [];
     var vcTableEdged = new Set();
+    var dsFlowEdged  = new Set(); // each upstream ds connects to only one flow
     var edges      = [];
     var edgesSeen  = new Set();
 
@@ -965,9 +966,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var dsId = ds.luid || ds.name;
       if (!dsId || dsId === heroLuid) return;
       if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-      if (targetType === 'flow') addEdge(dsId, targetId, 'ds_to_flow');
-      else if (targetType === 'datasource') {
-        // Only add ds_to_ds if this ds isn't already feeding a flow
+      if (targetType === 'flow') {
+        // Each upstream datasource connects to only ONE flow (prevents spiderweb
+        // when multiple flow versions share the same upstream datasources)
+        if (!dsFlowEdged.has(dsId)) {
+          dsFlowEdged.add(dsId);
+          addEdge(dsId, targetId, 'ds_to_flow');
+        }
+      } else if (targetType === 'datasource') {
         var feedsFlow = edges.some(function(e) { return e.from === dsId && e.type === 'ds_to_flow'; });
         if (!feedsFlow) addEdge(dsId, targetId, 'ds_to_ds');
       }
