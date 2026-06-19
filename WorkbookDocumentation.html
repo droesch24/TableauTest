@@ -998,26 +998,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
 
     // ── Build upstream ─────────────────────────────────────────────
-    // Collapse duplicate flow versions: flows with the same upstream datasource
-    // set (e.g. "CN Incentivized Sales - V2 / V3 / original") are versions of
-    // the same flow. Keep one representative to avoid rendering identical flows.
-    function flowInputSig(fl) {
-      return (fl.upstreamDatasources || [])
-        .map(function(ds) { return ds.luid || ds.name; })
-        .sort()
-        .join(',');
-    }
-    var seenFlowSigs = {};
-    var uniqueFlows  = [];
-    (raw.upstreamFlows || []).forEach(function(fl) {
-      var sig = flowInputSig(fl);
-      // Empty-input flows are always kept (can't dedupe on nothing)
-      if (sig && seenFlowSigs[sig]) return;
-      if (sig) seenFlowSigs[sig] = true;
-      uniqueFlows.push(fl);
-    });
-
-    uniqueFlows.forEach(function(fl) { processFlow(fl, heroLuid); });
+    (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, heroLuid); });
     (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, heroLuid, 'datasource', true); });
 
     // Direct upstream VC tables on the hero — only if no upstream flow/ds
@@ -1203,13 +1184,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       nodeMap[t.key] = { id: t.key, label: label, type: t.is_vc ? 'vc_table' : 'table', col: 0, luid: t.vc_luid || null };
     });
     (graph.flows || []).filter(function(f) { return !hiddenNodes.has(f.luid || f.name); }).forEach(function(f) {
-      nodeMap[f.luid || f.name] = { id: f.luid || f.name, label: f.name, type: 'flow', col: 1, luid: f.luid };
+      nodeMap[f.luid || f.name] = { id: f.luid || f.name, label: f.name, type: 'flow', col: 0, luid: f.luid };
     });
     (graph.datasources || []).filter(function(d) {
       var did = d.luid || d.name;
       return !hiddenNodes.has(did) && did !== (graph.hero_luid || graph.workbook.luid);
     }).forEach(function(d) {
-      nodeMap[d.luid || d.name] = { id: d.luid || d.name, label: d.name, type: 'datasource', col: 1, luid: d.luid };
+      nodeMap[d.luid || d.name] = { id: d.luid || d.name, label: d.name, type: 'datasource', col: 0, luid: d.luid };
     });
 
     var wbLuid   = graph.workbook.luid;
@@ -1233,9 +1214,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (dsId && !nodeMap[dsId] && !hiddenNodes.has(dsId)) nodeMap[dsId] = { id: dsId, label: ds.name, type: 'datasource', col: 0, luid: ds.luid, isDownstream: true };
     });
 
-    // Column assignment
+    // Column assignment — start everything at 0, let propagation sort it out
     Object.values(nodeMap).forEach(function(n) {
-      n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.isHero ? 0 : n.type === 'workbook' ? 0 : n.type === 'vc' ? 1 : 1;
+      if (n.isHero || n.isDownstream) return; // handled separately
+      n.col = 0;
     });
 
     // Identify datasources that FEED a flow (inputs) — these sit left of flows
