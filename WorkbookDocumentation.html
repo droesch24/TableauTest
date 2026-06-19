@@ -998,8 +998,25 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
 
     // ── Build upstream ─────────────────────────────────────────────
+    // Process flows first so we know which datasources are flow inputs
     (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, heroLuid); });
-    (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, heroLuid, 'datasource', true); });
+
+    // Build set of datasource luids that already have ds_to_flow edges
+    var dsWithFlowEdge = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
+
+    // Direct upstream datasources — only add ds_to_ds if they don't already
+    // feed the hero via a flow (drop the redundant direct edge)
+    (raw.upstreamDatasources || []).forEach(function(ds) {
+      var dsId = ds.luid || ds.name;
+      if (!dsId || dsId === heroLuid) return;
+      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
+      if (!dsWithFlowEdge.has(dsId)) {
+        addEdge(dsId, heroLuid, 'ds_to_ds');
+      }
+      (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+        addVcEdge(vct, dsId, 'vc_table_to_ds');
+      });
+    });
 
     // Direct upstream VC tables on the hero — only if no upstream flow/ds
     var hasUpstream = (raw.upstreamFlows || []).length > 0 || (raw.upstreamDatasources || []).length > 0;
@@ -1223,9 +1240,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Identify datasources that FEED a flow (inputs) — these sit left of flows
     // and must not be pushed right by the flow/ds separation step
     var inputDsIds = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
-    console.log('inputDsIds:', Array.from(inputDsIds));
-    console.log('all nodes before prop:', Object.values(nodeMap).map(function(n){ return n.id.substring(0,8)+' type='+n.type+' col='+n.col; }));
-    console.log('edges:', edges.map(function(e){ return e.from.substring(0,8)+'->'+e.to.substring(0,8)+' '+e.type; }));
 
     var changed = true, iterations = 0;
     while (changed && iterations < 200) {
