@@ -927,7 +927,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var dsSeen     = new Set();
     var allDs      = [];
     var vcTableEdged = new Set();
-    var dsFlowEdged  = new Set(); // each upstream ds connects to only one flow
     var edges      = [];
     var edgesSeen  = new Set();
 
@@ -966,14 +965,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var dsId = ds.luid || ds.name;
       if (!dsId || dsId === heroLuid) return;
       if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-      if (targetType === 'flow') {
-        // Each upstream datasource connects to only ONE flow (prevents spiderweb
-        // when multiple flow versions share the same upstream datasources)
-        if (!dsFlowEdged.has(dsId)) {
-          dsFlowEdged.add(dsId);
-          addEdge(dsId, targetId, 'ds_to_flow');
-        }
-      } else if (targetType === 'datasource') {
+      if (targetType === 'flow') addEdge(dsId, targetId, 'ds_to_flow');
+      else if (targetType === 'datasource') {
         var feedsFlow = edges.some(function(e) { return e.from === dsId && e.type === 'ds_to_flow'; });
         if (!feedsFlow) addEdge(dsId, targetId, 'ds_to_ds');
       }
@@ -1005,7 +998,26 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
 
     // ── Build upstream ─────────────────────────────────────────────
-    (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, heroLuid); });
+    // Collapse duplicate flow versions: flows with the same upstream datasource
+    // set (e.g. "CN Incentivized Sales - V2 / V3 / original") are versions of
+    // the same flow. Keep one representative to avoid rendering identical flows.
+    function flowInputSig(fl) {
+      return (fl.upstreamDatasources || [])
+        .map(function(ds) { return ds.luid || ds.name; })
+        .sort()
+        .join(',');
+    }
+    var seenFlowSigs = {};
+    var uniqueFlows  = [];
+    (raw.upstreamFlows || []).forEach(function(fl) {
+      var sig = flowInputSig(fl);
+      // Empty-input flows are always kept (can't dedupe on nothing)
+      if (sig && seenFlowSigs[sig]) return;
+      if (sig) seenFlowSigs[sig] = true;
+      uniqueFlows.push(fl);
+    });
+
+    uniqueFlows.forEach(function(fl) { processFlow(fl, heroLuid); });
     (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, heroLuid, 'datasource', true); });
 
     // Direct upstream VC tables on the hero — only if no upstream flow/ds
