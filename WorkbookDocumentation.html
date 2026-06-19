@@ -1028,34 +1028,65 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       return wbId;
     }
 
-    // Direct downstream workbooks (consume hero directly)
-    (raw.downstreamWorkbooks || []).forEach(function(wb) {
-      var wbId = addDownWb(wb);
-      if (wbId) addEdge(heroLuid, wbId, 'ds_to_wb');
+    // First pass: figure out which downstream flows actually lead somewhere.
+    // A downstream flow is meaningful only if it produces a datasource that
+    // (eventually) feeds a workbook. Dead-end flows/test flows are dropped.
+    var meaningfulFlows = [];
+    (raw.downstreamFlows || []).forEach(function(fl) {
+      var dsOutputs = (fl.downstreamDatasources || []).filter(function(ds) {
+        return (ds.downstreamWorkbooks || []).length > 0;
+      });
+      if (dsOutputs.length > 0) {
+        meaningfulFlows.push({ flow: fl, outputs: dsOutputs });
+      }
     });
 
-    // Downstream flows → their output datasources → those datasources' workbooks
-    (raw.downstreamFlows || []).forEach(function(fl) {
+    // Collect all workbooks reachable via the flow chain — these should NOT
+    // also get a direct hero→wb edge (the chain path is the real one)
+    var wbViaFlowChain = new Set();
+    meaningfulFlows.forEach(function(mf) {
+      mf.outputs.forEach(function(ds) {
+        (ds.downstreamWorkbooks || []).forEach(function(wb) {
+          wbViaFlowChain.add(wb.luid || wb.name);
+        });
+      });
+    });
+
+    // Direct downstream workbooks — only those NOT reachable through a flow chain
+    (raw.downstreamWorkbooks || []).forEach(function(wb) {
+      var wbId = wb.luid || wb.name;
+      if (wbViaFlowChain.has(wbId)) return; // shown via the chain instead
+      var added = addDownWb(wb);
+      if (added) addEdge(heroLuid, added, 'ds_to_wb');
+    });
+
+    // Downstream flow chains: hero → flow → produced ds → workbooks
+    meaningfulFlows.forEach(function(mf) {
+      var fl   = mf.flow;
       var flId = fl.luid || fl.name;
-      if (!flId) return;
       downFlows.push({ luid: fl.luid, name: fl.name });
       addEdge(heroLuid, flId, 'ds_to_downflow');
 
-      var dsOutputs = fl.downstreamDatasources || [];
-      dsOutputs.forEach(function(ds) {
+      mf.outputs.forEach(function(ds) {
         var dsId = ds.luid || ds.name;
-        if (!dsId) return;
         if (!downDsIds.has(dsId)) {
           downDsIds.add(dsId);
           downDs.push({ luid: ds.luid, name: ds.name });
         }
         addEdge(flId, dsId, 'downflow_to_ds');
-        // Workbooks that consume this produced datasource
         (ds.downstreamWorkbooks || []).forEach(function(wb) {
           var wbId = addDownWb(wb);
           if (wbId) addEdge(dsId, wbId, 'downds_to_wb');
         });
       });
+    });
+
+    // ── Redundancy removal (mirror workbook discipline) ────────────
+    // Drop ds_to_ds where the source already feeds a flow (chain path wins)
+    var dsViaFlow = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
+    var finalEdges = edges.filter(function(e) {
+      if (e.type === 'ds_to_ds' && dsViaFlow.has(e.from)) return false;
+      return true;
     });
 
     return {
@@ -1069,7 +1100,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       tables:            tables,
       datasources:       allDs,
       flows:             allFlows,
-      edges:             edges,
+      edges:             finalEdges,
     };
   }
 
