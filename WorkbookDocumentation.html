@@ -1013,9 +1013,18 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // Add hero datasource as a node in allDs so it renders
     allDs.push({ name: heroName, luid: heroLuid });
 
+    // Downstream workbooks — consumers of this datasource (rendered to the right)
+    var downWbs = [];
+    (raw.downstreamWorkbooks || []).forEach(function(wb) {
+      var wbId = wb.luid || wb.name;
+      if (!wbId) return;
+      downWbs.push({ luid: wb.luid, name: wb.name });
+      addEdge(heroLuid, wbId, 'ds_to_wb');
+    });
+
     return {
       workbook:        { luid: heroLuid, name: heroName },
-      extra_workbooks: [],
+      extra_workbooks: downWbs,
       hero_luid:       heroLuid,
       hero_type:       'datasource',
       central_type:    'datasource',
@@ -1123,9 +1132,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     // but uses its real type for the badge/color
     var heroRenderType = heroType === 'datasource' ? 'hero_ds' : 'workbook';
     nodeMap[wbLuid] = { id: wbLuid, label: graph.workbook.name, type: heroRenderType, col: 0, luid: wbLuid, isHero: true };
+    var isDsHero = heroType === 'datasource';
     (graph.extra_workbooks || []).forEach(function(wb) {
       var wbId = wb.luid || wb.name;
-      if (wbId && !nodeMap[wbId]) nodeMap[wbId] = { id: wbId, label: wb.name, type: 'workbook', col: 0, luid: wb.luid };
+      if (wbId && !nodeMap[wbId]) nodeMap[wbId] = { id: wbId, label: wb.name, type: 'workbook', col: 0, luid: wb.luid, isDownstream: isDsHero };
     });
 
     // Column assignment
@@ -1168,9 +1178,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       });
     }
 
-    var maxNonWb = Object.values(nodeMap).filter(function(n) { return !n.isHero; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
+    var maxNonWb = Object.values(nodeMap).filter(function(n) { return !n.isHero && !n.isDownstream; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
     Object.values(nodeMap).forEach(function(n) { if (n.isHero) n.col = maxNonWb + 1; });
     var wbCol = maxNonWb + 1;
+    // Downstream workbooks (datasource consumers) go one column right of the hero
+    Object.values(nodeMap).forEach(function(n) { if (n.isDownstream) n.col = wbCol + 1; });
 
     var wbDsIds = new Set(edges.filter(function(e) {
       return e.to === wbLuid && nodeMap[e.from] && nodeMap[e.from].type === 'datasource';
