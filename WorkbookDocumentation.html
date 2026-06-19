@@ -513,7 +513,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('topbar-title').textContent = wb.name || 'Item';
 
     // Show/hide lineage tab based on type
-    $('tab-lineage').style.display = wb.itemType === 'Workbook' ? '' : 'none';
+    $('tab-lineage').style.display = '';
 
     $('detail-wb-name').innerHTML = escHtml(wb.name || '\u2014') +
       (wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '');
@@ -915,6 +915,117 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     };
   }
 
+  // ── Datasource lineage transformer (hero = the datasource itself) ──────────
+  function transformDatasourceGraph(raw) {
+    var heroLuid = raw.luid;
+    var heroName = raw.name;
+
+    var tablesSeen = new Set();
+    var tables     = [];
+    var flowsSeen  = new Set();
+    var allFlows   = [];
+    var dsSeen     = new Set();
+    var allDs      = [];
+    var vcTableEdged = new Set();
+    var edges      = [];
+    var edgesSeen  = new Set();
+
+    function addEdge(from, to, type) {
+      if (!from || !to) return;
+      var key = from + '|' + to;
+      if (edgesSeen.has(key)) return;
+      edgesSeen.add(key);
+      edges.push({ from: from, to: to, type: type });
+    }
+
+    function addVcTable(vct) {
+      if (!vct) return null;
+      var vc   = vct.virtualConnection || {};
+      var vcId = vc.luid || vc.name;
+      var nm   = vct.name || '';
+      if (!nm || !vcId) return null;
+      var key = 'vc:' + vcId + '.' + nm;
+      if (!tablesSeen.has(key)) {
+        tablesSeen.add(key);
+        tables.push({ key: key, name: nm, db: vc.name || '', schema: 'Virtual Connection', is_vc: true, vc_luid: vcId });
+      }
+      return key;
+    }
+
+    function addVcEdge(vct, targetId, type) {
+      var key = addVcTable(vct);
+      if (!key) return;
+      if (!vcTableEdged.has(key)) {
+        vcTableEdged.add(key);
+        addEdge(key, targetId, type);
+      }
+    }
+
+    function processDs(ds, targetId, targetType, addVcEdges) {
+      var dsId = ds.luid || ds.name;
+      if (!dsId || dsId === heroLuid) return;
+      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
+      if (targetType === 'flow') addEdge(dsId, targetId, 'ds_to_flow');
+      else if (targetType === 'datasource') {
+        // Only add ds_to_ds if this ds isn't already feeding a flow
+        var feedsFlow = edges.some(function(e) { return e.from === dsId && e.type === 'ds_to_flow'; });
+        if (!feedsFlow) addEdge(dsId, targetId, 'ds_to_ds');
+      }
+      if (addVcEdges !== false) {
+        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+          addVcEdge(vct, dsId, 'vc_table_to_ds');
+        });
+      }
+    }
+
+    function processFlow(fl, targetId) {
+      var flId = fl.luid || fl.name;
+      if (!flId) return;
+      if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({ name: fl.name, luid: fl.luid }); }
+      addEdge(flId, targetId, 'flow_to_ds');
+      var upDs = fl.upstreamDatasources || [];
+      upDs.forEach(function(ds) { processDs(ds, flId, 'flow', false); });
+      // VC tables → flow, only if not covered by an upstream ds
+      var dsVcKeys = new Set();
+      upDs.forEach(function(ds) {
+        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+          var k = addVcTable(vct); if (k) dsVcKeys.add(k);
+        });
+      });
+      (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+        var key = addVcTable(vct);
+        if (key && !dsVcKeys.has(key)) addVcEdge(vct, flId, 'vc_table_to_flow');
+      });
+    }
+
+    // ── Build upstream ─────────────────────────────────────────────
+    (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, heroLuid); });
+    (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, heroLuid, 'datasource', true); });
+
+    // Direct upstream VC tables on the hero — only if no upstream flow/ds
+    var hasUpstream = (raw.upstreamFlows || []).length > 0 || (raw.upstreamDatasources || []).length > 0;
+    if (!hasUpstream) {
+      (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) {
+        addVcEdge(vct, heroLuid, 'vc_table_to_ds');
+      });
+    }
+
+    // Add hero datasource as a node in allDs so it renders
+    allDs.push({ name: heroName, luid: heroLuid });
+
+    return {
+      workbook:        { luid: heroLuid, name: heroName },
+      extra_workbooks: [],
+      hero_luid:       heroLuid,
+      hero_type:       'datasource',
+      central_type:    'datasource',
+      tables:          tables,
+      datasources:     allDs,
+      flows:           allFlows,
+      edges:           edges,
+    };
+  }
+
   async function loadLineage(wb) {
     var chart   = $('lineage-chart');
     var loading = $('lineage-loading');
@@ -926,7 +1037,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var res = await callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType });
       loading.style.display = 'none';
       if (res && res.graph) {
-        var graph = transformGraphQLToGraph(res.graph);
+        var graph = wb.itemType === 'Datasource'
+          ? transformDatasourceGraph(res.graph)
+          : transformGraphQLToGraph(res.graph);
         lineageCache[wb.luid] = graph;
         currentGraph = graph;
         renderLineageGraph(graph);
@@ -996,14 +1109,20 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     (graph.flows || []).filter(function(f) { return !hiddenNodes.has(f.luid || f.name); }).forEach(function(f) {
       nodeMap[f.luid || f.name] = { id: f.luid || f.name, label: f.name, type: 'flow', col: 1, luid: f.luid };
     });
-    (graph.datasources || []).filter(function(d) { return !hiddenNodes.has(d.luid || d.name); }).forEach(function(d) {
+    (graph.datasources || []).filter(function(d) {
+      var did = d.luid || d.name;
+      return !hiddenNodes.has(did) && did !== (graph.hero_luid || graph.workbook.luid);
+    }).forEach(function(d) {
       nodeMap[d.luid || d.name] = { id: d.luid || d.name, label: d.name, type: 'datasource', col: 1, luid: d.luid };
     });
 
     var wbLuid   = graph.workbook.luid;
     var heroLuid = graph.hero_luid || wbLuid;
     var heroType = graph.hero_type || 'workbook';
-    nodeMap[wbLuid] = { id: wbLuid, label: graph.workbook.name, type: 'workbook', col: 0, luid: wbLuid };
+    // The hero node renders as 'workbook' type styling slot (pinned rightmost)
+    // but uses its real type for the badge/color
+    var heroRenderType = heroType === 'datasource' ? 'hero_ds' : 'workbook';
+    nodeMap[wbLuid] = { id: wbLuid, label: graph.workbook.name, type: heroRenderType, col: 0, luid: wbLuid, isHero: true };
     (graph.extra_workbooks || []).forEach(function(wb) {
       var wbId = wb.luid || wb.name;
       if (wbId && !nodeMap[wbId]) nodeMap[wbId] = { id: wbId, label: wb.name, type: 'workbook', col: 0, luid: wb.luid };
@@ -1011,7 +1130,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
     // Column assignment
     Object.values(nodeMap).forEach(function(n) {
-      n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.type === 'workbook' ? 0 : n.type === 'vc' ? 1 : 1;
+      n.col = (n.type === 'table' || n.type === 'vc_table') ? 0 : n.isHero ? 0 : n.type === 'workbook' ? 0 : n.type === 'vc' ? 1 : 1;
     });
 
     var changed = true, iterations = 0;
@@ -1019,19 +1138,19 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       changed = false; iterations++;
       edges.forEach(function(e) {
         var src = nodeMap[e.from], dst = nodeMap[e.to];
-        if (!src || !dst || dst.type === 'workbook') return;
+        if (!src || !dst || dst.isHero) return;
         if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
       });
       var flowCols = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow'; }).map(function(n) { return n.col; }));
       Object.values(nodeMap).forEach(function(n) {
-        if (n.type === 'datasource' && flowCols.has(n.col)) { n.col++; changed = true; }
+        if (n.type === 'datasource' && !n.isHero && flowCols.has(n.col)) { n.col++; changed = true; }
       });
     }
 
     edges.forEach(function(e) {
       if (e.type !== 'flow_to_ds') return;
       var flow = nodeMap[e.from], ds = nodeMap[e.to];
-      if (!flow || !ds) return;
+      if (!flow || !ds || ds.isHero) return;
       if (ds.col !== flow.col + 1) ds.col = flow.col + 1;
     });
 
@@ -1040,17 +1159,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       changed = false; iterations++;
       var fc2 = new Set(Object.values(nodeMap).filter(function(n) { return n.type === 'flow'; }).map(function(n) { return n.col; }));
       Object.values(nodeMap).forEach(function(n) {
-        if (n.type === 'datasource' && fc2.has(n.col)) { n.col++; changed = true; }
+        if (n.type === 'datasource' && !n.isHero && fc2.has(n.col)) { n.col++; changed = true; }
       });
       edges.forEach(function(e) {
         var src = nodeMap[e.from], dst = nodeMap[e.to];
-        if (!src || !dst || dst.type === 'workbook') return;
+        if (!src || !dst || dst.isHero) return;
         if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
       });
     }
 
-    var maxNonWb = Object.values(nodeMap).filter(function(n) { return n.type !== 'workbook'; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
-    Object.values(nodeMap).forEach(function(n) { if (n.type === 'workbook') n.col = maxNonWb + 1; });
+    var maxNonWb = Object.values(nodeMap).filter(function(n) { return !n.isHero; }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
+    Object.values(nodeMap).forEach(function(n) { if (n.isHero) n.col = maxNonWb + 1; });
     var wbCol = maxNonWb + 1;
 
     var wbDsIds = new Set(edges.filter(function(e) {
@@ -1100,6 +1219,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       vc:         { fill: 'rgba(163,113,247,.15)', stroke: 'rgba(163,113,247,.6)', icon: '#a371f7' },
       flow:       { fill: 'rgba(227,179,65,.1)',  stroke: 'rgba(227,179,65,.4)', icon: '#e3b341' },
       datasource: { fill: 'rgba(46,160,67,.1)',   stroke: 'rgba(46,160,67,.4)',  icon: '#2ea043' },
+      hero_ds:    { fill: 'rgba(46,160,67,.18)',  stroke: 'rgba(46,160,67,.7)',  icon: '#3fb950' },
       workbook:   { fill: 'rgba(56,139,253,.1)',  stroke: 'rgba(56,139,253,.4)', icon: '#388bfd' },
     };
 
@@ -1153,7 +1273,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         'stroke-width': isHero ? '2' : '1',
       }));
 
-      var badgeLabels = { table: 'TABLE', vc_table: 'VC TABLE', vc: 'VIRTUAL CONN', flow: 'FLOW', datasource: 'DS', workbook: 'WB' };
+      var badgeLabels = { table: 'TABLE', vc_table: 'VC TABLE', vc: 'VIRTUAL CONN', flow: 'FLOW', datasource: 'DS', hero_ds: 'DATA SOURCE', workbook: 'WB' };
       g.appendChild(svgEl('text', { x: n.x + 10, y: n.y + 14, fill: c.icon, 'font-size': '8', 'font-weight': '700', 'letter-spacing': '0.05em' }, badgeLabels[n.type] || ''));
 
       var maxChars = isHero ? 24 : 20;
@@ -1180,7 +1300,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     cols.forEach(function(col, ci) {
       if (!col.length) return;
       var types = Array.from(new Set(col.map(function(n) { return n.type; })));
-      var label = types.includes('workbook') ? 'Workbook' : types.includes('datasource') ? 'Datasource' : types.includes('flow') ? 'Flow' : types.includes('vc_table') ? 'VC Tables' : 'Tables';
+      var label = types.includes('workbook') ? 'Workbook' : types.includes('hero_ds') ? 'Data Source' : types.includes('datasource') ? 'Datasource' : types.includes('flow') ? 'Flow' : types.includes('vc_table') ? 'VC Tables' : 'Tables';
       svg.insertBefore(svgEl('text', {
         x: colX[ci] + NODE_W / 2, y: 10, fill: '#8b949e',
         'font-size': '10', 'font-weight': '600', 'text-anchor': 'middle', 'letter-spacing': '0.05em',
