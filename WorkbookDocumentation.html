@@ -135,6 +135,7 @@
   }
   .btn-type-card:hover { border-color:var(--accent);background:var(--surface2); }
   .btn-type-icon { font-size:28px;line-height:1; }
+  .btn-type-count { font-size:32px;font-weight:700;line-height:1;color:var(--accent); }
   .btn-type-label { font-size:13px;font-weight:600;color:var(--text); }
 </style>
 </head>
@@ -163,11 +164,11 @@
       <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Select a content type to browse</div>
       <div style="display:flex;gap:16px;width:100%;max-width:420px">
         <button id="btn-type-workbook" class="btn-type-card" onclick="selectType('Workbook')">
-          <div class="btn-type-icon">&#128202;</div>
+          <div class="btn-type-count" id="count-workbook">&#8211;</div>
           <div class="btn-type-label">Workbooks</div>
         </button>
         <button id="btn-type-datasource" class="btn-type-card" onclick="selectType('Datasource')">
-          <div class="btn-type-icon">&#128194;</div>
+          <div class="btn-type-count" id="count-datasource">&#8211;</div>
           <div class="btn-type-label">Data Sources</div>
         </button>
       </div>
@@ -374,6 +375,19 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : 'Data Sources';
   }
 
+  function isPublishedDs(w) {
+    var isPublishedContent = w.contentType && w.contentType.toLowerCase() === 'published';
+    var isPublishedDb      = w.dbType && w.dbType.toLowerCase() === 'publishedconnection';
+    return isPublishedContent || isPublishedDb;
+  }
+
+  function updateCounts() {
+    var wbCount = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
+    var dsCount = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); }).length;
+    $('count-workbook').textContent   = wbCount;
+    $('count-datasource').textContent = dsCount;
+  }
+
   window.selectType = function(type) {
     activeType = type;
     $('search-input').placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : 'Search data sources\u2026';
@@ -433,11 +447,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var sort = $('sort-select').value;
     var list = workbooks.filter(function(w) {
       if (w.itemType !== activeType) return false;
-      if (w.itemType === 'Datasource') {
-        var isPublishedContent = w.contentType && w.contentType.toLowerCase() === 'published';
-        var isPublishedDb      = w.dbType && w.dbType.toLowerCase() === 'publishedconnection';
-        if (!isPublishedContent && !isPublishedDb) return false;
-      }
+      if (w.itemType === 'Datasource' && !isPublishedDs(w)) return false;
       return !q ||
         (w.name        || '').toLowerCase().includes(q) ||
         (w.project     || '').toLowerCase().includes(q) ||
@@ -1240,6 +1250,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       } catch(e) { setStatus('Ready'); }
     }
 
+    updateCounts();
     var overlay = $('loading-overlay');
     overlay.classList.add('hidden');
     setTimeout(function() { overlay.style.display = 'none'; }, 300);
