@@ -162,7 +162,7 @@
   <div id="view-home" class="view active">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;padding:32px">
       <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Select a content type to browse</div>
-      <div style="display:flex;gap:16px;width:100%;max-width:420px">
+      <div style="display:flex;gap:16px;width:100%;max-width:640px">
         <button id="btn-type-workbook" class="btn-type-card" onclick="selectType('Workbook')">
           <div class="btn-type-count" id="count-workbook">&#8211;</div>
           <div class="btn-type-label">Workbooks</div>
@@ -170,6 +170,10 @@
         <button id="btn-type-datasource" class="btn-type-card" onclick="selectType('Datasource')">
           <div class="btn-type-count" id="count-datasource">&#8211;</div>
           <div class="btn-type-label">Data Sources</div>
+        </button>
+        <button id="btn-type-vctable" class="btn-type-card" onclick="selectType('VCTable')">
+          <div class="btn-type-count" id="count-vctable">&#8211;</div>
+          <div class="btn-type-label">VC Tables</div>
         </button>
       </div>
     </div>
@@ -372,7 +376,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $(('view-' + name)).classList.add('active');
     $('back-btn').style.display = (name !== 'home') ? 'inline-flex' : 'none';
     if (name === 'home') $('topbar-title').textContent = 'Workbook Documentation';
-    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : 'Data Sources';
+    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : activeType === 'VCTable' ? 'VC Tables' : 'Data Sources';
   }
 
   function isPublishedDs(w) {
@@ -383,10 +387,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   function updateCounts() {
-    var wbCount = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
-    var dsCount = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); }).length;
+    var wbCount  = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
+    var dsCount  = workbooks.filter(function(w) { return w.itemType === 'Datasource' && !w.isVcTable && isPublishedDs(w); }).length;
+    var vctCount = workbooks.filter(function(w) { return w.isVcTable === true; }).length;
     $('count-workbook').textContent   = wbCount;
     $('count-datasource').textContent = dsCount;
+    $('count-vctable').textContent    = vctCount;
   }
 
   function mergeVcTables(vcNodes) {
@@ -415,7 +421,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
   window.selectType = function(type) {
     activeType = type;
-    $('search-input').placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : 'Search data sources\u2026';
+    var placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : type === 'VCTable' ? 'Search VC tables\u2026' : 'Search data sources\u2026';
+    $('search-input').placeholder = placeholder;
     renderList();
     showView('list');
   };
@@ -471,7 +478,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var q    = $('search-input').value.toLowerCase();
     var sort = $('sort-select').value;
     var list = workbooks.filter(function(w) {
+      if (activeType === 'VCTable') {
+        if (!w.isVcTable) return false;
+        return !q ||
+          (w.name   || '').toLowerCase().includes(q) ||
+          (w.vcName || '').toLowerCase().includes(q);
+      }
       if (w.itemType !== activeType) return false;
+      if (w.itemType === 'Datasource' && w.isVcTable) return false;
       if (w.itemType === 'Datasource' && !isPublishedDs(w)) return false;
       return !q ||
         (w.name        || '').toLowerCase().includes(q) ||
@@ -541,8 +555,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     showError('detail-error', '');
     $('topbar-title').textContent = wb.name || 'Item';
 
-    // Show/hide lineage tab based on type
-    $('tab-lineage').style.display = wb.itemType === 'Workbook' ? '' : 'none';
+    // Show lineage for workbooks and datasources, hide for VC tables
+    $('tab-lineage').style.display = wb.isVcTable ? 'none' : '';
     // Hide edit button for VC tables (read-only)
     $('btn-edit').style.display = wb.isVcTable ? 'none' : '';
 
@@ -1505,11 +1519,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         var documented = new Set(flatLuids);
         workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
         if (vcRes && vcRes.vc_tables) {
-          console.log('vc_tables type:', typeof vcRes.vc_tables, 'length:', Array.isArray(vcRes.vc_tables) ? vcRes.vc_tables.length : 'not array');
-          mergeVcTables(vcRes.vc_tables);
-          console.log('workbooks after merge:', workbooks.length);
-        } else {
-          console.log('vcRes:', JSON.stringify(vcRes).substring(0, 200));
+          mergeVcTables(Array.isArray(vcRes.vc_tables) ? vcRes.vc_tables : []);
         }
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
