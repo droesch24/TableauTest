@@ -1332,9 +1332,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         if (seen.has(key)) return false;
         seen.add(key); return true;
       });
-      // Debug: log a sample of datasource rows to see contentType/dbType values
-      var dsSample = workbooks.filter(function(w) { return w.itemType === 'Datasource'; }).slice(0, 5);
-      console.log('DS sample:', dsSample.map(function(w) { return { name: w.name, contentType: w.contentType, dbType: w.dbType }; }));
+      // Debug: log datasources that pass the filter
+      var passing = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); });
+      var failing = workbooks.filter(function(w) { return w.itemType === 'Datasource' && !isPublishedDs(w); });
+      console.log('Passing filter:', passing.length, 'Failing filter:', failing.length);
+      console.log('Sample failing:', failing.slice(0,3).map(function(w){ return {name:w.name,ct:w.contentType,db:w.dbType}; }));
     } catch(e) {
       showError('list-error', 'Could not read worksheet data: ' + e.message);
     }
