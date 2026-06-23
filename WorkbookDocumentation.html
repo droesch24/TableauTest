@@ -172,8 +172,6 @@
           <div class="btn-type-label">Data Sources</div>
         </button>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="testVcTables()" style="margin-top:8px;font-size:11px;color:var(--text2)">Test VC Tables</button>
-      <div id="vc-test-result" style="font-size:11px;color:var(--text2);max-width:420px;word-break:break-all;display:none"></div>
     </div>
   </div>
 
@@ -378,6 +376,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   function isPublishedDs(w) {
+    if (w.isVcTable) return true;
     var isPublishedContent = w.contentType && w.contentType.toLowerCase() === 'published';
     var isPublishedDb      = w.dbType && w.dbType.toLowerCase() === 'publishedconnection';
     return isPublishedContent || isPublishedDb;
@@ -390,19 +389,29 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('count-datasource').textContent = dsCount;
   }
 
-  window.testVcTables = async function() {
-    var el = $('vc-test-result');
-    el.style.display = 'block';
-    el.textContent = 'Calling flow...';
-    try {
-      var res = await callFlow({ action: 'list_vc_tables' });
-      var txt = JSON.stringify(res, null, 2);
-      console.log('list_vc_tables response:', res);
-      el.textContent = txt.substring(0, 500) + (txt.length > 500 ? '... (see console for full response)' : '');
-    } catch(e) {
-      el.textContent = 'Error: ' + e.message;
-    }
-  };
+  function mergeVcTables(vcNodes) {
+    (vcNodes || []).forEach(function(vct) {
+      var id = vct.luid || vct.name;
+      if (!id) return;
+      workbooks.push({
+        luid:        id,
+        name:        vct.name,
+        itemType:    'Datasource',
+        contentType: 'VCTable',
+        dbType:      '',
+        project:     vct.virtualConnection ? vct.virtualConnection.name : '',
+        parentProject: '',
+        owner:       '',
+        ownerEmail:  '',
+        description: '',
+        updated:     '',
+        certified:   false,
+        vcName:      vct.virtualConnection ? vct.virtualConnection.name : '',
+        vcLuid:      vct.virtualConnection ? vct.virtualConnection.luid : '',
+        isVcTable:   true,
+      });
+    });
+  }
 
   window.selectType = function(type) {
     activeType = type;
@@ -496,17 +505,21 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var row = document.createElement('div');
       row.className    = 'wb-row';
       row.dataset.luid = wb.luid;
-      var metaParts = [
-        wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null,
-        wb.project || null,
-        wb.owner   || null,
-        wb.updated ? wb.updated.substring(0, 10) : null,
-      ].filter(Boolean).join('  \u00b7  ');
+      var metaParts = wb.isVcTable
+        ? (wb.vcName ? 'Virtual Connection: ' + wb.vcName : '')
+        : [
+            wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null,
+            wb.project || null,
+            wb.owner   || null,
+            wb.updated ? wb.updated.substring(0, 10) : null,
+          ].filter(Boolean).join('  \u00b7  ');
+      var vcBadge = wb.isVcTable ? '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;flex-shrink:0">VC TABLE</span>' : '';
       row.innerHTML =
         '<div class="wb-row-main">' +
           '<div class="wb-row-name">' + escHtml(wb.name || '\u2014') + '</div>' +
           '<div class="wb-row-meta">' + escHtml(metaParts) + '</div>' +
         '</div>' +
+        vcBadge +
         (wb.certified ? '<span class="cert-badge" title="Certified">\ud83c\udfc5</span>' : '') +
         '<span class="doc-badge ' + (hasDoc ? 'yes' : 'no') + '">' + (hasDoc ? 'Documented' : 'No docs') + '</span>' +
         '<span class="wb-row-arrow">\u203a</span>';
@@ -529,11 +542,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('topbar-title').textContent = wb.name || 'Item';
 
     // Show/hide lineage tab based on type
-    $('tab-lineage').style.display = '';
+    $('tab-lineage').style.display = wb.itemType === 'Workbook' ? '' : 'none';
+    // Hide edit button for VC tables (read-only)
+    $('btn-edit').style.display = wb.isVcTable ? 'none' : '';
 
     $('detail-wb-name').innerHTML = escHtml(wb.name || '\u2014') +
-      (wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '');
-    $('detail-wb-meta').innerHTML = [
+      (wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '') +
+      (wb.isVcTable ? ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;vertical-align:middle">VC TABLE</span>' : '');
+    $('detail-wb-meta').innerHTML = wb.isVcTable ? [
+      wb.vcName ? 'Virtual Connection: <b>' + escHtml(wb.vcName) + '</b>' : null,
+      wb.vcLuid ? 'VC LUID: <b style="font-family:var(--mono)">' + escHtml(wb.vcLuid) + '</b>' : null,
+    ].filter(Boolean).join('<br>') : [
       (wb.parentProject && wb.parentProject !== wb.project) ? 'Parent Project: <b>' + escHtml(wb.parentProject) + '</b>' : null,
       wb.project    ? 'Project: <b>' + escHtml(wb.project) + '</b>' : null,
       wb.owner      ? 'Owner: <b>' + escHtml(wb.owner) + '</b>' : null,
@@ -542,7 +561,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       wb.description ? '<span style="color:var(--text);font-family:var(--sans)">' + escHtml(wb.description) + '</span>' : null,
     ].filter(Boolean).join('<br>');
 
-    if (docCache[wb.luid] === undefined || docCache[wb.luid] === true || docCache[wb.luid] === null) {
+    if (!wb.isVcTable && (docCache[wb.luid] === undefined || docCache[wb.luid] === true || docCache[wb.luid] === null)) {
       setStatus('Loading\u2026');
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
@@ -1475,11 +1494,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (flowUrl && workbooks.length) {
       setStatus('Checking docs\u2026');
       try {
-        var res = await callFlow({ action: 'list' });
-        var rawLuids = (res && res.luids) ? res.luids : [];
-        var flatLuids = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
+        var results = await Promise.all([
+          callFlow({ action: 'list' }),
+          callFlow({ action: 'list_vc_tables' }),
+        ]);
+        var res        = results[0];
+        var vcRes      = results[1];
+        var rawLuids   = (res && res.luids) ? res.luids : [];
+        var flatLuids  = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
         var documented = new Set(flatLuids);
         workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
+        if (vcRes && vcRes.vc_tables) mergeVcTables(vcRes.vc_tables);
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
     }
