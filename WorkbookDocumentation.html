@@ -1332,11 +1332,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         if (seen.has(key)) return false;
         seen.add(key); return true;
       });
-      // Debug: log datasources that pass the filter
-      var passing = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); });
-      var failing = workbooks.filter(function(w) { return w.itemType === 'Datasource' && !isPublishedDs(w); });
-      console.log('Passing filter:', passing.length, 'Failing filter:', failing.length);
-      console.log('Sample failing:', failing.slice(0,3).map(function(w){ return {name:w.name,ct:w.contentType,db:w.dbType}; }));
+      var target = workbooks.filter(function(w) { return (w.name || '').toLowerCase().includes('agvance_gffb'); });
+      console.log('agvance_gffb:', JSON.stringify(target[0]));
     } catch(e) {
       showError('list-error', 'Could not read worksheet data: ' + e.message);
     }
