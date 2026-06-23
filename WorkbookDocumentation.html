@@ -1504,7 +1504,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         var flatLuids  = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
         var documented = new Set(flatLuids);
         workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
-        if (vcRes && vcRes.vc_tables) mergeVcTables(vcRes.vc_tables);
+        if (vcRes && vcRes.vc_tables) {
+          console.log('vc_tables type:', typeof vcRes.vc_tables, 'length:', Array.isArray(vcRes.vc_tables) ? vcRes.vc_tables.length : 'not array');
+          mergeVcTables(vcRes.vc_tables);
+          console.log('workbooks after merge:', workbooks.length);
+        } else {
+          console.log('vcRes:', JSON.stringify(vcRes).substring(0, 200));
+        }
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
     }
