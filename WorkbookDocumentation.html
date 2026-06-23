@@ -162,7 +162,7 @@
   <div id="view-home" class="view active">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;padding:32px">
       <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Select a content type to browse</div>
-      <div style="display:flex;gap:16px;width:100%;max-width:640px">
+      <div style="display:flex;gap:16px;width:100%;max-width:420px">
         <button id="btn-type-workbook" class="btn-type-card" onclick="selectType('Workbook')">
           <div class="btn-type-count" id="count-workbook">&#8211;</div>
           <div class="btn-type-label">Workbooks</div>
@@ -170,10 +170,6 @@
         <button id="btn-type-datasource" class="btn-type-card" onclick="selectType('Datasource')">
           <div class="btn-type-count" id="count-datasource">&#8211;</div>
           <div class="btn-type-label">Data Sources</div>
-        </button>
-        <button id="btn-type-vctable" class="btn-type-card" onclick="selectType('VCTable')">
-          <div class="btn-type-count" id="count-vctable">&#8211;</div>
-          <div class="btn-type-label">VC Tables</div>
         </button>
       </div>
     </div>
@@ -377,7 +373,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $(('view-' + name)).classList.add('active');
     $('back-btn').style.display = (name !== 'home') ? 'inline-flex' : 'none';
     if (name === 'home') $('topbar-title').textContent = 'Workbook Documentation';
-    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : activeType === 'VCTable' ? 'VC Tables' : 'Data Sources';
+    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : 'Data Sources';
   }
 
   function isPublishedDs(w) {
@@ -387,16 +383,15 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   function updateCounts() {
-    var wbCount  = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
-    var dsCount  = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); }).length;
+    var wbCount = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
+    var dsCount = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); }).length + vcTables.length;
     $('count-workbook').textContent   = wbCount;
     $('count-datasource').textContent = dsCount;
-    $('count-vctable').textContent    = vcTables.length;
   }
 
   window.selectType = function(type) {
     activeType = type;
-    $('search-input').placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : type === 'VCTable' ? 'Search VC tables\u2026' : 'Search data sources\u2026';
+    $('search-input').placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : 'Search data sources\u2026';
     renderList();
     showView('list');
   };
@@ -452,21 +447,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var q    = $('search-input').value.toLowerCase();
     var sort = $('sort-select').value;
 
-    // VC Tables use separate array
-    if (activeType === 'VCTable') {
-      var list = vcTables.filter(function(vct) {
-        return !q ||
-          (vct.name   || '').toLowerCase().includes(q) ||
-          (vct.vcName || '').toLowerCase().includes(q);
-      });
-      list.sort(function(a, b) {
-        if (sort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
-        if (sort === 'project')   return (a.vcName || '').localeCompare(b.vcName || '');
-        return (a.name || '').localeCompare(b.name || '');
-      });
-      return list;
-    }
-
     var list = workbooks.filter(function(w) {
       if (w.itemType !== activeType) return false;
       if (w.itemType === 'Datasource' && !isPublishedDs(w)) return false;
@@ -476,10 +456,21 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         (w.owner       || '').toLowerCase().includes(q) ||
         (w.description || '').toLowerCase().includes(q);
     });
+
+    // Merge VC tables into datasource list
+    if (activeType === 'Datasource') {
+      var vctList = vcTables.filter(function(vct) {
+        return !q ||
+          (vct.name   || '').toLowerCase().includes(q) ||
+          (vct.vcName || '').toLowerCase().includes(q);
+      });
+      list = list.concat(vctList);
+    }
+
     list.sort(function(a, b) {
-      if (sort === 'name')      return (a.name    || '').localeCompare(b.name    || '');
-      if (sort === 'name-desc') return (b.name    || '').localeCompare(a.name    || '');
-      if (sort === 'project')   return (a.project || '').localeCompare(b.project || '');
+      if (sort === 'name')      return (a.name || '').localeCompare(b.name || '');
+      if (sort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
+      if (sort === 'project')   return (a.project || a.vcName || '').localeCompare(b.project || b.vcName || '');
       if (sort === 'updated')   return (b.updated || '').localeCompare(a.updated || '');
       if (sort === 'doc') {
         var ad = docCache[a.luid] ? 1 : 0, bd = docCache[b.luid] ? 1 : 0;
