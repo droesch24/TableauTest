@@ -1344,19 +1344,18 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (flowUrl && workbooks.length) {
       setStatus('Checking docs\u2026');
       try {
-        var results = await Promise.all([
-          callFlow({ action: 'list' }),
-          callFlow({ action: 'list_vc_tables' }),
-        ]);
-        var res    = results[0];
-        var vcRes  = results[1];
+        var res = await callFlow({ action: 'list' });
         var rawLuids = (res && res.luids) ? res.luids : [];
         var flatLuids = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
         var documented = new Set(flatLuids);
         workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
-        if (vcRes && Array.isArray(vcRes.vc_tables)) mergeVcTables(vcRes.vc_tables);
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
+      try {
+        var vcRes = await callFlow({ action: 'list_vc_tables' });
+        if (vcRes && Array.isArray(vcRes.vc_tables)) mergeVcTables(vcRes.vc_tables);
+        updateCounts();
+      } catch(e) { /* vc tables optional */ }
     }
 
     updateCounts();
