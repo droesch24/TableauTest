@@ -377,9 +377,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   function isPublishedDs(w) {
-    var isPublishedContent = w.contentType && w.contentType.toLowerCase() === 'published';
-    var isPublishedDb      = w.dbType && w.dbType.toLowerCase() === 'publishedconnection';
-    return isPublishedContent || isPublishedDb;
+    if (w.isVcTable) return true;
+    var ct = (w.contentType || '').toLowerCase();
+    var db = (w.dbType || '').toLowerCase();
+    return ct === 'published' || db === 'publishedconnection';
   }
 
   function updateCounts() {
