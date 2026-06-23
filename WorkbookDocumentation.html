@@ -162,7 +162,7 @@
   <div id="view-home" class="view active">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;padding:32px">
       <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Select a content type to browse</div>
-      <div style="display:flex;gap:16px;width:100%;max-width:640px">
+      <div style="display:flex;gap:16px;width:100%;max-width:420px">
         <button id="btn-type-workbook" class="btn-type-card" onclick="selectType('Workbook')">
           <div class="btn-type-count" id="count-workbook">&#8211;</div>
           <div class="btn-type-label">Workbooks</div>
@@ -170,10 +170,6 @@
         <button id="btn-type-datasource" class="btn-type-card" onclick="selectType('Datasource')">
           <div class="btn-type-count" id="count-datasource">&#8211;</div>
           <div class="btn-type-label">Data Sources</div>
-        </button>
-        <button id="btn-type-vctable" class="btn-type-card" onclick="selectType('VCTable')">
-          <div class="btn-type-count" id="count-vctable">&#8211;</div>
-          <div class="btn-type-label">VC Tables</div>
         </button>
       </div>
     </div>
@@ -376,53 +372,25 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $(('view-' + name)).classList.add('active');
     $('back-btn').style.display = (name !== 'home') ? 'inline-flex' : 'none';
     if (name === 'home') $('topbar-title').textContent = 'Workbook Documentation';
-    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : activeType === 'VCTable' ? 'VC Tables' : 'Data Sources';
+    if (name === 'list') $('topbar-title').textContent = activeType === 'Workbook' ? 'Workbooks' : 'Data Sources';
   }
 
   function isPublishedDs(w) {
-    if (w.isVcTable) return true;
     var isPublishedContent = w.contentType && w.contentType.toLowerCase() === 'published';
     var isPublishedDb      = w.dbType && w.dbType.toLowerCase() === 'publishedconnection';
     return isPublishedContent || isPublishedDb;
   }
 
   function updateCounts() {
-    var wbCount  = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
-    var dsCount  = workbooks.filter(function(w) { return w.itemType === 'Datasource' && !w.isVcTable && isPublishedDs(w); }).length;
-    var vctCount = workbooks.filter(function(w) { return w.isVcTable === true; }).length;
+    var wbCount = workbooks.filter(function(w) { return w.itemType === 'Workbook'; }).length;
+    var dsCount = workbooks.filter(function(w) { return w.itemType === 'Datasource' && isPublishedDs(w); }).length;
     $('count-workbook').textContent   = wbCount;
     $('count-datasource').textContent = dsCount;
-    $('count-vctable').textContent    = vctCount;
-  }
-
-  function mergeVcTables(vcNodes) {
-    (vcNodes || []).forEach(function(vct) {
-      var id = vct.luid || vct.name;
-      if (!id) return;
-      workbooks.push({
-        luid:        id,
-        name:        vct.name,
-        itemType:    'Datasource',
-        contentType: 'VCTable',
-        dbType:      '',
-        project:     vct.virtualConnection ? vct.virtualConnection.name : '',
-        parentProject: '',
-        owner:       '',
-        ownerEmail:  '',
-        description: '',
-        updated:     '',
-        certified:   false,
-        vcName:      vct.virtualConnection ? vct.virtualConnection.name : '',
-        vcLuid:      vct.virtualConnection ? vct.virtualConnection.luid : '',
-        isVcTable:   true,
-      });
-    });
   }
 
   window.selectType = function(type) {
     activeType = type;
-    var placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : type === 'VCTable' ? 'Search VC tables\u2026' : 'Search data sources\u2026';
-    $('search-input').placeholder = placeholder;
+    $('search-input').placeholder = type === 'Workbook' ? 'Search workbooks\u2026' : 'Search data sources\u2026';
     renderList();
     showView('list');
   };
@@ -478,14 +446,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var q    = $('search-input').value.toLowerCase();
     var sort = $('sort-select').value;
     var list = workbooks.filter(function(w) {
-      if (activeType === 'VCTable') {
-        if (!w.isVcTable) return false;
-        return !q ||
-          (w.name   || '').toLowerCase().includes(q) ||
-          (w.vcName || '').toLowerCase().includes(q);
-      }
       if (w.itemType !== activeType) return false;
-      if (w.itemType === 'Datasource' && w.isVcTable) return false;
       if (w.itemType === 'Datasource' && !isPublishedDs(w)) return false;
       return !q ||
         (w.name        || '').toLowerCase().includes(q) ||
@@ -519,21 +480,17 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var row = document.createElement('div');
       row.className    = 'wb-row';
       row.dataset.luid = wb.luid;
-      var metaParts = wb.isVcTable
-        ? (wb.vcName ? 'Virtual Connection: ' + wb.vcName : '')
-        : [
-            wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null,
-            wb.project || null,
-            wb.owner   || null,
-            wb.updated ? wb.updated.substring(0, 10) : null,
-          ].filter(Boolean).join('  \u00b7  ');
-      var vcBadge = wb.isVcTable ? '<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;flex-shrink:0">VC TABLE</span>' : '';
+      var metaParts = [
+        wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null,
+        wb.project || null,
+        wb.owner   || null,
+        wb.updated ? wb.updated.substring(0, 10) : null,
+      ].filter(Boolean).join('  \u00b7  ');
       row.innerHTML =
         '<div class="wb-row-main">' +
           '<div class="wb-row-name">' + escHtml(wb.name || '\u2014') + '</div>' +
           '<div class="wb-row-meta">' + escHtml(metaParts) + '</div>' +
         '</div>' +
-        vcBadge +
         (wb.certified ? '<span class="cert-badge" title="Certified">\ud83c\udfc5</span>' : '') +
         '<span class="doc-badge ' + (hasDoc ? 'yes' : 'no') + '">' + (hasDoc ? 'Documented' : 'No docs') + '</span>' +
         '<span class="wb-row-arrow">\u203a</span>';
@@ -555,18 +512,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     showError('detail-error', '');
     $('topbar-title').textContent = wb.name || 'Item';
 
-    // Show lineage for workbooks and datasources, hide for VC tables
-    $('tab-lineage').style.display = wb.isVcTable ? 'none' : '';
-    // Hide edit button for VC tables (read-only)
-    $('btn-edit').style.display = wb.isVcTable ? 'none' : '';
+    // Show/hide lineage tab based on type
+    $('tab-lineage').style.display = '';
 
     $('detail-wb-name').innerHTML = escHtml(wb.name || '\u2014') +
-      (wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '') +
-      (wb.isVcTable ? ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;vertical-align:middle">VC TABLE</span>' : '');
-    $('detail-wb-meta').innerHTML = wb.isVcTable ? [
-      wb.vcName ? 'Virtual Connection: <b>' + escHtml(wb.vcName) + '</b>' : null,
-      wb.vcLuid ? 'VC LUID: <b style="font-family:var(--mono)">' + escHtml(wb.vcLuid) + '</b>' : null,
-    ].filter(Boolean).join('<br>') : [
+      (wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '');
+    $('detail-wb-meta').innerHTML = [
       (wb.parentProject && wb.parentProject !== wb.project) ? 'Parent Project: <b>' + escHtml(wb.parentProject) + '</b>' : null,
       wb.project    ? 'Project: <b>' + escHtml(wb.project) + '</b>' : null,
       wb.owner      ? 'Owner: <b>' + escHtml(wb.owner) + '</b>' : null,
@@ -575,7 +526,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       wb.description ? '<span style="color:var(--text);font-family:var(--sans)">' + escHtml(wb.description) + '</span>' : null,
     ].filter(Boolean).join('<br>');
 
-    if (!wb.isVcTable && (docCache[wb.luid] === undefined || docCache[wb.luid] === true || docCache[wb.luid] === null)) {
+    if (docCache[wb.luid] === undefined || docCache[wb.luid] === true || docCache[wb.luid] === null) {
       setStatus('Loading\u2026');
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
@@ -1033,14 +984,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       addEdge(flId, targetId, 'flow_to_ds');
       var upDs = fl.upstreamDatasources || [];
       upDs.forEach(function(ds) { processDs(ds, flId, 'flow', false); });
-      // Bridge datasources — outputs of this flow that feed another upstream flow
-      // Add flow_to_ds edges so they appear between the two flow columns
-      (fl.downstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        if (!dsId || dsId === heroLuid) return;
-        if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-        addEdge(flId, dsId, 'flow_to_ds');
-      });
       // VC tables → flow, only if not covered by an upstream ds
       var dsVcKeys = new Set();
       upDs.forEach(function(ds) {
@@ -1055,6 +998,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
 
     // ── Build upstream ─────────────────────────────────────────────
+    // Process flows first so we know which datasources are flow inputs
     (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, heroLuid); });
 
     // Build set of datasource luids that already have ds_to_flow edges
@@ -1508,19 +1452,11 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (flowUrl && workbooks.length) {
       setStatus('Checking docs\u2026');
       try {
-        var results = await Promise.all([
-          callFlow({ action: 'list' }),
-          callFlow({ action: 'list_vc_tables' }),
-        ]);
-        var res        = results[0];
-        var vcRes      = results[1];
-        var rawLuids   = (res && res.luids) ? res.luids : [];
-        var flatLuids  = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
+        var res = await callFlow({ action: 'list' });
+        var rawLuids = (res && res.luids) ? res.luids : [];
+        var flatLuids = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
         var documented = new Set(flatLuids);
         workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
-        if (vcRes && vcRes.vc_tables) {
-          mergeVcTables(Array.isArray(vcRes.vc_tables) ? vcRes.vc_tables : []);
-        }
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
     }
