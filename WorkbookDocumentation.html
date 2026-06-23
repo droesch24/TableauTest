@@ -461,12 +461,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         (w.description || '').toLowerCase().includes(q);
     });
 
-    // Merge VC tables into datasource list — only those with downstream consumers
+    // Merge VC tables into datasource list
     if (activeType === 'Datasource') {
       var vctList = vcTables.filter(function(vct) {
-        var hasConsumers = (vct.downstreamDatasources && vct.downstreamDatasources.length > 0) ||
-                           (vct.downstreamWorkbooks   && vct.downstreamWorkbooks.length   > 0);
-        if (!hasConsumers) return false;
         return !q ||
           (vct.name   || '').toLowerCase().includes(q) ||
           (vct.vcName || '').toLowerCase().includes(q);
@@ -1335,6 +1332,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         if (seen.has(key)) return false;
         seen.add(key); return true;
       });
+      var target = workbooks.filter(function(w) { return (w.name || '').toLowerCase().includes('agvance_gffb'); });
+      console.log('agvance_gffb:', JSON.stringify(target[0]));
     } catch(e) {
       showError('list-error', 'Could not read worksheet data: ' + e.message);
     }
