@@ -294,8 +294,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   function isPublishedDs(w) {
     if (w.isVcTable) return true;
     var ct = (w.contentType || '').toLowerCase().trim();
-    var db = (w.dbType || '').toLowerCase().trim();
-    return ct === 'published' || db === 'publishedconnection';
+    // Only allow explicitly published — never allow embedded regardless of dbType
+    return ct === 'published';
   }
 
   function updateCounts() {
@@ -715,7 +715,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         return { luid:get('luid')||get('id'), name:get('name'), itemType:get('item type')||get('type')||'Workbook', contentType:get('data source content type')||get('content type')||'', dbType:get('data source database type')||get('database type')||'', project:get('project'), parentProject:get('parent project')||get('parent'), owner:get('owner'), ownerEmail:get('email')||get('owner email'), description:get('description'), updated:get('updated')||get('modified'), certified:(get('data source is certified')||'').toLowerCase()==='true' };
       }).filter(function(w){return w.luid||w.name;});
       var seen=new Set(); workbooks=workbooks.filter(function(w){var key=w.luid||w.name;if(seen.has(key))return false;seen.add(key);return true;});
-      console.log('acctprof rows:', JSON.stringify(workbooks.filter(function(w){return (w.name||'').toLowerCase().includes('acctprof');})));
     } catch(e) { showError('list-error', 'Could not read worksheet data: ' + e.message); }
 
     if (flowUrl && workbooks.length) {
