@@ -294,7 +294,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   function isPublishedDs(w) {
     if (w.isVcTable) return true;
     var ct = (w.contentType || '').toLowerCase().trim();
-    // Only allow explicitly published — never allow embedded regardless of dbType
+    // Only allow published — embedded datasources are excluded regardless of dbType
     return ct === 'published';
   }
 
@@ -715,6 +715,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         return { luid:get('luid')||get('id'), name:get('name'), itemType:get('item type')||get('type')||'Workbook', contentType:get('data source content type')||get('content type')||'', dbType:get('data source database type')||get('database type')||'', project:get('project'), parentProject:get('parent project')||get('parent'), owner:get('owner'), ownerEmail:get('email')||get('owner email'), description:get('description'), updated:get('updated')||get('modified'), certified:(get('data source is certified')||'').toLowerCase()==='true' };
       }).filter(function(w){return w.luid||w.name;});
       var seen=new Set(); workbooks=workbooks.filter(function(w){var key=w.luid||w.name;if(seen.has(key))return false;seen.add(key);return true;});
+      var problematic = workbooks.filter(function(w){ return (w.name||'').toLowerCase().includes('vc_entitlements'); });
+      console.log('VC entitlements rows:', JSON.stringify(problematic.map(function(w){ return {name:w.name,ct:w.contentType,db:w.dbType,itemType:w.itemType}; })));
     } catch(e) { showError('list-error', 'Could not read worksheet data: ' + e.message); }
 
     if (flowUrl && workbooks.length) {
