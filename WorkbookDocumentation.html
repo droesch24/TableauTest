@@ -17,19 +17,16 @@
   }
   html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5}
   #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-  /* topbar */
   #topbar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:10px}
   #topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
   #back-btn{display:none;background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;border-radius:4px;transition:color var(--tr)}
   #back-btn:hover{color:var(--text)}
   #topbar-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-  /* status */
   #status-pill{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);transition:all var(--tr);white-space:nowrap}
   #status-pill.saving{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
   #status-pill.saved{background:var(--success-bg);color:var(--success);border-color:var(--success)}
   #status-pill.error{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
-  /* buttons */
   .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all var(--tr);white-space:nowrap;font-family:var(--sans)}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -37,17 +34,14 @@
   .btn-ghost{background:transparent;color:var(--text2);border-color:var(--border)}
   .btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--text2)}
   .btn-sm{padding:4px 10px;font-size:11px}
-  /* views */
   .view{display:none;flex:1;overflow:hidden;flex-direction:column}
   .view.active{display:flex}
-  /* tab bar */
   #detail-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;padding:0 14px;background:var(--surface)}
   .tab-btn{padding:8px 14px;font-size:12px;font-weight:500;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all var(--tr);margin-bottom:-1px;font-family:var(--sans)}
   .tab-btn:hover{color:var(--text)}
   .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
   .tab-panel{display:none;flex:1;overflow:hidden;flex-direction:column}
   .tab-panel.active{display:flex}
-  /* list */
   #search-bar{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
   #search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:12px;padding:6px 10px}
   #search-input:focus{outline:none;border-color:var(--accent)}
@@ -64,10 +58,9 @@
   .doc-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
   .doc-badge.yes{background:var(--success-bg);color:var(--success)}
   .doc-badge.no{background:var(--surface2);color:var(--text2)}
-  .cert-badge{font-size:14px;flex-shrink:0;line-height:1;title:'Certified'}
+  .cert-badge{font-size:14px;flex-shrink:0;line-height:1}
   .wb-row-arrow{color:var(--text2);font-size:14px;flex-shrink:0}
   #list-empty{display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px}
-  /* detail doc tab */
   #detail-doc-scroll{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
   #detail-doc-scroll::-webkit-scrollbar{width:4px}
   #detail-doc-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
@@ -91,7 +84,6 @@
   .log-delete{background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;line-height:1;padding:0;opacity:.4;flex-shrink:0}
   .log-delete:hover{color:var(--danger);opacity:1}
   #detail-undocumented{display:none;text-align:center;padding:24px;color:var(--text2);font-size:12px;font-style:italic}
-  /* lineage tab */
   #lineage-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
   #lineage-hint{font-size:11px;color:var(--text2);flex:1}
   #lineage-scroll{flex:1;overflow:auto;padding:14px;background:var(--bg)}
@@ -100,7 +92,6 @@
   #lineage-chart{display:inline-block;min-width:100%}
   #lineage-loading{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px;color:var(--text2);font-size:12px}
   #lineage-empty{display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px;font-style:italic}
-  /* edit view */
   #edit-scroll{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
   #edit-scroll::-webkit-scrollbar{width:4px}
   #edit-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
@@ -119,33 +110,23 @@
   #new-log-row{display:flex;gap:8px;align-items:flex-start}
   #new-log-date{flex-shrink:0;width:136px;resize:none}
   #new-log-note{flex:1;resize:none;height:34px}
-  /* loading overlay */
   #loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;transition:opacity .3s ease}
   #loading-overlay.hidden{opacity:0;pointer-events:none}
   .spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-text{font-size:12px;color:var(--text2);font-family:var(--mono)}
   .error-banner{background:var(--danger-bg);border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius);padding:9px 12px;font-size:12px;display:none;margin:10px 14px 0}
-
-  /* ── Type selector cards ── */
-  .btn-type-card {
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:10px;padding:28px 16px;background:var(--surface);border:1px solid var(--border);
-    border-radius:var(--radius);cursor:pointer;transition:all var(--tr);font-family:var(--sans);
-  }
-  .btn-type-card:hover { border-color:var(--accent);background:var(--surface2); }
-  .btn-type-icon { font-size:28px;line-height:1; }
-  .btn-type-count { font-size:32px;font-weight:700;line-height:1;color:var(--accent); }
-  .btn-type-label { font-size:13px;font-weight:600;color:var(--text); }
+  .btn-type-card{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--tr);font-family:var(--sans)}
+  .btn-type-card:hover{border-color:var(--accent);background:var(--surface2)}
+  .btn-type-count{font-size:32px;font-weight:700;line-height:1;color:var(--accent)}
+  .btn-type-label{font-size:13px;font-weight:600;color:var(--text)}
 </style>
 </head>
 <body>
-
 <div id="loading-overlay">
   <div class="spinner"></div>
   <div class="loading-text">Loading workbooks…</div>
 </div>
-
 <div id="app">
   <div id="topbar">
     <div id="topbar-left">
@@ -158,7 +139,6 @@
     </div>
   </div>
 
-  <!-- HOME VIEW -->
   <div id="view-home" class="view active">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;padding:32px">
       <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Select a content type to browse</div>
@@ -175,7 +155,6 @@
     </div>
   </div>
 
-  <!-- LIST VIEW -->
   <div id="view-list" class="view">
     <div id="search-bar">
       <input id="search-input" type="text" placeholder="Search&#8230;" autocomplete="off" />
@@ -191,14 +170,11 @@
     <div id="list-scroll"><div id="list-empty">No items found.</div></div>
   </div>
 
-    <!-- DETAIL VIEW -->
   <div id="view-detail" class="view">
     <div id="detail-tabs">
-      <button class="tab-btn active" id="tab-doc"     onclick="switchTab('doc')">Documentation</button>
-      <button class="tab-btn"        id="tab-lineage" onclick="switchTab('lineage')">Lineage</button>
+      <button class="tab-btn active" id="tab-doc" onclick="switchTab('doc')">Documentation</button>
+      <button class="tab-btn" id="tab-lineage" onclick="switchTab('lineage')">Lineage</button>
     </div>
-
-    <!-- Documentation tab -->
     <div id="panel-doc" class="tab-panel active">
       <div class="error-banner" id="detail-error"></div>
       <div id="detail-doc-scroll">
@@ -216,8 +192,6 @@
         <div id="detail-body"></div>
       </div>
     </div>
-
-    <!-- Lineage tab -->
     <div id="panel-lineage" class="tab-panel">
       <div id="lineage-toolbar">
         <span id="lineage-hint">Data flow from source to workbook</span>
@@ -231,41 +205,20 @@
     </div>
   </div>
 
-  <!-- EDIT VIEW -->
   <div id="view-edit" class="view">
     <div class="error-banner" id="edit-error"></div>
     <div id="edit-scroll">
       <div class="edit-section">
         <div class="edit-section-label">Documentation</div>
-        <div class="field-group">
-          <div class="field-label">Intended Audience</div>
-          <textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea>
-        </div>
-        <div class="field-group">
-          <div class="field-label">Key Metrics / Fields</div>
-          <textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea>
-        </div>
-        <div class="field-group">
-          <div class="field-label">Known Limitations / Caveats</div>
-          <textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea>
-        </div>
+        <div class="field-group"><div class="field-label">Intended Audience</div><textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea></div>
+        <div class="field-group"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea></div>
+        <div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea></div>
       </div>
-
-      <!-- Datasource-only fields -->
       <div class="edit-section" id="ds-fields" style="display:none">
         <div class="edit-section-label">Data Source Details</div>
-        <div class="field-group">
-          <div class="field-label">Source System</div>
-          <input type="text" id="f-source-system" placeholder="e.g. Agvance, SAP, SharePoint, Excel" />
-        </div>
-        <div class="field-group">
-          <div class="field-label">Refresh Schedule</div>
-          <input type="text" id="f-refresh" placeholder="e.g. Daily at 6am, Manual, Live connection" />
-        </div>
-        <div class="field-group">
-          <div class="field-label">Data Owner / Steward</div>
-          <input type="text" id="f-steward" placeholder="Name or email of the person responsible for this data" />
-        </div>
+        <div class="field-group"><div class="field-label">Source System</div><input type="text" id="f-source-system" placeholder="e.g. Agvance, SAP, SharePoint, Excel" /></div>
+        <div class="field-group"><div class="field-label">Refresh Schedule</div><input type="text" id="f-refresh" placeholder="e.g. Daily at 6am, Manual, Live connection" /></div>
+        <div class="field-group"><div class="field-label">Data Owner / Steward</div><input type="text" id="f-steward" placeholder="Name or email of the person responsible for this data" /></div>
         <div class="field-group">
           <div class="field-label" style="margin-bottom:8px">Row-Level Security</div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -274,16 +227,12 @@
               Row-level security is applied to this data source
             </label>
           </div>
-          <textarea id="f-rls-desc" rows="2" placeholder="Describe how row-level security works — who sees what and why&#8230;" style="display:none"></textarea>
+          <textarea id="f-rls-desc" rows="2" placeholder="Describe how row-level security works…" style="display:none"></textarea>
         </div>
       </div>
-
       <div class="edit-section">
         <div class="edit-section-label">Ownership</div>
-        <div class="field-group">
-          <div class="field-label">Last Reviewed</div>
-          <input type="date" id="f-reviewed" />
-        </div>
+        <div class="field-group"><div class="field-label">Last Reviewed</div><input type="date" id="f-reviewed" /></div>
       </div>
       <div class="edit-section">
         <div class="edit-section-label">Tags</div>
@@ -309,30 +258,8 @@
 </div>
 
 <script>
-// ── CONFIG POPUP ──────────────────────────────────────────────────────────────
 if (new URLSearchParams(window.location.search).get('config') === '1') {
-  document.body.innerHTML = [
-    '<style>',
-    'body{background:#0f1117;color:#e8eaf6;font-family:Inter,system-ui,sans-serif;padding:24px;font-size:13px}',
-    'h2{font-size:14px;font-weight:600;margin-bottom:16px}',
-    'label{display:block;font-size:11px;color:#7b82a8;margin-bottom:4px;font-weight:500}',
-    'input{width:100%;background:#1a1d27;border:1px solid #2e3352;border-radius:6px;color:#e8eaf6;padding:7px 10px;font-size:12px;margin-bottom:6px}',
-    'input:focus{outline:none;border-color:#4f7cff}',
-    'p.hint{font-size:11px;color:#7b82a8;line-height:1.4;margin-bottom:16px}',
-    '.row{display:flex;gap:8px;justify-content:flex-end}',
-    '.btn{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;font-family:inherit}',
-    '.btn-primary{background:#4f7cff;color:#fff}',
-    '.btn-ghost{background:transparent;color:#7b82a8;border-color:#2e3352}',
-    '</style>',
-    '<h2>Extension Settings</h2>',
-    '<label>Power Automate Flow URL</label>',
-    '<input id="cfg-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/&#8230;" />',
-    '<p class="hint">Single flow that handles load, save, list, and lineage via the action field.</p>',
-    '<div class="row">',
-    '<button class="btn btn-ghost" id="cfg-cancel">Cancel</button>',
-    '<button class="btn btn-primary" id="cfg-save">Save Settings</button>',
-    '</div>',
-  ].join('');
+  document.body.innerHTML = ['<style>','body{background:#0f1117;color:#e8eaf6;font-family:Inter,system-ui,sans-serif;padding:24px;font-size:13px}','h2{font-size:14px;font-weight:600;margin-bottom:16px}','label{display:block;font-size:11px;color:#7b82a8;margin-bottom:4px;font-weight:500}','input{width:100%;background:#1a1d27;border:1px solid #2e3352;border-radius:6px;color:#e8eaf6;padding:7px 10px;font-size:12px;margin-bottom:6px}','input:focus{outline:none;border-color:#4f7cff}','p.hint{font-size:11px;color:#7b82a8;line-height:1.4;margin-bottom:16px}','.row{display:flex;gap:8px;justify-content:flex-end}','.btn{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;font-family:inherit}','.btn-primary{background:#4f7cff;color:#fff}','.btn-ghost{background:transparent;color:#7b82a8;border-color:#2e3352}','</style>','<h2>Extension Settings</h2>','<label>Power Automate Flow URL</label>','<input id="cfg-url" type="text" placeholder="https://prod-xx.westus.logic.azure.com/&#8230;" />','<p class="hint">Single flow that handles load, save, list, and lineage via the action field.</p>','<div class="row">','<button class="btn btn-ghost" id="cfg-cancel">Cancel</button>','<button class="btn btn-primary" id="cfg-save">Save Settings</button>','</div>'].join('');
   tableau.extensions.initializeDialogAsync().then(function() {
     var s = tableau.extensions.settings.getAll();
     document.getElementById('cfg-url').value = s.flowUrl || '';
@@ -340,9 +267,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       tableau.extensions.settings.set('flowUrl', document.getElementById('cfg-url').value.trim());
       tableau.extensions.settings.saveAsync().then(function() { tableau.extensions.ui.closeDialog('saved'); });
     });
-    document.getElementById('cfg-cancel').addEventListener('click', function() {
-      tableau.extensions.ui.closeDialog('cancelled');
-    });
+    document.getElementById('cfg-cancel').addEventListener('click', function() { tableau.extensions.ui.closeDialog('cancelled'); });
   });
 }
 </script>
@@ -352,20 +277,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   'use strict';
   if (new URLSearchParams(window.location.search).get('config') === '1') return;
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  var flowUrl        = '';
-  var workbooks      = [];
-  var vcTables       = [];
-  var docCache       = {};
-  var lineageCache   = {};
-  var activeWb       = null;
-  var activeType     = 'Workbook';
-  var editTags       = [];
-  var editLog        = [];
-  var hiddenNodes    = new Set();
-  var currentGraph   = null;
+  var flowUrl = '', workbooks = [], vcTables = [], docCache = {}, lineageCache = {};
+  var activeWb = null, activeType = 'Workbook', editTags = [], editLog = [];
+  var hiddenNodes = new Set(), currentGraph = null;
 
-  // ── DOM helper ─────────────────────────────────────────────────────────────
   function $(id) { return document.getElementById(id); }
 
   function showView(name) {
@@ -380,10 +295,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (w.isVcTable) return true;
     var ct = (w.contentType || '').toLowerCase().trim();
     var db = (w.dbType || '').toLowerCase().trim();
-    // Explicitly require 'published' — excludes 'Null', 'Embedded', and empty
-    if (ct === 'published') return true;
-    if (db === 'publishedconnection') return true;
-    return false;
+    return ct === 'published' || db === 'publishedconnection';
   }
 
   function updateCounts() {
@@ -406,114 +318,68 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       $(('panel-' + t)).classList.toggle('active', t === tab);
     });
     if (tab === 'lineage' && activeWb) {
-      if (lineageCache[activeWb.luid]) {
-        renderLineageGraph(lineageCache[activeWb.luid]);
-      } else {
-        loadLineage(activeWb);
-      }
+      if (lineageCache[activeWb.luid]) renderLineageGraph(lineageCache[activeWb.luid]);
+      else loadLineage(activeWb);
     }
   };
 
-  function setStatus(msg, cls) {
-    var p = $('status-pill');
-    p.textContent = msg;
-    p.className   = cls || '';
-  }
-
-  function showError(id, msg) {
-    var el = $(id);
-    el.textContent   = msg;
-    el.style.display = msg ? 'block' : 'none';
-  }
-
-  function escHtml(str) {
-    return String(str || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
+  function setStatus(msg, cls) { var p = $('status-pill'); p.textContent = msg; p.className = cls || ''; }
+  function showError(id, msg) { var el = $(id); el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+  function escHtml(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function todayISO() { return new Date().toISOString().split('T')[0]; }
 
-  // ── Flow call ──────────────────────────────────────────────────────────────
   async function callFlow(payload) {
-    var r = await fetch(flowUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    var r = await fetch(flowUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!r.ok) throw new Error('Flow returned ' + r.status);
     var text = await r.text();
     try { return text ? JSON.parse(text) : {}; } catch(e) { return {}; }
   }
 
-  // ── List ───────────────────────────────────────────────────────────────────
   function filteredSorted() {
-    var q    = $('search-input').value.toLowerCase();
+    var q = $('search-input').value.toLowerCase();
     var sort = $('sort-select').value;
-
     var list = workbooks.filter(function(w) {
       if (w.itemType !== activeType) return false;
       if (w.itemType === 'Datasource' && !isPublishedDs(w)) return false;
-      return !q ||
-        (w.name        || '').toLowerCase().includes(q) ||
-        (w.project     || '').toLowerCase().includes(q) ||
-        (w.owner       || '').toLowerCase().includes(q) ||
-        (w.description || '').toLowerCase().includes(q);
+      return !q || (w.name||'').toLowerCase().includes(q) || (w.project||'').toLowerCase().includes(q) || (w.owner||'').toLowerCase().includes(q) || (w.description||'').toLowerCase().includes(q);
     });
-
-    // Merge VC tables into datasource list
     if (activeType === 'Datasource') {
       var vctList = vcTables.filter(function(vct) {
-        return !q ||
-          (vct.name   || '').toLowerCase().includes(q) ||
-          (vct.vcName || '').toLowerCase().includes(q);
+        var hasConsumers = (vct.downstreamDatasources && vct.downstreamDatasources.length > 0) ||
+                           (vct.downstreamWorkbooks   && vct.downstreamWorkbooks.length   > 0);
+        if (!hasConsumers) return false;
+        return !q || (vct.name||'').toLowerCase().includes(q) || (vct.vcName||'').toLowerCase().includes(q);
       });
       list = list.concat(vctList);
     }
-
     list.sort(function(a, b) {
-      if (sort === 'name')      return (a.name || '').localeCompare(b.name || '');
-      if (sort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
-      if (sort === 'project')   return (a.project || a.vcName || '').localeCompare(b.project || b.vcName || '');
-      if (sort === 'updated')   return (b.updated || '').localeCompare(a.updated || '');
-      if (sort === 'doc') {
-        var ad = docCache[a.luid] ? 1 : 0, bd = docCache[b.luid] ? 1 : 0;
-        return bd - ad || (a.name || '').localeCompare(b.name || '');
-      }
+      if (sort === 'name')      return (a.name||'').localeCompare(b.name||'');
+      if (sort === 'name-desc') return (b.name||'').localeCompare(a.name||'');
+      if (sort === 'project')   return (a.project||a.vcName||'').localeCompare(b.project||b.vcName||'');
+      if (sort === 'updated')   return (b.updated||'').localeCompare(a.updated||'');
+      if (sort === 'doc') { var ad = docCache[a.luid]?1:0, bd = docCache[b.luid]?1:0; return bd-ad||(a.name||'').localeCompare(b.name||''); }
       return 0;
     });
     return list;
   }
 
   function renderList() {
-    var scroll = $('list-scroll');
-    var empty  = $('list-empty');
-    var list   = filteredSorted();
+    var scroll = $('list-scroll'), empty = $('list-empty'), list = filteredSorted();
     scroll.querySelectorAll('.wb-row').forEach(function(r) { r.remove(); });
     if (!list.length) { empty.style.display = 'block'; return; }
     empty.style.display = 'none';
     list.forEach(function(wb) {
-      var isVct  = activeType === 'VCTable';
-      var hasDoc = !isVct && !!docCache[wb.luid];
+      var isVct = !!wb.isVcTable, hasDoc = !isVct && !!docCache[wb.luid];
       var row = document.createElement('div');
-      row.className    = 'wb-row';
-      row.dataset.luid = wb.luid;
+      row.className = 'wb-row'; row.dataset.luid = wb.luid;
       var metaParts = isVct
         ? (wb.vcName ? 'Virtual Connection: ' + wb.vcName : '')
-        : [
-            wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null,
-            wb.project || null,
-            wb.owner   || null,
-            wb.updated ? wb.updated.substring(0, 10) : null,
-          ].filter(Boolean).join('  \u00b7  ');
+        : [wb.parentProject && wb.parentProject !== wb.project ? wb.parentProject : null, wb.project||null, wb.owner||null, wb.updated ? wb.updated.substring(0,10) : null].filter(Boolean).join('  \u00b7  ');
       row.innerHTML =
-        '<div class="wb-row-main">' +
-          '<div class="wb-row-name">' + escHtml(wb.name || '\u2014') + '</div>' +
-          '<div class="wb-row-meta">' + escHtml(metaParts) + '</div>' +
-        '</div>' +
+        '<div class="wb-row-main"><div class="wb-row-name">' + escHtml(wb.name||'\u2014') + '</div><div class="wb-row-meta">' + escHtml(metaParts) + '</div></div>' +
         (isVct ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;flex-shrink:0">VC TABLE</span>' : '') +
         (!isVct && wb.certified ? '<span class="cert-badge" title="Certified">\ud83c\udfc5</span>' : '') +
-        (!isVct ? '<span class="doc-badge ' + (hasDoc ? 'yes' : 'no') + '">' + (hasDoc ? 'Documented' : 'No docs') + '</span>' : '') +
+        (!isVct ? '<span class="doc-badge ' + (hasDoc?'yes':'no') + '">' + (hasDoc?'Documented':'No docs') + '</span>' : '') +
         '<span class="wb-row-arrow">\u203a</span>';
       row.addEventListener('click', function() { openDetail(wb); });
       scroll.appendChild(row);
@@ -523,27 +389,22 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   $('search-input').addEventListener('input', renderList);
   $('sort-select').addEventListener('change', renderList);
 
-  // ── Detail ─────────────────────────────────────────────────────────────────
   async function openDetail(wb) {
-    activeWb     = wb;
-    hiddenNodes  = new Set();
-    currentGraph = null;
-    showView('detail');
-    switchTab('doc');
+    activeWb = wb; hiddenNodes = new Set(); currentGraph = null;
+    showView('detail'); switchTab('doc');
     showError('detail-error', '');
     $('topbar-title').textContent = wb.name || 'Item';
-
     $('tab-lineage').style.display = wb.isVcTable ? 'none' : '';
     $('btn-edit').style.display    = wb.isVcTable ? 'none' : '';
 
-    $('detail-wb-name').innerHTML = escHtml(wb.name || '\u2014') +
+    $('detail-wb-name').innerHTML = escHtml(wb.name||'\u2014') +
       (wb.isVcTable ? ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;vertical-align:middle;margin-left:6px">VC TABLE</span>' : '') +
       (!wb.isVcTable && wb.certified ? ' <span title="Certified" style="font-size:16px">\ud83c\udfc5</span>' : '');
     $('detail-wb-meta').innerHTML = wb.isVcTable ? [
       wb.vcName ? 'Virtual Connection: <b>' + escHtml(wb.vcName) + '</b>' : null,
       wb.vcLuid ? 'VC LUID: <b style="font-family:var(--mono);font-size:10px">' + escHtml(wb.vcLuid) + '</b>' : null,
-      (wb.downstreamDatasources && wb.downstreamDatasources.length) ? 'Used by <b>' + wb.downstreamDatasources.length + '</b> datasource' + (wb.downstreamDatasources.length !== 1 ? 's' : '') : null,
-      (wb.downstreamWorkbooks && wb.downstreamWorkbooks.length) ? 'Used by <b>' + wb.downstreamWorkbooks.length + '</b> workbook' + (wb.downstreamWorkbooks.length !== 1 ? 's' : '') : null,
+      (wb.downstreamDatasources && wb.downstreamDatasources.length) ? 'Used by <b>' + wb.downstreamDatasources.length + '</b> datasource' + (wb.downstreamDatasources.length!==1?'s':'') : null,
+      (wb.downstreamWorkbooks && wb.downstreamWorkbooks.length) ? 'Used by <b>' + wb.downstreamWorkbooks.length + '</b> workbook' + (wb.downstreamWorkbooks.length!==1?'s':'') : null,
     ].filter(Boolean).join('<br>') : [
       (wb.parentProject && wb.parentProject !== wb.project) ? 'Parent Project: <b>' + escHtml(wb.parentProject) + '</b>' : null,
       wb.project    ? 'Project: <b>' + escHtml(wb.project) + '</b>' : null,
@@ -558,9 +419,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
         var doc = null;
-        if (res && res.doc) {
-          doc = typeof res.doc === 'string' ? JSON.parse(res.doc) : res.doc;
-        }
+        if (res && res.doc) doc = typeof res.doc === 'string' ? JSON.parse(res.doc) : res.doc;
         docCache[wb.luid] = doc;
         setStatus('Ready');
       } catch(e) {
@@ -573,61 +432,41 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   function renderDetail(doc) {
-    var body         = $('detail-body');
-    var undocumented = $('detail-undocumented');
-    body.innerHTML   = '';
+    var body = $('detail-body'), undocumented = $('detail-undocumented');
+    body.innerHTML = '';
     $('btn-reload-doc').style.display = !doc ? 'inline-flex' : 'none';
     if (!doc) { undocumented.style.display = 'block'; return; }
     undocumented.style.display = 'none';
-
     function section(label, fields) {
-      var sec = document.createElement('div');
-      sec.className = 'detail-section';
+      var sec = document.createElement('div'); sec.className = 'detail-section';
       sec.innerHTML = '<div class="detail-section-label">' + label + '</div>';
       fields.forEach(function(f) {
         var lbl = f[0], val = f[1], type = f[2];
         if (!val && !Array.isArray(val)) return;
-        var d = document.createElement('div');
-        d.className = 'detail-field';
+        var d = document.createElement('div'); d.className = 'detail-field';
         if (type === 'tags') {
-          var chips = (val || []).map(function(t) { return '<span class="tag-chip">' + escHtml(t) + '</span>'; }).join('');
-          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div><div>' + (chips || '<span class="detail-field-empty">None</span>') + '</div>';
+          var chips = (val||[]).map(function(t) { return '<span class="tag-chip">' + escHtml(t) + '</span>'; }).join('');
+          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div><div>' + (chips||'<span class="detail-field-empty">None</span>') + '</div>';
         } else if (type === 'log') {
-          if (!(val || []).length) return;
-          var rows = [].concat(val).reverse().map(function(e) {
-            return '<div class="log-entry"><span class="log-date">' + escHtml(e.date || '\u2014') + '</span><span class="log-note">' + escHtml(e.note || '') + '</span></div>';
-          }).join('');
+          if (!(val||[]).length) return;
+          var rows = [].concat(val).reverse().map(function(e) { return '<div class="log-entry"><span class="log-date">' + escHtml(e.date||'\u2014') + '</span><span class="log-note">' + escHtml(e.note||'') + '</span></div>'; }).join('');
           d.innerHTML = '<div class="detail-field-label">' + lbl + '</div>' + rows;
         } else {
-          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div>' +
-            '<div class="detail-field-value">' + (val ? escHtml(val) : '<span class="detail-field-empty">\u2014</span>') + '</div>';
+          d.innerHTML = '<div class="detail-field-label">' + lbl + '</div><div class="detail-field-value">' + (val ? escHtml(val) : '<span class="detail-field-empty">\u2014</span>') + '</div>';
         }
         sec.appendChild(d);
       });
       if (sec.querySelectorAll('.detail-field').length) body.appendChild(sec);
     }
-
     var isDs = activeWb && activeWb.itemType === 'Datasource';
-    section('Documentation', [
-      ['Intended Audience',           doc.audience, 'text'],
-      [isDs ? 'Key Fields / Tables' : 'Key Metrics / Fields', doc.metrics, 'text'],
-      ['Known Limitations / Caveats', doc.caveats,  'text'],
-    ]);
-    if (isDs) {
-      section('Data Source Details', [
-        ['Source System',       doc.sourceSystem, 'text'],
-        ['Refresh Schedule',    doc.refresh,      'text'],
-        ['Data Owner / Steward',doc.steward,      'text'],
-        ['Row-Level Security',  doc.rlsEnabled ? ('Yes \u2014 ' + (doc.rlsDesc || 'No description provided.')) : 'No', 'text'],
-      ]);
-    }
-    section('Ownership',  [['Last Reviewed', doc.reviewed, 'text']]);
-    section('Tags',       [['Tags',          doc.tags,     'tags']]);
-    section('Change Log', [['Change Log',    doc.changelog,'log']]);
+    section('Documentation', [['Intended Audience', doc.audience, 'text'], [isDs ? 'Key Fields / Tables' : 'Key Metrics / Fields', doc.metrics, 'text'], ['Known Limitations / Caveats', doc.caveats, 'text']]);
+    if (isDs) { section('Data Source Details', [['Source System', doc.sourceSystem, 'text'], ['Refresh Schedule', doc.refresh, 'text'], ['Data Owner / Steward', doc.steward, 'text'], ['Row-Level Security', doc.rlsEnabled ? ('Yes \u2014 ' + (doc.rlsDesc||'No description provided.')) : 'No', 'text']]); }
+    section('Ownership', [['Last Reviewed', doc.reviewed, 'text']]);
+    section('Tags', [['Tags', doc.tags, 'tags']]);
+    section('Change Log', [['Change Log', doc.changelog, 'log']]);
     if (!body.children.length) undocumented.style.display = 'block';
   }
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
   function openEdit() {
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     $('f-audience').placeholder = isDs ? 'Who consumes this data source and for what purpose?' : 'Who uses this workbook and for what decisions?';
@@ -635,717 +474,258 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = docCache[activeWb.luid] || {};
     $('ds-fields').style.display = isDs ? '' : 'none';
-    if (isDs) {
-      $('f-source-system').value = doc.sourceSystem || '';
-      $('f-refresh').value       = doc.refresh       || '';
-      $('f-steward').value       = doc.steward       || '';
-      $('f-rls-enabled').checked = !!doc.rlsEnabled;
-      $('f-rls-desc').value      = doc.rlsDesc       || '';
-      $('f-rls-desc').style.display = doc.rlsEnabled ? '' : 'none';
-    }
-    editTags = [].concat(doc.tags      || []);
-    editLog  = [].concat(doc.changelog || []);
-    $('f-audience').value   = doc.audience || '';
-    $('f-metrics').value    = doc.metrics  || '';
-    $('f-caveats').value    = doc.caveats  || '';
-    $('f-reviewed').value   = doc.reviewed || '';
-    $('new-log-date').value = todayISO();
-    $('new-log-note').value = '';
+    if (isDs) { $('f-source-system').value = doc.sourceSystem||''; $('f-refresh').value = doc.refresh||''; $('f-steward').value = doc.steward||''; $('f-rls-enabled').checked = !!doc.rlsEnabled; $('f-rls-desc').value = doc.rlsDesc||''; $('f-rls-desc').style.display = doc.rlsEnabled ? '' : 'none'; }
+    editTags = [].concat(doc.tags||[]); editLog = [].concat(doc.changelog||[]);
+    $('f-audience').value = doc.audience||''; $('f-metrics').value = doc.metrics||''; $('f-caveats').value = doc.caveats||''; $('f-reviewed').value = doc.reviewed||'';
+    $('new-log-date').value = todayISO(); $('new-log-note').value = '';
     renderEditTags(); renderEditLog();
-    showView('edit');
-    $('topbar-title').textContent = 'Editing: ' + (activeWb.name || '');
-    showError('edit-error', '');
+    showView('edit'); $('topbar-title').textContent = 'Editing: ' + (activeWb.name||''); showError('edit-error', '');
   }
   $('btn-edit').addEventListener('click', openEdit);
-
-  $('f-rls-enabled').addEventListener('change', function() {
-    $('f-rls-desc').style.display = this.checked ? '' : 'none';
-    if (!this.checked) $('f-rls-desc').value = '';
-  });
+  $('f-rls-enabled').addEventListener('change', function() { $('f-rls-desc').style.display = this.checked ? '' : 'none'; if (!this.checked) $('f-rls-desc').value = ''; });
 
   $('btn-reload-doc').addEventListener('click', async function() {
     if (!activeWb) return;
-    delete docCache[activeWb.luid];
-    setStatus('Loading\u2026');
-    showError('detail-error', '');
+    delete docCache[activeWb.luid]; setStatus('Loading\u2026'); showError('detail-error', '');
     try {
       var res = await callFlow({ action: 'get', luid: activeWb.luid });
       var doc = null;
-      if (res && res.doc) {
-        doc = typeof res.doc === 'string' ? JSON.parse(res.doc) : res.doc;
-      }
-      docCache[activeWb.luid] = doc;
-      renderDetail(doc);
-      renderList();
-      setStatus('Ready');
-    } catch(e) {
-      showError('detail-error', 'Load failed: ' + e.message);
-      setStatus('Error', 'error');
-    }
+      if (res && res.doc) doc = typeof res.doc === 'string' ? JSON.parse(res.doc) : res.doc;
+      docCache[activeWb.luid] = doc; renderDetail(doc); renderList(); setStatus('Ready');
+    } catch(e) { showError('detail-error', 'Load failed: ' + e.message); setStatus('Error', 'error'); }
   });
 
   function renderEditTags() {
-    var container = $('tags-container');
-    container.querySelectorAll('.tag-chip').forEach(function(c) { c.remove(); });
+    var container = $('tags-container'); container.querySelectorAll('.tag-chip').forEach(function(c) { c.remove(); });
     var input = $('tag-input');
     editTags.forEach(function(tag, i) {
-      var chip = document.createElement('span');
-      chip.className = 'tag-chip';
+      var chip = document.createElement('span'); chip.className = 'tag-chip';
       chip.innerHTML = escHtml(tag) + '<button title="Remove">\u00d7</button>';
       chip.querySelector('button').addEventListener('click', function() { editTags.splice(i,1); renderEditTags(); });
       container.insertBefore(chip, input);
     });
   }
-
   $('tag-input').addEventListener('keydown', function(e) {
     var val = e.target.value.trim();
-    if ((e.key === 'Enter' || e.key === ',') && val) {
-      e.preventDefault();
-      if (!editTags.includes(val)) editTags.push(val);
-      e.target.value = ''; renderEditTags();
-    }
-    if (e.key === 'Backspace' && !val && editTags.length) { editTags.pop(); renderEditTags(); }
+    if ((e.key==='Enter'||e.key===',') && val) { e.preventDefault(); if (!editTags.includes(val)) editTags.push(val); e.target.value=''; renderEditTags(); }
+    if (e.key==='Backspace' && !val && editTags.length) { editTags.pop(); renderEditTags(); }
   });
 
   function renderEditLog() {
-    var list = $('edit-changelog-list');
-    list.innerHTML = '';
-    if (!editLog.length) {
-      list.innerHTML = '<div style="font-size:12px;color:var(--text2);font-style:italic;margin-bottom:8px">No entries yet.</div>';
-      return;
-    }
+    var list = $('edit-changelog-list'); list.innerHTML = '';
+    if (!editLog.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text2);font-style:italic;margin-bottom:8px">No entries yet.</div>'; return; }
     [].concat(editLog).reverse().forEach(function(entry, ri) {
-      var realIdx = editLog.length - 1 - ri;
-      var row = document.createElement('div');
-      row.className = 'log-entry'; row.style.marginBottom = '4px';
-      row.innerHTML = '<span class="log-date">' + escHtml(entry.date || '\u2014') + '</span>' +
-        '<span class="log-note">' + escHtml(entry.note) + '</span>' +
-        '<button class="log-delete" title="Remove">\u00d7</button>';
+      var realIdx = editLog.length-1-ri;
+      var row = document.createElement('div'); row.className = 'log-entry'; row.style.marginBottom = '4px';
+      row.innerHTML = '<span class="log-date">' + escHtml(entry.date||'\u2014') + '</span><span class="log-note">' + escHtml(entry.note) + '</span><button class="log-delete" title="Remove">\u00d7</button>';
       row.querySelector('.log-delete').addEventListener('click', function() { editLog.splice(realIdx,1); renderEditLog(); });
       list.appendChild(row);
     });
   }
-
   $('btn-add-log').addEventListener('click', function() {
-    var note = $('new-log-note').value.trim();
-    if (!note) { $('new-log-note').focus(); return; }
-    editLog.push({ date: $('new-log-date').value, note: note });
-    renderEditLog();
+    var note = $('new-log-note').value.trim(); if (!note) { $('new-log-note').focus(); return; }
+    editLog.push({ date: $('new-log-date').value, note: note }); renderEditLog();
     $('new-log-note').value = ''; $('new-log-date').value = todayISO();
   });
-
-  $('new-log-note').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); }
-  });
+  $('new-log-note').addEventListener('keydown', function(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); } });
 
   $('btn-save').addEventListener('click', async function() {
     if (!flowUrl) { showError('edit-error', 'Flow URL not configured.'); return; }
-    setStatus('Saving\u2026', 'saving');
-    $('btn-save').disabled = true;
-    showError('edit-error', '');
+    setStatus('Saving\u2026', 'saving'); $('btn-save').disabled = true; showError('edit-error', '');
     var isDs = activeWb && activeWb.itemType === 'Datasource';
-    var doc = {
-      luid: activeWb.luid, name: activeWb.name, project: activeWb.project,
-      owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType,
-      audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(),
-      caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value,
-      tags: editTags, changelog: editLog, savedAt: new Date().toISOString(),
-    };
-    if (isDs) {
-      doc.sourceSystem = $('f-source-system').value.trim();
-      doc.refresh      = $('f-refresh').value.trim();
-      doc.steward      = $('f-steward').value.trim();
-      doc.rlsEnabled   = $('f-rls-enabled').checked;
-      doc.rlsDesc      = $('f-rls-desc').value.trim();
-    }
+    var doc = { luid: activeWb.luid, name: activeWb.name, project: activeWb.project, owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType, audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(), caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value, tags: editTags, changelog: editLog, savedAt: new Date().toISOString() };
+    if (isDs) { doc.sourceSystem = $('f-source-system').value.trim(); doc.refresh = $('f-refresh').value.trim(); doc.steward = $('f-steward').value.trim(); doc.rlsEnabled = $('f-rls-enabled').checked; doc.rlsDesc = $('f-rls-desc').value.trim(); }
     try {
       await callFlow({ action: 'save', luid: activeWb.luid, doc: doc });
-      docCache[activeWb.luid] = doc;
-      renderList(); setStatus('Saved', 'saved');
+      docCache[activeWb.luid] = doc; renderList(); setStatus('Saved', 'saved');
       setTimeout(function() { setStatus('Ready'); }, 2500);
-      renderDetail(doc); showView('detail');
-      $('topbar-title').textContent = activeWb.name || 'Item';
-    } catch(e) {
-      showError('edit-error', 'Save failed: ' + e.message);
-      setStatus('Save failed', 'error');
-    } finally { $('btn-save').disabled = false; }
+      renderDetail(doc); showView('detail'); $('topbar-title').textContent = activeWb.name||'Item';
+    } catch(e) { showError('edit-error', 'Save failed: ' + e.message); setStatus('Save failed', 'error'); }
+    finally { $('btn-save').disabled = false; }
   });
-
-  $('btn-cancel').addEventListener('click', function() {
-    showView('detail'); $('topbar-title').textContent = activeWb.name || 'Item';
-  });
-
+  $('btn-cancel').addEventListener('click', function() { showView('detail'); $('topbar-title').textContent = activeWb.name||'Item'; });
   $('back-btn').addEventListener('click', function() {
     var cur = document.querySelector('.view.active').id;
-    if (cur === 'view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name || 'Item'; }
-    if (cur === 'view-detail') { showView('list'); activeWb = null; }
-    if (cur === 'view-list')   { showView('home'); activeType = 'Workbook'; }
+    if (cur==='view-edit')   { showView('detail'); $('topbar-title').textContent = activeWb.name||'Item'; }
+    if (cur==='view-detail') { showView('list'); activeWb = null; }
+    if (cur==='view-list')   { showView('home'); activeType = 'Workbook'; }
   });
-
   $('btn-settings').addEventListener('click', function() {
     var popup = window.location.origin + window.location.pathname + '?config=1';
-    tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 })
-      .then(function() { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
-      .catch(function() {});
+    tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 }).then(function() { flowUrl = tableau.extensions.settings.getAll().flowUrl||''; }).catch(function() {});
   });
 
   // ── LINEAGE ────────────────────────────────────────────────────────────────
-
   function transformGraphQLToGraph(raw) {
-    var wbLuid = raw.luid;
-    var wbName = raw.name;
-    var tablesSeen = new Set(), tables = [], flowsSeen = new Set(), allFlows = [];
-    var dsSeen = new Set(), allDs = [], vcMap = {}, edges = [], edgesSeen = new Set();
-
-    function addEdge(from, to, type) {
-      if (!from || !to) return;
-      var key = from + '|' + to;
-      if (edgesSeen.has(key)) return;
-      edgesSeen.add(key);
-      edges.push({ from: from, to: to, type: type });
-    }
-
-    var wbDsIds = new Set();
-    (raw.upstreamDatasources || []).forEach(function(ds) { wbDsIds.add(ds.luid || ds.name); });
+    var wbLuid = raw.luid, wbName = raw.name;
+    var tablesSeen = new Set(), tables = [], flowsSeen = new Set(), allFlows = [], dsSeen = new Set(), allDs = [], vcMap = {}, edges = [], edgesSeen = new Set();
+    function addEdge(from, to, type) { if (!from||!to) return; var key=from+'|'+to; if (edgesSeen.has(key)) return; edgesSeen.add(key); edges.push({from,to,type}); }
+    var wbDsIds = new Set(); (raw.upstreamDatasources||[]).forEach(function(ds) { wbDsIds.add(ds.luid||ds.name); });
     var vcTableEdged = new Set();
-
-    function addVcTable(vct) {
-      if (!vct) return null;
-      var vc = vct.virtualConnection || {}, vcId = vc.luid || vc.name, nm = vct.name || '';
-      if (!nm || !vcId) return null;
-      if (!vcMap[vcId]) vcMap[vcId] = { luid: vc.luid, name: vc.name };
-      var key = 'vc:' + vcId + '.' + nm;
-      if (!tablesSeen.has(key)) {
-        tablesSeen.add(key);
-        tables.push({ key: key, name: nm, db: vc.name || '', schema: 'Virtual Connection', is_vc: true, vc_luid: vcId });
-      }
-      return key;
-    }
-
-    function addVcEdge(vct, targetId, type) {
-      var key = addVcTable(vct);
-      if (!key) return;
-      if (!vcTableEdged.has(key)) { vcTableEdged.add(key); addEdge(key, targetId, type); }
-    }
-
+    function addVcTable(vct) { if (!vct) return null; var vc=vct.virtualConnection||{}, vcId=vc.luid||vc.name, nm=vct.name||''; if (!nm||!vcId) return null; if (!vcMap[vcId]) vcMap[vcId]={luid:vc.luid,name:vc.name}; var key='vc:'+vcId+'.'+nm; if (!tablesSeen.has(key)) { tablesSeen.add(key); tables.push({key,name:nm,db:vc.name||'',schema:'Virtual Connection',is_vc:true,vc_luid:vcId}); } return key; }
+    function addVcEdge(vct, targetId, type) { var key=addVcTable(vct); if (!key) return; if (!vcTableEdged.has(key)) { vcTableEdged.add(key); addEdge(key,targetId,type); } }
     function processDs(ds, targetId, targetType, addVcEdges) {
-      var dsId = ds.luid || ds.name;
-      if (!dsId) return;
-      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-      if (targetType === 'workbook') addEdge(dsId, wbLuid, 'ds_to_wb');
-      else addEdge(dsId, targetId, 'ds_to_flow');
-      if (addVcEdges !== false) {
-        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) { addVcEdge(vct, dsId, 'vc_table_to_ds'); });
-      }
-      (ds.upstreamFlows || []).forEach(function(fl) { processFlow(fl, dsId, 'datasource', false); });
+      var dsId=ds.luid||ds.name; if (!dsId) return;
+      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({name:ds.name,luid:ds.luid}); }
+      if (targetType==='workbook') addEdge(dsId,wbLuid,'ds_to_wb'); else addEdge(dsId,targetId,'ds_to_flow');
+      if (addVcEdges!==false) (ds.upstreamVirtualConnectionTables||[]).forEach(function(vct) { addVcEdge(vct,dsId,'vc_table_to_ds'); });
+      (ds.upstreamFlows||[]).forEach(function(fl) { processFlow(fl,dsId,'datasource',false); });
     }
-
     function processFlow(fl, targetId, targetType, addVcEdges) {
-      var flId = fl.luid || fl.name;
-      if (!flId) return;
-      if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({ name: fl.name, luid: fl.luid }); }
-      if (targetType === 'workbook') addEdge(flId, wbLuid, 'flow_to_wb');
-      else addEdge(flId, targetId, 'flow_to_ds');
-      var upDs = fl.upstreamDatasources || [];
-      upDs.forEach(function(ds) { processDs(ds, flId, 'flow', false); });
-      if (addVcEdges !== false) {
-        var dsVcKeys = new Set();
-        upDs.forEach(function(ds) {
-          (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) { var k = addVcTable(vct); if (k) dsVcKeys.add(k); });
-        });
-        (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-          var key = addVcTable(vct);
-          if (key && !dsVcKeys.has(key)) addVcEdge(vct, flId, 'vc_table_to_flow');
-        });
-      }
-      if (targetType === 'workbook') {
-        var relevantDown = (fl.downstreamDatasources || []).filter(function(ds) { return wbDsIds.has(ds.luid || ds.name); });
-        relevantDown.forEach(function(ds) {
-          var dsId = ds.luid || ds.name;
-          if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-          addEdge(flId, dsId, 'flow_to_ds');
-          addEdge(dsId, wbLuid, 'ds_to_wb');
-        });
-      }
+      var flId=fl.luid||fl.name; if (!flId) return;
+      if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({name:fl.name,luid:fl.luid}); }
+      if (targetType==='workbook') addEdge(flId,wbLuid,'flow_to_wb'); else addEdge(flId,targetId,'flow_to_ds');
+      var upDs=fl.upstreamDatasources||[]; upDs.forEach(function(ds) { processDs(ds,flId,'flow',false); });
+      if (addVcEdges!==false) { var dsVcKeys=new Set(); upDs.forEach(function(ds) { (ds.upstreamVirtualConnectionTables||[]).forEach(function(vct) { var k=addVcTable(vct); if (k) dsVcKeys.add(k); }); }); (fl.upstreamVirtualConnectionTables||[]).forEach(function(vct) { var key=addVcTable(vct); if (key&&!dsVcKeys.has(key)) addVcEdge(vct,flId,'vc_table_to_flow'); }); }
+      if (targetType==='workbook') { var rel=(fl.downstreamDatasources||[]).filter(function(ds) { return wbDsIds.has(ds.luid||ds.name); }); rel.forEach(function(ds) { var dsId=ds.luid||ds.name; if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({name:ds.name,luid:ds.luid}); } addEdge(flId,dsId,'flow_to_ds'); addEdge(dsId,wbLuid,'ds_to_wb'); }); }
     }
-
-    (raw.upstreamDatasources || []).forEach(function(ds) { processDs(ds, wbLuid, 'workbook'); });
-    (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, wbLuid, 'workbook'); });
-
-    var hasUpstreamDsOrFlow = (raw.upstreamDatasources || []).length > 0 || (raw.upstreamFlows || []).length > 0;
-    if (!hasUpstreamDsOrFlow) {
-      (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) { addVcEdge(vct, wbLuid, 'vc_table_to_wb'); });
-    }
-
-    var finalEdges = [], finalSeen = new Set();
-    edges.forEach(function(e) {
-      var key = e.from + '|' + e.to;
-      if (!finalSeen.has(key)) { finalSeen.add(key); finalEdges.push(e); }
-    });
-
-    var dsViaFlow = new Set(finalEdges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
-    var flowWithDsOut = new Set(finalEdges.filter(function(e) { return e.type === 'flow_to_ds'; }).map(function(e) { return e.from; }));
-    finalEdges = finalEdges.filter(function(e) {
-      if (e.type === 'ds_to_wb'   && dsViaFlow.has(e.from))     return false;
-      if (e.type === 'flow_to_wb' && flowWithDsOut.has(e.from)) return false;
-      return true;
-    });
-
-    return {
-      workbook: { luid: wbLuid, name: wbName }, extra_workbooks: [],
-      hero_luid: wbLuid, hero_type: 'workbook', central_type: 'workbook',
-      tables: tables, datasources: allDs, flows: allFlows, edges: finalEdges,
-    };
+    (raw.upstreamDatasources||[]).forEach(function(ds) { processDs(ds,wbLuid,'workbook'); });
+    (raw.upstreamFlows||[]).forEach(function(fl) { processFlow(fl,wbLuid,'workbook'); });
+    var hasUp=(raw.upstreamDatasources||[]).length>0||(raw.upstreamFlows||[]).length>0;
+    if (!hasUp) (raw.upstreamVirtualConnectionTables||[]).forEach(function(vct) { addVcEdge(vct,wbLuid,'vc_table_to_wb'); });
+    var finalEdges=[], finalSeen=new Set();
+    edges.forEach(function(e) { var key=e.from+'|'+e.to; if (!finalSeen.has(key)) { finalSeen.add(key); finalEdges.push(e); } });
+    var dsViaFlow=new Set(finalEdges.filter(function(e){return e.type==='ds_to_flow';}).map(function(e){return e.from;}));
+    var flowWithDsOut=new Set(finalEdges.filter(function(e){return e.type==='flow_to_ds';}).map(function(e){return e.from;}));
+    finalEdges=finalEdges.filter(function(e) { if (e.type==='ds_to_wb'&&dsViaFlow.has(e.from)) return false; if (e.type==='flow_to_wb'&&flowWithDsOut.has(e.from)) return false; return true; });
+    return { workbook:{luid:wbLuid,name:wbName}, extra_workbooks:[], hero_luid:wbLuid, hero_type:'workbook', central_type:'workbook', tables, datasources:allDs, flows:allFlows, edges:finalEdges };
   }
 
   function transformDatasourceGraph(raw) {
-    var heroLuid = raw.luid, heroName = raw.name;
-    var tablesSeen = new Set(), tables = [], flowsSeen = new Set(), allFlows = [];
-    var dsSeen = new Set(), allDs = [], vcTableEdged = new Set(), edges = [], edgesSeen = new Set();
-
-    function addEdge(from, to, type) {
-      if (!from || !to) return;
-      var key = from + '|' + to;
-      if (edgesSeen.has(key)) return;
-      edgesSeen.add(key);
-      edges.push({ from: from, to: to, type: type });
+    var heroLuid=raw.luid, heroName=raw.name;
+    var tablesSeen=new Set(), tables=[], flowsSeen=new Set(), allFlows=[], dsSeen=new Set(), allDs=[], vcTableEdged=new Set(), edges=[], edgesSeen=new Set();
+    function addEdge(from,to,type) { if (!from||!to) return; var key=from+'|'+to; if (edgesSeen.has(key)) return; edgesSeen.add(key); edges.push({from,to,type}); }
+    function addVcTable(vct) { if (!vct) return null; var vc=vct.virtualConnection||{}, vcId=vc.luid||vc.name, nm=vct.name||''; if (!nm||!vcId) return null; var key='vc:'+vcId+'.'+nm; if (!tablesSeen.has(key)) { tablesSeen.add(key); tables.push({key,name:nm,db:vc.name||'',schema:'Virtual Connection',is_vc:true,vc_luid:vcId}); } return key; }
+    function addVcEdge(vct,targetId,type) { var key=addVcTable(vct); if (!key) return; if (!vcTableEdged.has(key)) { vcTableEdged.add(key); addEdge(key,targetId,type); } }
+    function processDs(ds,targetId,targetType,addVcEdges) {
+      var dsId=ds.luid||ds.name; if (!dsId||dsId===heroLuid) return;
+      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({name:ds.name,luid:ds.luid}); }
+      if (targetType==='flow') addEdge(dsId,targetId,'ds_to_flow');
+      else if (targetType==='datasource') { var feedsFlow=edges.some(function(e){return e.from===dsId&&e.type==='ds_to_flow';}); if (!feedsFlow) addEdge(dsId,targetId,'ds_to_ds'); }
+      if (addVcEdges!==false) (ds.upstreamVirtualConnectionTables||[]).forEach(function(vct){addVcEdge(vct,dsId,'vc_table_to_ds');});
     }
-
-    function addVcTable(vct) {
-      if (!vct) return null;
-      var vc = vct.virtualConnection || {}, vcId = vc.luid || vc.name, nm = vct.name || '';
-      if (!nm || !vcId) return null;
-      var key = 'vc:' + vcId + '.' + nm;
-      if (!tablesSeen.has(key)) {
-        tablesSeen.add(key);
-        tables.push({ key: key, name: nm, db: vc.name || '', schema: 'Virtual Connection', is_vc: true, vc_luid: vcId });
-      }
-      return key;
+    function processFlow(fl,targetId) {
+      var flId=fl.luid||fl.name; if (!flId) return;
+      if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({name:fl.name,luid:fl.luid}); }
+      addEdge(flId,targetId,'flow_to_ds');
+      var upDs=fl.upstreamDatasources||[]; upDs.forEach(function(ds){processDs(ds,flId,'flow',false);});
+      (fl.downstreamDatasources||[]).forEach(function(ds) { var dsId=ds.luid||ds.name; if (!dsId||dsId===heroLuid) return; if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({name:ds.name,luid:ds.luid}); } addEdge(flId,dsId,'flow_to_ds'); });
+      var dsVcKeys=new Set(); upDs.forEach(function(ds){(ds.upstreamVirtualConnectionTables||[]).forEach(function(vct){var k=addVcTable(vct);if(k)dsVcKeys.add(k);});});
+      (fl.upstreamVirtualConnectionTables||[]).forEach(function(vct){var key=addVcTable(vct);if(key&&!dsVcKeys.has(key))addVcEdge(vct,flId,'vc_table_to_flow');});
     }
-
-    function addVcEdge(vct, targetId, type) {
-      var key = addVcTable(vct);
-      if (!key) return;
-      if (!vcTableEdged.has(key)) { vcTableEdged.add(key); addEdge(key, targetId, type); }
-    }
-
-    function processDs(ds, targetId, targetType, addVcEdges) {
-      var dsId = ds.luid || ds.name;
-      if (!dsId || dsId === heroLuid) return;
-      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-      if (targetType === 'flow') addEdge(dsId, targetId, 'ds_to_flow');
-      else if (targetType === 'datasource') {
-        var feedsFlow = edges.some(function(e) { return e.from === dsId && e.type === 'ds_to_flow'; });
-        if (!feedsFlow) addEdge(dsId, targetId, 'ds_to_ds');
-      }
-      if (addVcEdges !== false) {
-        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) { addVcEdge(vct, dsId, 'vc_table_to_ds'); });
-      }
-    }
-
-    function processFlow(fl, targetId) {
-      var flId = fl.luid || fl.name;
-      if (!flId) return;
-      if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({ name: fl.name, luid: fl.luid }); }
-      addEdge(flId, targetId, 'flow_to_ds');
-      var upDs = fl.upstreamDatasources || [];
-      upDs.forEach(function(ds) { processDs(ds, flId, 'flow', false); });
-      (fl.downstreamDatasources || []).forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        if (!dsId || dsId === heroLuid) return;
-        if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-        addEdge(flId, dsId, 'flow_to_ds');
-      });
-      var dsVcKeys = new Set();
-      upDs.forEach(function(ds) {
-        (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) { var k = addVcTable(vct); if (k) dsVcKeys.add(k); });
-      });
-      (fl.upstreamVirtualConnectionTables || []).forEach(function(vct) {
-        var key = addVcTable(vct);
-        if (key && !dsVcKeys.has(key)) addVcEdge(vct, flId, 'vc_table_to_flow');
-      });
-    }
-
-    (raw.upstreamFlows || []).forEach(function(fl) { processFlow(fl, heroLuid); });
-
-    var dsWithFlowEdge = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
-    (raw.upstreamDatasources || []).forEach(function(ds) {
-      var dsId = ds.luid || ds.name;
-      if (!dsId || dsId === heroLuid) return;
-      if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({ name: ds.name, luid: ds.luid }); }
-      if (!dsWithFlowEdge.has(dsId)) addEdge(dsId, heroLuid, 'ds_to_ds');
-      (ds.upstreamVirtualConnectionTables || []).forEach(function(vct) { addVcEdge(vct, dsId, 'vc_table_to_ds'); });
-    });
-
-    var hasUpstream = (raw.upstreamFlows || []).length > 0 || (raw.upstreamDatasources || []).length > 0;
-    if (!hasUpstream) {
-      (raw.upstreamVirtualConnectionTables || []).forEach(function(vct) { addVcEdge(vct, heroLuid, 'vc_table_to_ds'); });
-    }
-
-    allDs.push({ name: heroName, luid: heroLuid });
-
-    var downWbs = [], downWbIds = new Set(), downDs = [], downDsIds = new Set(), downFlows = [];
-
-    function addDownWb(wb) {
-      var wbId = wb.luid || wb.name;
-      if (!wbId || downWbIds.has(wbId)) return wbId;
-      downWbIds.add(wbId); downWbs.push({ luid: wb.luid, name: wb.name }); return wbId;
-    }
-
-    var meaningfulFlows = [];
-    (raw.downstreamFlows || []).forEach(function(fl) {
-      var dsOutputs = (fl.downstreamDatasources || []).filter(function(ds) { return (ds.downstreamWorkbooks || []).length > 0; });
-      if (dsOutputs.length > 0) meaningfulFlows.push({ flow: fl, outputs: dsOutputs });
-    });
-
-    var wbViaFlowChain = new Set();
-    meaningfulFlows.forEach(function(mf) {
-      mf.outputs.forEach(function(ds) {
-        (ds.downstreamWorkbooks || []).forEach(function(wb) { wbViaFlowChain.add(wb.luid || wb.name); });
-      });
-    });
-
-    (raw.downstreamWorkbooks || []).forEach(function(wb) {
-      var wbId = wb.luid || wb.name;
-      if (wbViaFlowChain.has(wbId)) return;
-      var added = addDownWb(wb);
-      if (added) addEdge(heroLuid, added, 'ds_to_wb');
-    });
-
-    meaningfulFlows.forEach(function(mf) {
-      var fl = mf.flow, flId = fl.luid || fl.name;
-      downFlows.push({ luid: fl.luid, name: fl.name });
-      addEdge(heroLuid, flId, 'ds_to_downflow');
-      mf.outputs.forEach(function(ds) {
-        var dsId = ds.luid || ds.name;
-        if (!downDsIds.has(dsId)) { downDsIds.add(dsId); downDs.push({ luid: ds.luid, name: ds.name }); }
-        addEdge(flId, dsId, 'downflow_to_ds');
-        (ds.downstreamWorkbooks || []).forEach(function(wb) {
-          var wbId = addDownWb(wb); if (wbId) addEdge(dsId, wbId, 'downds_to_wb');
-        });
-      });
-    });
-
-    var dsViaFlow = new Set(edges.filter(function(e) { return e.type === 'ds_to_flow'; }).map(function(e) { return e.from; }));
-    var finalEdges = edges.filter(function(e) {
-      if (e.type === 'ds_to_ds' && dsViaFlow.has(e.from)) return false;
-      return true;
-    });
-
-    return {
-      workbook: { luid: heroLuid, name: heroName }, extra_workbooks: downWbs,
-      downstream_ds: downDs, downstream_flows: downFlows,
-      hero_luid: heroLuid, hero_type: 'datasource', central_type: 'datasource',
-      tables: tables, datasources: allDs, flows: allFlows, edges: finalEdges,
-    };
+    (raw.upstreamFlows||[]).forEach(function(fl){processFlow(fl,heroLuid);});
+    var dsWithFlowEdge=new Set(edges.filter(function(e){return e.type==='ds_to_flow';}).map(function(e){return e.from;}));
+    (raw.upstreamDatasources||[]).forEach(function(ds) { var dsId=ds.luid||ds.name; if (!dsId||dsId===heroLuid) return; if (!dsSeen.has(dsId)){dsSeen.add(dsId);allDs.push({name:ds.name,luid:ds.luid});} if (!dsWithFlowEdge.has(dsId)) addEdge(dsId,heroLuid,'ds_to_ds'); (ds.upstreamVirtualConnectionTables||[]).forEach(function(vct){addVcEdge(vct,dsId,'vc_table_to_ds');}); });
+    var hasUp=(raw.upstreamFlows||[]).length>0||(raw.upstreamDatasources||[]).length>0;
+    if (!hasUp) (raw.upstreamVirtualConnectionTables||[]).forEach(function(vct){addVcEdge(vct,heroLuid,'vc_table_to_ds');});
+    allDs.push({name:heroName,luid:heroLuid});
+    var downWbs=[],downWbIds=new Set(),downDs=[],downDsIds=new Set(),downFlows=[];
+    function addDownWb(wb) { var wbId=wb.luid||wb.name; if (!wbId||downWbIds.has(wbId)) return wbId; downWbIds.add(wbId); downWbs.push({luid:wb.luid,name:wb.name}); return wbId; }
+    var meaningfulFlows=[];
+    (raw.downstreamFlows||[]).forEach(function(fl) { var dsOutputs=(fl.downstreamDatasources||[]).filter(function(ds){return (ds.downstreamWorkbooks||[]).length>0;}); if (dsOutputs.length>0) meaningfulFlows.push({flow:fl,outputs:dsOutputs}); });
+    var wbViaFlowChain=new Set(); meaningfulFlows.forEach(function(mf){mf.outputs.forEach(function(ds){(ds.downstreamWorkbooks||[]).forEach(function(wb){wbViaFlowChain.add(wb.luid||wb.name);});});});
+    (raw.downstreamWorkbooks||[]).forEach(function(wb) { var wbId=wb.luid||wb.name; if (wbViaFlowChain.has(wbId)) return; var added=addDownWb(wb); if (added) addEdge(heroLuid,added,'ds_to_wb'); });
+    meaningfulFlows.forEach(function(mf) { var fl=mf.flow, flId=fl.luid||fl.name; downFlows.push({luid:fl.luid,name:fl.name}); addEdge(heroLuid,flId,'ds_to_downflow'); mf.outputs.forEach(function(ds) { var dsId=ds.luid||ds.name; if (!downDsIds.has(dsId)){downDsIds.add(dsId);downDs.push({luid:ds.luid,name:ds.name});} addEdge(flId,dsId,'downflow_to_ds'); (ds.downstreamWorkbooks||[]).forEach(function(wb){var wbId=addDownWb(wb);if(wbId)addEdge(dsId,wbId,'downds_to_wb');}); }); });
+    var dsViaFlow=new Set(edges.filter(function(e){return e.type==='ds_to_flow';}).map(function(e){return e.from;}));
+    var finalEdges=edges.filter(function(e){if(e.type==='ds_to_ds'&&dsViaFlow.has(e.from))return false;return true;});
+    return { workbook:{luid:heroLuid,name:heroName}, extra_workbooks:downWbs, downstream_ds:downDs, downstream_flows:downFlows, hero_luid:heroLuid, hero_type:'datasource', central_type:'datasource', tables, datasources:allDs, flows:allFlows, edges:finalEdges };
   }
 
   async function loadLineage(wb) {
-    var chart = $('lineage-chart'), loading = $('lineage-loading'), empty = $('lineage-empty');
-    chart.innerHTML = ''; empty.style.display = 'none'; loading.style.display = 'flex';
+    var chart=$('lineage-chart'),loading=$('lineage-loading'),empty=$('lineage-empty');
+    chart.innerHTML=''; empty.style.display='none'; loading.style.display='flex';
     try {
-      var res = await callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType });
-      loading.style.display = 'none';
-      if (res && res.graph) {
-        var graph = wb.itemType === 'Datasource'
-          ? transformDatasourceGraph(res.graph)
-          : transformGraphQLToGraph(res.graph);
-        lineageCache[wb.luid] = graph;
-        currentGraph = graph;
-        renderLineageGraph(graph);
-      } else {
-        empty.style.display = 'block';
-      }
-    } catch(e) {
-      loading.style.display = 'none';
-      empty.textContent = 'Could not load lineage: ' + e.message;
-      empty.style.display = 'block';
-    }
+      var res=await callFlow({action:'lineage',luid:wb.luid,itemType:wb.itemType});
+      loading.style.display='none';
+      if (res&&res.graph) { var graph=wb.itemType==='Datasource'?transformDatasourceGraph(res.graph):transformGraphQLToGraph(res.graph); lineageCache[wb.luid]=graph; currentGraph=graph; renderLineageGraph(graph); }
+      else empty.style.display='block';
+    } catch(e) { loading.style.display='none'; empty.textContent='Could not load lineage: '+e.message; empty.style.display='block'; }
   }
 
-  window.resetHiddenNodes = function() {
-    hiddenNodes = new Set();
-    $('lineage-chart').innerHTML = '';
-    $('btn-lineage-reset').style.display = 'none';
-    if (currentGraph) renderLineageGraph(currentGraph);
-  };
+  window.resetHiddenNodes = function() { hiddenNodes=new Set(); $('lineage-chart').innerHTML=''; $('btn-lineage-reset').style.display='none'; if (currentGraph) renderLineageGraph(currentGraph); };
 
   function hideNode(id) {
-    hiddenNodes.add(id);
-    if (!currentGraph) return;
-    var allEdges = currentGraph.edges || [];
-    var protectedIds = new Set([currentGraph.workbook.luid].concat(
-      (currentGraph.extra_workbooks || []).map(function(w) { return w.luid; })
-    ));
-    var changed = true;
-    while (changed) {
-      changed = false;
-      var allIds = []
-        .concat((currentGraph.tables      || []).map(function(t) { return t.key; }))
-        .concat((currentGraph.datasources || []).map(function(d) { return d.luid || d.name; }))
-        .concat((currentGraph.flows       || []).map(function(f) { return f.luid || f.name; }));
-      allIds.forEach(function(nid) {
-        if (hiddenNodes.has(nid) || protectedIds.has(nid)) return;
-        var hasDown = allEdges.some(function(e) { return e.from === nid && !hiddenNodes.has(e.to); });
-        if (!hasDown) { hiddenNodes.add(nid); changed = true; }
-      });
-    }
-    $('lineage-chart').innerHTML = '';
-    renderLineageGraph(currentGraph);
-    $('btn-lineage-reset').style.display = hiddenNodes.size ? '' : 'none';
+    hiddenNodes.add(id); if (!currentGraph) return;
+    var allEdges=currentGraph.edges||[];
+    var protectedIds=new Set([currentGraph.workbook.luid].concat((currentGraph.extra_workbooks||[]).map(function(w){return w.luid;})));
+    var changed=true;
+    while (changed) { changed=false; var allIds=[].concat((currentGraph.tables||[]).map(function(t){return t.key;})).concat((currentGraph.datasources||[]).map(function(d){return d.luid||d.name;})).concat((currentGraph.flows||[]).map(function(f){return f.luid||f.name;})); allIds.forEach(function(nid){if(hiddenNodes.has(nid)||protectedIds.has(nid))return;var hasDown=allEdges.some(function(e){return e.from===nid&&!hiddenNodes.has(e.to);});if(!hasDown){hiddenNodes.add(nid);changed=true;}}); }
+    $('lineage-chart').innerHTML=''; renderLineageGraph(currentGraph); $('btn-lineage-reset').style.display=hiddenNodes.size?'':'none';
   }
 
   function renderLineageGraph(graph) {
-    currentGraph = graph;
-    var container = $('lineage-chart');
-    container.innerHTML = '';
-    $('lineage-empty').style.display = 'none';
-
-    var NODE_W = 180, NODE_H = 44, NODE_W_HERO = 220, NODE_H_HERO = 56;
-    var COL_GAP = 80, ROW_GAP = 16, PAD = 20;
-
-    var edges = (graph.edges || []).filter(function(e) {
-      return !hiddenNodes.has(e.from) && !hiddenNodes.has(e.to);
-    });
-    var nodeMap = {};
-
-    (graph.tables || []).filter(function(t) { return !hiddenNodes.has(t.key); }).forEach(function(t) {
-      var label = t.is_vc ? (t.db + ' \u203a ' + t.name) : [t.db, t.schema, t.name].filter(function(s) { return s && s !== 'Virtual Connection'; }).join('.');
-      nodeMap[t.key] = { id: t.key, label: label, type: t.is_vc ? 'vc_table' : 'table', col: 0, luid: t.vc_luid || null };
-    });
-    (graph.flows || []).filter(function(f) { return !hiddenNodes.has(f.luid || f.name); }).forEach(function(f) {
-      nodeMap[f.luid || f.name] = { id: f.luid || f.name, label: f.name, type: 'flow', col: 0, luid: f.luid };
-    });
-    (graph.datasources || []).filter(function(d) {
-      var did = d.luid || d.name;
-      return !hiddenNodes.has(did) && did !== (graph.hero_luid || graph.workbook.luid);
-    }).forEach(function(d) {
-      nodeMap[d.luid || d.name] = { id: d.luid || d.name, label: d.name, type: 'datasource', col: 0, luid: d.luid };
-    });
-
-    var wbLuid = graph.workbook.luid, heroLuid = graph.hero_luid || wbLuid;
-    var heroType = graph.hero_type || 'workbook', isDsHero = heroType === 'datasource';
-    var heroRenderType = isDsHero ? 'hero_ds' : 'workbook';
-
-    nodeMap[wbLuid] = { id: wbLuid, label: graph.workbook.name, type: heroRenderType, col: isDsHero ? 99 : 0, luid: wbLuid, isHero: true };
-
-    (graph.extra_workbooks || []).forEach(function(wb) {
-      var wbId = wb.luid || wb.name;
-      if (wbId && !nodeMap[wbId]) nodeMap[wbId] = { id: wbId, label: wb.name, type: 'workbook', col: 0, luid: wb.luid, isDownstream: isDsHero };
-    });
-    (graph.downstream_flows || []).forEach(function(fl) {
-      var flId = fl.luid || fl.name;
-      if (flId && !nodeMap[flId] && !hiddenNodes.has(flId)) nodeMap[flId] = { id: flId, label: fl.name, type: 'flow', col: 0, luid: fl.luid, isDownstream: true };
-    });
-    (graph.downstream_ds || []).forEach(function(ds) {
-      var dsId = ds.luid || ds.name;
-      if (dsId && !nodeMap[dsId] && !hiddenNodes.has(dsId)) nodeMap[dsId] = { id: dsId, label: ds.name, type: 'datasource', col: 0, luid: ds.luid, isDownstream: true };
-    });
-
-    Object.values(nodeMap).forEach(function(n) { if (n.isHero || n.isDownstream) return; n.col = 0; });
-
-    var changed = true, iterations = 0;
-    while (changed && iterations < 200) {
-      changed = false; iterations++;
-      edges.forEach(function(e) {
-        var src = nodeMap[e.from], dst = nodeMap[e.to];
-        if (!src || !dst || dst.isHero || dst.isDownstream || dst.type === 'workbook') return;
-        if (dst.col < src.col + 1) { dst.col = src.col + 1; changed = true; }
-      });
-    }
-
-    var maxUpstreamCol = Object.values(nodeMap).filter(function(n) {
-      return !n.isHero && !n.isDownstream && n.type !== 'workbook';
-    }).reduce(function(m, n) { return Math.max(m, n.col); }, 0);
-    nodeMap[wbLuid].col = maxUpstreamCol + 1;
-    var wbCol = maxUpstreamCol + 1;
-
-    Object.values(nodeMap).forEach(function(n) { if (n.isDownstream) n.col = wbCol + 1; });
-    var downTypes = { 'ds_to_downflow': 1, 'downflow_to_ds': 1, 'downds_to_wb': 1, 'ds_to_wb': 1 };
-    var dchanged = true, diter = 0;
-    while (dchanged && diter < 50) {
-      dchanged = false; diter++;
-      edges.forEach(function(e) {
-        if (!downTypes[e.type]) return;
-        var src = nodeMap[e.from], dst = nodeMap[e.to];
-        if (!src || !dst || !dst.isDownstream) return;
-        if (dst.col < src.col + 1) { dst.col = src.col + 1; dchanged = true; }
-      });
-    }
-
-    var allVals = Object.values(nodeMap);
-    var usedCols = Array.from(new Set(allVals.map(function(n) { return n.col; }))).sort(function(a,b) { return a-b; });
-    var colRemap = {};
-    usedCols.forEach(function(c, i) { colRemap[c] = i; });
-    allVals.forEach(function(n) { n.col = colRemap[n.col]; });
-    var maxCol = usedCols.length - 1;
-
-    var cols = [];
-    for (var ci = 0; ci <= maxCol; ci++) cols.push([]);
-    Object.values(nodeMap).forEach(function(n) { cols[n.col].push(n); });
-    var allNodes = Object.values(nodeMap);
-
-    var colX = [PAD];
-    for (var i = 1; i <= maxCol; i++) colX[i] = colX[i-1] + NODE_W + COL_GAP;
-
-    cols.forEach(function(col, ci) {
-      col.forEach(function(n) {
-        var isHero = n.isHero || false;
-        n.w = isHero ? NODE_W_HERO : NODE_W; n.h = isHero ? NODE_H_HERO : NODE_H; n.x = colX[ci];
-      });
-      var yOff = PAD;
-      col.forEach(function(n) { n.y = yOff; yOff += n.h + ROW_GAP; });
-    });
-
-    var maxY = Math.max.apply(null, allNodes.map(function(n) { return n.y + n.h; })) + PAD;
-    var maxX = Math.max.apply(null, allNodes.map(function(n) { return n.x + n.w; })) + PAD;
-    var topPad = 40;
-
-    var colors = {
-      table:      { fill: 'rgba(139,148,158,.1)', stroke: '#30363d',              icon: '#8b949e' },
-      vc_table:   { fill: 'rgba(163,113,247,.1)', stroke: 'rgba(163,113,247,.4)', icon: '#a371f7' },
-      flow:       { fill: 'rgba(227,179,65,.1)',  stroke: 'rgba(227,179,65,.4)',  icon: '#e3b341' },
-      datasource: { fill: 'rgba(46,160,67,.1)',   stroke: 'rgba(46,160,67,.4)',   icon: '#2ea043' },
-      hero_ds:    { fill: 'rgba(46,160,67,.18)',  stroke: 'rgba(46,160,67,.7)',   icon: '#3fb950' },
-      workbook:   { fill: 'rgba(56,139,253,.1)',  stroke: 'rgba(56,139,253,.4)',  icon: '#388bfd' },
-    };
-
-    function svgEl(tag, attrs, inner) {
-      var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-      Object.entries(attrs || {}).forEach(function(kv) { el.setAttribute(kv[0], kv[1]); });
-      if (inner !== undefined) el.innerHTML = inner;
-      return el;
-    }
-
-    var svg = svgEl('svg', {
-      width: maxX, height: maxY + topPad,
-      viewBox: '0 -' + topPad + ' ' + maxX + ' ' + (maxY + topPad),
-      style: 'font-family:Inter,system-ui,sans-serif;display:block;',
-    });
-
-    var defs = svgEl('defs');
-    var marker = svgEl('marker', { id: 'arr', markerWidth: '8', markerHeight: '8', refX: '6', refY: '3', orient: 'auto' });
-    marker.appendChild(svgEl('path', { d: 'M0,0 L0,6 L8,3 z', fill: '#30363d' }));
-    defs.appendChild(marker); svg.appendChild(defs);
-
-    var edgeGroup = svgEl('g');
-    edges.forEach(function(e) {
-      var src = nodeMap[e.from], dst = nodeMap[e.to];
-      if (!src || !dst) return;
-      var x1 = src.x + (src.w || NODE_W), y1 = src.y + (src.h || NODE_H) / 2;
-      var x2 = dst.x, y2 = dst.y + (dst.h || NODE_H) / 2, mx = (x1 + x2) / 2;
-      edgeGroup.appendChild(svgEl('path', {
-        d: 'M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2,
-        fill: 'none', stroke: '#30363d', 'stroke-width': '1.5', 'marker-end': 'url(#arr)', opacity: '0.7',
-      }));
-    });
+    currentGraph=graph; var container=$('lineage-chart'); container.innerHTML=''; $('lineage-empty').style.display='none';
+    var NODE_W=180,NODE_H=44,NODE_W_HERO=220,NODE_H_HERO=56,COL_GAP=80,ROW_GAP=16,PAD=20;
+    var edges=(graph.edges||[]).filter(function(e){return !hiddenNodes.has(e.from)&&!hiddenNodes.has(e.to);});
+    var nodeMap={};
+    (graph.tables||[]).filter(function(t){return !hiddenNodes.has(t.key);}).forEach(function(t){var label=t.is_vc?(t.db+' \u203a '+t.name):[t.db,t.schema,t.name].filter(function(s){return s&&s!=='Virtual Connection';}).join('.');nodeMap[t.key]={id:t.key,label,type:t.is_vc?'vc_table':'table',col:0,luid:t.vc_luid||null};});
+    (graph.flows||[]).filter(function(f){return !hiddenNodes.has(f.luid||f.name);}).forEach(function(f){nodeMap[f.luid||f.name]={id:f.luid||f.name,label:f.name,type:'flow',col:0,luid:f.luid};});
+    (graph.datasources||[]).filter(function(d){var did=d.luid||d.name;return !hiddenNodes.has(did)&&did!==(graph.hero_luid||graph.workbook.luid);}).forEach(function(d){nodeMap[d.luid||d.name]={id:d.luid||d.name,label:d.name,type:'datasource',col:0,luid:d.luid};});
+    var wbLuid=graph.workbook.luid,heroLuid=graph.hero_luid||wbLuid,heroType=graph.hero_type||'workbook',isDsHero=heroType==='datasource',heroRenderType=isDsHero?'hero_ds':'workbook';
+    nodeMap[wbLuid]={id:wbLuid,label:graph.workbook.name,type:heroRenderType,col:isDsHero?99:0,luid:wbLuid,isHero:true};
+    (graph.extra_workbooks||[]).forEach(function(wb){var wbId=wb.luid||wb.name;if(wbId&&!nodeMap[wbId])nodeMap[wbId]={id:wbId,label:wb.name,type:'workbook',col:0,luid:wb.luid,isDownstream:isDsHero};});
+    (graph.downstream_flows||[]).forEach(function(fl){var flId=fl.luid||fl.name;if(flId&&!nodeMap[flId]&&!hiddenNodes.has(flId))nodeMap[flId]={id:flId,label:fl.name,type:'flow',col:0,luid:fl.luid,isDownstream:true};});
+    (graph.downstream_ds||[]).forEach(function(ds){var dsId=ds.luid||ds.name;if(dsId&&!nodeMap[dsId]&&!hiddenNodes.has(dsId))nodeMap[dsId]={id:dsId,label:ds.name,type:'datasource',col:0,luid:ds.luid,isDownstream:true};});
+    Object.values(nodeMap).forEach(function(n){if(n.isHero||n.isDownstream)return;n.col=0;});
+    var changed=true,iterations=0;
+    while(changed&&iterations<200){changed=false;iterations++;edges.forEach(function(e){var src=nodeMap[e.from],dst=nodeMap[e.to];if(!src||!dst||dst.isHero||dst.isDownstream||dst.type==='workbook')return;if(dst.col<src.col+1){dst.col=src.col+1;changed=true;}});}
+    var maxUpstreamCol=Object.values(nodeMap).filter(function(n){return !n.isHero&&!n.isDownstream&&n.type!=='workbook';}).reduce(function(m,n){return Math.max(m,n.col);},0);
+    nodeMap[wbLuid].col=maxUpstreamCol+1;var wbCol=maxUpstreamCol+1;
+    Object.values(nodeMap).forEach(function(n){if(n.isDownstream)n.col=wbCol+1;});
+    var downTypes={'ds_to_downflow':1,'downflow_to_ds':1,'downds_to_wb':1,'ds_to_wb':1},dchanged=true,diter=0;
+    while(dchanged&&diter<50){dchanged=false;diter++;edges.forEach(function(e){if(!downTypes[e.type])return;var src=nodeMap[e.from],dst=nodeMap[e.to];if(!src||!dst||!dst.isDownstream)return;if(dst.col<src.col+1){dst.col=src.col+1;dchanged=true;}});}
+    var allVals=Object.values(nodeMap),usedCols=Array.from(new Set(allVals.map(function(n){return n.col;}))).sort(function(a,b){return a-b;}),colRemap={};
+    usedCols.forEach(function(c,i){colRemap[c]=i;}); allVals.forEach(function(n){n.col=colRemap[n.col];}); var maxCol=usedCols.length-1;
+    var cols=[]; for(var ci=0;ci<=maxCol;ci++)cols.push([]); Object.values(nodeMap).forEach(function(n){cols[n.col].push(n);}); var allNodes=Object.values(nodeMap);
+    var colX=[PAD]; for(var i=1;i<=maxCol;i++)colX[i]=colX[i-1]+NODE_W+COL_GAP;
+    cols.forEach(function(col,ci){col.forEach(function(n){var isHero=n.isHero||false;n.w=isHero?NODE_W_HERO:NODE_W;n.h=isHero?NODE_H_HERO:NODE_H;n.x=colX[ci];});var yOff=PAD;col.forEach(function(n){n.y=yOff;yOff+=n.h+ROW_GAP;});});
+    var maxY=Math.max.apply(null,allNodes.map(function(n){return n.y+n.h;}))+PAD,maxX=Math.max.apply(null,allNodes.map(function(n){return n.x+n.w;}))+PAD,topPad=40;
+    var colors={table:{fill:'rgba(139,148,158,.1)',stroke:'#30363d',icon:'#8b949e'},vc_table:{fill:'rgba(163,113,247,.1)',stroke:'rgba(163,113,247,.4)',icon:'#a371f7'},flow:{fill:'rgba(227,179,65,.1)',stroke:'rgba(227,179,65,.4)',icon:'#e3b341'},datasource:{fill:'rgba(46,160,67,.1)',stroke:'rgba(46,160,67,.4)',icon:'#2ea043'},hero_ds:{fill:'rgba(46,160,67,.18)',stroke:'rgba(46,160,67,.7)',icon:'#3fb950'},workbook:{fill:'rgba(56,139,253,.1)',stroke:'rgba(56,139,253,.4)',icon:'#388bfd'}};
+    function svgEl(tag,attrs,inner){var el=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.entries(attrs||{}).forEach(function(kv){el.setAttribute(kv[0],kv[1]);});if(inner!==undefined)el.innerHTML=inner;return el;}
+    var svg=svgEl('svg',{width:maxX,height:maxY+topPad,viewBox:'0 -'+topPad+' '+maxX+' '+(maxY+topPad),style:'font-family:Inter,system-ui,sans-serif;display:block;'});
+    var defs=svgEl('defs'),marker=svgEl('marker',{id:'arr',markerWidth:'8',markerHeight:'8',refX:'6',refY:'3',orient:'auto'});
+    marker.appendChild(svgEl('path',{d:'M0,0 L0,6 L8,3 z',fill:'#30363d'}));defs.appendChild(marker);svg.appendChild(defs);
+    var edgeGroup=svgEl('g');
+    edges.forEach(function(e){var src=nodeMap[e.from],dst=nodeMap[e.to];if(!src||!dst)return;var x1=src.x+(src.w||NODE_W),y1=src.y+(src.h||NODE_H)/2,x2=dst.x,y2=dst.y+(dst.h||NODE_H)/2,mx=(x1+x2)/2;edgeGroup.appendChild(svgEl('path',{d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,fill:'none',stroke:'#30363d','stroke-width':'1.5','marker-end':'url(#arr)',opacity:'0.7'}));});
     svg.appendChild(edgeGroup);
-
-    allNodes.forEach(function(n) {
-      var c = colors[n.type] || colors.table, isHero = n.isHero || false;
-      var nw = n.w || NODE_W, nh = n.h || NODE_H;
-      var g = svgEl('g', { 'data-node-id': n.id });
-      g.appendChild(svgEl('rect', { x: n.x, y: n.y, width: nw, height: nh, rx: 7, fill: c.fill, stroke: isHero ? c.icon : c.stroke, 'stroke-width': isHero ? '2' : '1' }));
-      var badgeLabels = { table: 'TABLE', vc_table: 'VC TABLE', flow: 'FLOW', datasource: 'DS', hero_ds: 'DATA SOURCE', workbook: 'WB' };
-      g.appendChild(svgEl('text', { x: n.x + 10, y: n.y + 14, fill: c.icon, 'font-size': '8', 'font-weight': '700', 'letter-spacing': '0.05em' }, badgeLabels[n.type] || ''));
-      var maxChars = isHero ? 24 : 20;
-      var label = n.label.length > maxChars ? n.label.slice(0, maxChars) + '\u2026' : n.label;
-      g.appendChild(svgEl('text', { x: n.x + 10, y: n.y + 29, fill: '#e6edf3', 'font-size': '11', 'font-weight': isHero ? '600' : '400' }, label));
-      g.appendChild(svgEl('title', {}, n.label));
-      if (!isHero && n.type !== 'workbook') {
-        var hb = svgEl('g', { style: 'cursor:pointer;opacity:0;transition:opacity .15s' });
-        var bx = n.x + nw - 18, by = n.y + 4;
-        hb.appendChild(svgEl('rect', { x: bx, y: by, width: 14, height: 14, rx: 3, fill: 'rgba(248,81,73,.15)', stroke: 'rgba(248,81,73,.4)', 'stroke-width': '1' }));
-        hb.appendChild(svgEl('text', { x: bx + 7, y: by + 10, fill: '#f85149', 'font-size': '10', 'text-anchor': 'middle', 'font-weight': '700' }, '\u00d7'));
-        hb.addEventListener('click', function(ev) { ev.stopPropagation(); hideNode(n.id); });
-        g.appendChild(hb);
-        g.addEventListener('mouseenter', function() { hb.style.opacity = '1'; });
-        g.addEventListener('mouseleave', function() { hb.style.opacity = '0'; });
-      }
-      svg.appendChild(g);
-    });
-
-    cols.forEach(function(col, ci) {
-      if (!col.length) return;
-      var types = Array.from(new Set(col.map(function(n) { return n.type; })));
-      var label = types.includes('workbook') ? 'Workbook' : types.includes('hero_ds') ? 'Data Source' : types.includes('datasource') ? 'Datasource' : types.includes('flow') ? 'Flow' : types.includes('vc_table') ? 'VC Tables' : 'Tables';
-      svg.insertBefore(svgEl('text', { x: colX[ci] + NODE_W / 2, y: 10, fill: '#8b949e', 'font-size': '10', 'font-weight': '600', 'text-anchor': 'middle', 'letter-spacing': '0.05em' }, label.toUpperCase()), svg.firstChild);
-    });
-
+    allNodes.forEach(function(n){var c=colors[n.type]||colors.table,isHero=n.isHero||false,nw=n.w||NODE_W,nh=n.h||NODE_H;var g=svgEl('g',{'data-node-id':n.id});g.appendChild(svgEl('rect',{x:n.x,y:n.y,width:nw,height:nh,rx:7,fill:c.fill,stroke:isHero?c.icon:c.stroke,'stroke-width':isHero?'2':'1'}));var badgeLabels={table:'TABLE',vc_table:'VC TABLE',flow:'FLOW',datasource:'DS',hero_ds:'DATA SOURCE',workbook:'WB'};g.appendChild(svgEl('text',{x:n.x+10,y:n.y+14,fill:c.icon,'font-size':'8','font-weight':'700','letter-spacing':'0.05em'},badgeLabels[n.type]||''));var maxChars=isHero?24:20;var label=n.label.length>maxChars?n.label.slice(0,maxChars)+'\u2026':n.label;g.appendChild(svgEl('text',{x:n.x+10,y:n.y+29,fill:'#e6edf3','font-size':'11','font-weight':isHero?'600':'400'},label));g.appendChild(svgEl('title',{},n.label));if(!isHero&&n.type!=='workbook'){var hb=svgEl('g',{style:'cursor:pointer;opacity:0;transition:opacity .15s'}),bx=n.x+nw-18,by=n.y+4;hb.appendChild(svgEl('rect',{x:bx,y:by,width:14,height:14,rx:3,fill:'rgba(248,81,73,.15)',stroke:'rgba(248,81,73,.4)','stroke-width':'1'}));hb.appendChild(svgEl('text',{x:bx+7,y:by+10,fill:'#f85149','font-size':'10','text-anchor':'middle','font-weight':'700'},'\u00d7'));hb.addEventListener('click',function(ev){ev.stopPropagation();hideNode(n.id);});g.appendChild(hb);g.addEventListener('mouseenter',function(){hb.style.opacity='1';});g.addEventListener('mouseleave',function(){hb.style.opacity='0';});}svg.appendChild(g);});
+    cols.forEach(function(col,ci){if(!col.length)return;var types=Array.from(new Set(col.map(function(n){return n.type;})));var label=types.includes('workbook')?'Workbook':types.includes('hero_ds')?'Data Source':types.includes('datasource')?'Datasource':types.includes('flow')?'Flow':types.includes('vc_table')?'VC Tables':'Tables';svg.insertBefore(svgEl('text',{x:colX[ci]+NODE_W/2,y:10,fill:'#8b949e','font-size':'10','font-weight':'600','text-anchor':'middle','letter-spacing':'0.05em'},label.toUpperCase()),svg.firstChild);});
     container.appendChild(svg);
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
   function mergeVcTables(nodes) {
-    vcTables = (nodes || []).map(function(vct) {
-      return {
-        luid:                  vct.luid,
-        name:                  vct.name,
-        isVcTable:             true,
-        vcName:                vct.virtualConnection ? vct.virtualConnection.name : '',
-        vcLuid:                vct.virtualConnection ? vct.virtualConnection.luid : '',
-        downstreamDatasources: vct.downstreamDatasources || [],
-        downstreamWorkbooks:   vct.downstreamWorkbooks   || [],
-      };
+    vcTables = (nodes||[]).map(function(vct) {
+      return { luid:vct.luid, name:vct.name, isVcTable:true, vcName:vct.virtualConnection?vct.virtualConnection.name:'', vcLuid:vct.virtualConnection?vct.virtualConnection.luid:'', downstreamDatasources:vct.downstreamDatasources||[], downstreamWorkbooks:vct.downstreamWorkbooks||[] };
     });
   }
 
   tableau.extensions.initializeAsync({ configure: configure }).then(async function() {
     var settings = tableau.extensions.settings.getAll();
     flowUrl = settings.flowUrl || '';
-
-    if (!flowUrl) {
-      showError('list-error', 'No Flow URL configured. Click \u2699 to add your Power Automate URL.');
-      setStatus('Setup needed', 'error');
-    }
+    if (!flowUrl) { showError('list-error', 'No Flow URL configured. Click \u2699 to add your Power Automate URL.'); setStatus('Setup needed', 'error'); }
 
     try {
       var ws = tableau.extensions.worksheetContent.worksheet;
       var dataTable = await ws.getSummaryDataAsync();
       var cols = dataTable.columns, rows = dataTable.data;
-
-      function colIdx(name) {
-        return cols.findIndex(function(c) { return c.fieldName.toLowerCase().includes(name.toLowerCase()); });
-      }
-
+      function colIdx(name) { return cols.findIndex(function(c){return c.fieldName.toLowerCase().includes(name.toLowerCase());}); }
       workbooks = rows.map(function(row) {
-        function get(name) { var i = colIdx(name); return (i >= 0 && row[i]) ? row[i].formattedValue : ''; }
-        return {
-          luid:          get('luid') || get('id'),
-          name:          get('name'),
-          itemType:      get('item type') || get('type') || 'Workbook',
-          contentType:   get('data source content type') || get('content type') || '',
-          dbType:        get('data source database type') || get('database type') || '',
-          project:       get('project'),
-          parentProject: get('parent project') || get('parent'),
-          owner:         get('owner'),
-          ownerEmail:    get('email') || get('owner email'),
-          description:   get('description'),
-          updated:       get('updated') || get('modified'),
-          certified:     (get('data source is certified') || '').toLowerCase() === 'true',
-        };
-      }).filter(function(w) { return w.luid || w.name; });
-
-      var seen = new Set();
-      workbooks = workbooks.filter(function(w) {
-        var key = w.luid || w.name;
-        if (seen.has(key)) return false;
-        seen.add(key); return true;
-      });
-      var target = workbooks.filter(function(w) { return (w.name || '').toLowerCase().includes('agvance_gffb'); });
-      console.log('agvance_gffb:', JSON.stringify(target[0]));
-    } catch(e) {
-      showError('list-error', 'Could not read worksheet data: ' + e.message);
-    }
+        function get(name) { var i=colIdx(name); return (i>=0&&row[i])?row[i].formattedValue:''; }
+        return { luid:get('luid')||get('id'), name:get('name'), itemType:get('item type')||get('type')||'Workbook', contentType:get('data source content type')||get('content type')||'', dbType:get('data source database type')||get('database type')||'', project:get('project'), parentProject:get('parent project')||get('parent'), owner:get('owner'), ownerEmail:get('email')||get('owner email'), description:get('description'), updated:get('updated')||get('modified'), certified:(get('data source is certified')||'').toLowerCase()==='true' };
+      }).filter(function(w){return w.luid||w.name;});
+      var seen=new Set(); workbooks=workbooks.filter(function(w){var key=w.luid||w.name;if(seen.has(key))return false;seen.add(key);return true;});
+      console.log('acctprof rows:', JSON.stringify(workbooks.filter(function(w){return (w.name||'').toLowerCase().includes('acctprof');})));
+    } catch(e) { showError('list-error', 'Could not read worksheet data: ' + e.message); }
 
     if (flowUrl && workbooks.length) {
       setStatus('Checking docs\u2026');
       try {
         var res = await callFlow({ action: 'list' });
-        var rawLuids = (res && res.luids) ? res.luids : [];
-        var flatLuids = [].concat.apply([], rawLuids).map(function(x) { return x.luid || x; });
-        var documented = new Set(flatLuids);
-        workbooks.forEach(function(w) { if (documented.has(w.luid)) docCache[w.luid] = true; });
+        var rawLuids=(res&&res.luids)?res.luids:[];
+        var flatLuids=[].concat.apply([],rawLuids).map(function(x){return x.luid||x;});
+        var documented=new Set(flatLuids);
+        workbooks.forEach(function(w){if(documented.has(w.luid))docCache[w.luid]=true;});
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
       try {
@@ -1356,22 +736,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
 
     updateCounts();
-    var overlay = $('loading-overlay');
-    overlay.classList.add('hidden');
-    setTimeout(function() { overlay.style.display = 'none'; }, 300);
-
-  }).catch(function(e) {
-    $('loading-overlay').classList.add('hidden');
-    showError('list-error', 'Extension failed to initialize: ' + e.message);
-  });
+    var overlay=$('loading-overlay'); overlay.classList.add('hidden'); setTimeout(function(){overlay.style.display='none';},300);
+  }).catch(function(e) { $('loading-overlay').classList.add('hidden'); showError('list-error','Extension failed to initialize: '+e.message); });
 
   function configure() {
-    var popup = window.location.origin + window.location.pathname + '?config=1';
-    tableau.extensions.ui.displayDialogAsync(popup, '', { height: 240, width: 440 })
-      .then(function() { flowUrl = tableau.extensions.settings.getAll().flowUrl || ''; })
-      .catch(function() {});
+    var popup=window.location.origin+window.location.pathname+'?config=1';
+    tableau.extensions.ui.displayDialogAsync(popup,'',{height:240,width:440}).then(function(){flowUrl=tableau.extensions.settings.getAll().flowUrl||'';}).catch(function(){});
   }
-
 })();
 </script>
 </body>
