@@ -729,10 +729,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       } catch(e) { setStatus('Ready'); }
       try {
         var vcRes = await callFlow({ action: 'list_vc_tables' });
-        console.log('vcRes keys:', Object.keys(vcRes||{}), 'vc_tables type:', typeof vcRes.vc_tables, 'isArray:', Array.isArray(vcRes.vc_tables), 'length:', (vcRes.vc_tables||[]).length);
-        if (vcRes && Array.isArray(vcRes.vc_tables)) mergeVcTables(vcRes.vc_tables);
-        updateCounts();
-      } catch(e) { console.log('vc error:', e.message); }
+        if (vcRes && Array.isArray(vcRes.vc_tables)) {
+          mergeVcTables(vcRes.vc_tables);
+          updateCounts();
+          if (activeType === 'Datasource') renderList();
+        }
+      } catch(e) { /* vc tables optional */ }
     }
 
     updateCounts();
