@@ -197,10 +197,20 @@
         <span id="lineage-hint">Data flow from source to workbook</span>
         <button class="btn btn-ghost btn-sm" id="btn-lineage-reset" style="display:none" onclick="resetHiddenNodes()">&#8635; Reset</button>
       </div>
-      <div id="lineage-scroll">
+      <div id="lineage-scroll" style="position:relative">
         <div id="lineage-loading"><div class="spinner"></div><span>Loading lineage&#8230;</span></div>
         <div id="lineage-empty">No lineage data available.</div>
         <div id="lineage-chart"></div>
+        <div id="webi-popup" style="display:none;position:absolute;z-index:50;background:var(--surface);border:1px solid rgba(227,179,65,.4);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.5);padding:16px;min-width:260px;max-width:340px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">
+            <div>
+              <div style="font-size:9px;font-weight:700;letter-spacing:.08em;color:#e3b341;margin-bottom:4px">WEBI REPORT</div>
+              <div id="webi-popup-name" style="font-size:13px;font-weight:600;color:var(--text)"></div>
+            </div>
+            <button onclick="document.getElementById('webi-popup').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">×</button>
+          </div>
+          <div id="webi-popup-body" style="display:flex;flex-direction:column;gap:8px;font-size:12px"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -767,7 +777,32 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var edgeGroup=svgEl('g');
     edges.forEach(function(e){var src=nodeMap[e.from],dst=nodeMap[e.to];if(!src||!dst)return;var x1=src.x+(src.w||NODE_W),y1=src.y+(src.h||NODE_H)/2,x2=dst.x,y2=dst.y+(dst.h||NODE_H)/2,mx=(x1+x2)/2;edgeGroup.appendChild(svgEl('path',{d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,fill:'none',stroke:'#30363d','stroke-width':'1.5','marker-end':'url(#arr)',opacity:'0.7'}));});
     svg.appendChild(edgeGroup);
-    allNodes.forEach(function(n){var c=colors[n.type]||colors.table,isHero=n.isHero||false,nw=n.w||NODE_W,nh=n.h||NODE_H;var g=svgEl('g',{'data-node-id':n.id});g.appendChild(svgEl('rect',{x:n.x,y:n.y,width:nw,height:nh,rx:7,fill:c.fill,stroke:isHero?c.icon:c.stroke,'stroke-width':isHero?'2':'1'}));var badgeLabels={table:'TABLE',vc_table:'VC TABLE',flow:'FLOW',datasource:'DS',hero_ds:'DATA SOURCE',workbook:'WB',database:'DATABASE',webi:'WEBI REPORT',onedrive:'SHAREPOINT/ONEDRIVE'};g.appendChild(svgEl('text',{x:n.x+10,y:n.y+14,fill:c.icon,'font-size':'8','font-weight':'700','letter-spacing':'0.05em'},badgeLabels[n.type]||''));var maxChars=isHero?24:20;var label=n.label.length>maxChars?n.label.slice(0,maxChars)+'\u2026':n.label;g.appendChild(svgEl('text',{x:n.x+10,y:n.y+29,fill:'#e6edf3','font-size':'11','font-weight':isHero?'600':'400'},label));g.appendChild(svgEl('title',{},n.label));if(!isHero&&n.type!=='workbook'){var hb=svgEl('g',{style:'cursor:pointer;opacity:0;transition:opacity .15s'}),bx=n.x+nw-18,by=n.y+4;hb.appendChild(svgEl('rect',{x:bx,y:by,width:14,height:14,rx:3,fill:'rgba(248,81,73,.15)',stroke:'rgba(248,81,73,.4)','stroke-width':'1'}));hb.appendChild(svgEl('text',{x:bx+7,y:by+10,fill:'#f85149','font-size':'10','text-anchor':'middle','font-weight':'700'},'\u00d7'));hb.addEventListener('click',function(ev){ev.stopPropagation();hideNode(n.id);});g.appendChild(hb);g.addEventListener('mouseenter',function(){hb.style.opacity='1';});g.addEventListener('mouseleave',function(){hb.style.opacity='0';});}svg.appendChild(g);});
+    allNodes.forEach(function(n){var c=colors[n.type]||colors.table,isHero=n.isHero||false,nw=n.w||NODE_W,nh=n.h||NODE_H;var g=svgEl('g',{'data-node-id':n.id});g.appendChild(svgEl('rect',{x:n.x,y:n.y,width:nw,height:nh,rx:7,fill:c.fill,stroke:isHero?c.icon:c.stroke,'stroke-width':isHero?'2':'1'}));var badgeLabels={table:'TABLE',vc_table:'VC TABLE',flow:'FLOW',datasource:'DS',hero_ds:'DATA SOURCE',workbook:'WB',database:'DATABASE',webi:'WEBI REPORT',onedrive:'SHAREPOINT/ONEDRIVE'};g.appendChild(svgEl('text',{x:n.x+10,y:n.y+14,fill:c.icon,'font-size':'8','font-weight':'700','letter-spacing':'0.05em'},badgeLabels[n.type]||''));var maxChars=isHero?24:20;var label=n.label.length>maxChars?n.label.slice(0,maxChars)+'\u2026':n.label;g.appendChild(svgEl('text',{x:n.x+10,y:n.y+29,fill:'#e6edf3','font-size':'11','font-weight':isHero?'600':'400'},label));g.appendChild(svgEl('title',{},n.label));if(!isHero&&n.type!=='workbook'){var hb=svgEl('g',{style:'cursor:pointer;opacity:0;transition:opacity .15s'}),bx=n.x+nw-18,by=n.y+4;hb.appendChild(svgEl('rect',{x:bx,y:by,width:14,height:14,rx:3,fill:'rgba(248,81,73,.15)',stroke:'rgba(248,81,73,.4)','stroke-width':'1'}));hb.appendChild(svgEl('text',{x:bx+7,y:by+10,fill:'#f85149','font-size':'10','text-anchor':'middle','font-weight':'700'},'\u00d7'));hb.addEventListener('click',function(ev){ev.stopPropagation();hideNode(n.id);});g.appendChild(hb);g.addEventListener('mouseenter',function(){hb.style.opacity='1';});g.addEventListener('mouseleave',function(){hb.style.opacity='0';});}
+      if (n.type==='webi') {
+        g.style.cursor='pointer';
+        (function(node){g.addEventListener('click',function(){
+          var link=(currentGraph.webi_links||[]).find(function(l){return l['Object Name']===node.label;});
+          if(!link)return;
+          var popup=$('webi-popup');
+          $('webi-popup-name').textContent=node.label;
+          var body=$('webi-popup-body');
+          body.innerHTML=[
+            link['Object Folder Path']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">FOLDER PATH</div><div style="color:var(--text);font-family:var(--mono);font-size:11px;word-break:break-all">'+escHtml(link['Object Folder Path'])+'</div></div>':'',
+            link['File Name']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">FILE NAME</div><div style="color:var(--text)">'+escHtml(link['File Name'])+'</div></div>':'',
+            link['Destination']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">DESTINATION</div><div style="color:var(--text)">'+escHtml(link['Destination'])+'</div></div>':'',
+            link['owner']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">OWNER</div><div style="color:var(--text)">'+escHtml(link['owner'])+'</div></div>':'',
+            link['updated_at']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">LAST DELIVERED</div><div style="color:var(--text)">'+escHtml(link['updated_at'].substring(0,10))+'</div></div>':'',
+            link['excel_tab']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">EXCEL TAB</div><div style="color:var(--text);font-family:var(--mono);font-size:11px">'+escHtml(link['excel_tab'])+'</div></div>':'',
+          ].filter(Boolean).join('');
+          var scrollEl=$('lineage-scroll');
+          var px=node.x+nw+10;
+          var py=node.y+topPad;
+          popup.style.left=px+'px';
+          popup.style.top=Math.max(8,py)+'px';
+          popup.style.display='block';
+        });})(n);
+      }
+      svg.appendChild(g);});
     cols.forEach(function(col,ci){if(!col.length)return;var types=Array.from(new Set(col.map(function(n){return n.type;})));var label=types.includes('workbook')?'Workbook':types.includes('hero_ds')?'Data Source':types.includes('datasource')?'Datasource':types.includes('flow')?'Flow':types.includes('vc_table')?'VC Tables':types.includes('database')?'Database':types.includes('webi')?'WebI Report':types.includes('onedrive')?'SharePoint/OneDrive':'Tables';svg.insertBefore(svgEl('text',{x:colX[ci]+NODE_W/2,y:10,fill:'#8b949e','font-size':'10','font-weight':'600','text-anchor':'middle','letter-spacing':'0.05em'},label.toUpperCase()),svg.firstChild);});
     container.appendChild(svg);
   }
