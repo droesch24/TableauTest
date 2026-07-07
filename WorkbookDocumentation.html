@@ -800,6 +800,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
           popup.style.display='block';
         });})(n);
       }
+      // Datasource nodes — click to navigate to that datasource's detail view
+      if ((n.type==='datasource' || n.type==='hero_ds') && n.luid && !n.isHero) {
+        g.style.cursor='pointer';
+        (function(node){g.addEventListener('click',function(){
+          var ds = workbooks.find(function(w){ return w.luid===node.luid; });
+          if (ds) { openDetail(ds); }
+        });})(n);
+      }
       svg.appendChild(g);});
     cols.forEach(function(col,ci){if(!col.length)return;var types=Array.from(new Set(col.map(function(n){return n.type;})));var label=types.includes('workbook')?'Workbook':types.includes('hero_ds')?'Data Source':types.includes('datasource')?'Datasource':types.includes('flow')?'Flow':types.includes('vc_table')?'VC Tables':types.includes('database')?'Database':types.includes('webi')?'WebI Report':types.includes('onedrive')?'SharePoint/OneDrive':'Tables';svg.insertBefore(svgEl('text',{x:colX[ci]+NODE_W/2,y:10,fill:'#8b949e','font-size':'10','font-weight':'600','text-anchor':'middle','letter-spacing':'0.05em'},label.toUpperCase()),svg.firstChild);});
     container.appendChild(svg);
