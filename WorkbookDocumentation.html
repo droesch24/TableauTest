@@ -675,18 +675,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var heroWbIds = new Set((raw.downstreamWorkbooks || []).map(function(wb) { return wb.luid || wb.name; }));
 
     // Hero's direct downstream datasources — the ground truth for what this DS produces
-    var heroDownDsIds = new Set((raw.downstreamDatasources || []).map(function(ds) { return ds.luid || ds.name; }));
-    console.log('heroDownDsIds:', Array.from(heroDownDsIds), 'heroWbIds:', Array.from(heroWbIds));
-
     var meaningfulFlows=[];
     (raw.downstreamFlows||[]).forEach(function(fl) {
       var dsOutputs=(fl.downstreamDatasources||[]).filter(function(ds) {
-        var dsId = ds.luid || ds.name;
-        // Only include flow outputs that appear in the hero's own downstreamDatasources
-        return heroDownDsIds.has(dsId) &&
-          (ds.downstreamWorkbooks||[]).some(function(wb) {
-            return heroWbIds.has(wb.luid || wb.name);
-          });
+        // Only show flow outputs that explicitly list the hero as an upstream datasource
+        return (ds.upstreamDatasources||[]).some(function(up) {
+          return (up.luid || up.name) === heroLuid;
+        });
       });
       if (dsOutputs.length>0) meaningfulFlows.push({flow:fl,outputs:dsOutputs});
     });
