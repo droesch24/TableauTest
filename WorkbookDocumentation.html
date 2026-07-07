@@ -790,9 +790,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
             link['Object Folder Path']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">FOLDER PATH</div><div style="color:var(--text);font-family:var(--mono);font-size:11px;word-break:break-all">'+escHtml(link['Object Folder Path'])+'</div></div>':'',
             link['File Name']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">FILE NAME</div><div style="color:var(--text)">'+escHtml(link['File Name'])+'</div></div>':'',
             link['Destination']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">DESTINATION</div><div style="color:var(--text)">'+escHtml(link['Destination'])+'</div></div>':'',
-            link['owner']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">OWNER</div><div style="color:var(--text)">'+escHtml(link['owner'])+'</div></div>':'',
-            link['updated_at']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">LAST DELIVERED</div><div style="color:var(--text)">'+escHtml(link['updated_at'].substring(0,10))+'</div></div>':'',
-            link['excel_tab']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">EXCEL TAB</div><div style="color:var(--text);font-family:var(--mono);font-size:11px">'+escHtml(link['excel_tab'])+'</div></div>':'',
+            link['User Name']?'<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">OWNER</div><div style="color:var(--text)">'+escHtml(link['User Name'])+'</div></div>':'',
           ].filter(Boolean).join('');
           var scrollEl=$('lineage-scroll');
           var px=node.x+nw+10;
