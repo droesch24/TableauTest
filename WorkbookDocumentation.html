@@ -633,16 +633,22 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       addDbEdge(ds.upstreamTables, dsId);
     }
 
+    // Build set of datasource luids that actually feed the hero directly
+    var heroDsIds = new Set((raw.upstreamDatasources || []).map(function(ds) { return ds.luid || ds.name; }));
+
     function processFlow(fl,targetId) {
       var flId=fl.luid||fl.name; if (!flId) return;
       if (!flowsSeen.has(flId)) { flowsSeen.add(flId); allFlows.push({name:fl.name,luid:fl.luid}); }
       addEdge(flId,targetId,'flow_to_ds');
-      var upDs=fl.upstreamDatasources||[]; upDs.forEach(function(ds){processDs(ds,flId,'flow',false);});
+      // Only process upstream datasources that are in the hero's direct upstream list
+      var upDs=(fl.upstreamDatasources||[]).filter(function(ds) {
+        return heroDsIds.has(ds.luid || ds.name);
+      });
+      upDs.forEach(function(ds){processDs(ds,flId,'flow',false);});
       (fl.downstreamDatasources||[]).forEach(function(ds) { var dsId=ds.luid||ds.name; if (!dsId||dsId===heroLuid) return; if (!dsSeen.has(dsId)) { dsSeen.add(dsId); allDs.push({name:ds.name,luid:ds.luid}); } addEdge(flId,dsId,'flow_to_ds'); });
       var dsVcKeys=new Set(); upDs.forEach(function(ds){(ds.upstreamVirtualConnectionTables||[]).forEach(function(vct){var k=addVcTable(vct);if(k)dsVcKeys.add(k);});});
       (fl.upstreamVirtualConnectionTables||[]).forEach(function(vct){var key=addVcTable(vct);if(key&&!dsVcKeys.has(key))addVcEdge(vct,flId,'vc_table_to_flow');});
-      // Only add database edges for tables NOT already covered by an upstream datasource
-      // Collect database names covered by upstream datasources
+      // Only add database edges for tables not covered by the relevant upstream datasources
       var coveredDbs = new Set();
       upDs.forEach(function(ds) {
         (ds.upstreamTables||[]).forEach(function(t) {
