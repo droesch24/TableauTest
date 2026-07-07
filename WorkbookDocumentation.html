@@ -671,8 +671,19 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     allDs.push({name:heroName,luid:heroLuid});
     var downWbs=[],downWbIds=new Set(),downDs=[],downDsIds=new Set(),downFlows=[];
     function addDownWb(wb) { var wbId=wb.luid||wb.name; if (!wbId||downWbIds.has(wbId)) return wbId; downWbIds.add(wbId); downWbs.push({luid:wb.luid,name:wb.name}); return wbId; }
+    // Build set of workbook luids that actually consume the hero
+    var heroWbIds = new Set((raw.downstreamWorkbooks || []).map(function(wb) { return wb.luid || wb.name; }));
+
     var meaningfulFlows=[];
-    (raw.downstreamFlows||[]).forEach(function(fl) { var dsOutputs=(fl.downstreamDatasources||[]).filter(function(ds){return (ds.downstreamWorkbooks||[]).length>0;}); if (dsOutputs.length>0) meaningfulFlows.push({flow:fl,outputs:dsOutputs}); });
+    (raw.downstreamFlows||[]).forEach(function(fl) {
+      // Only include downstream datasource outputs that lead to workbooks consuming the hero
+      var dsOutputs=(fl.downstreamDatasources||[]).filter(function(ds) {
+        return (ds.downstreamWorkbooks||[]).some(function(wb) {
+          return heroWbIds.has(wb.luid || wb.name);
+        });
+      });
+      if (dsOutputs.length>0) meaningfulFlows.push({flow:fl,outputs:dsOutputs});
+    });
     var wbViaFlowChain=new Set(); meaningfulFlows.forEach(function(mf){mf.outputs.forEach(function(ds){(ds.downstreamWorkbooks||[]).forEach(function(wb){wbViaFlowChain.add(wb.luid||wb.name);});});});
     (raw.downstreamWorkbooks||[]).forEach(function(wb) { var wbId=wb.luid||wb.name; if (wbViaFlowChain.has(wbId)) return; var added=addDownWb(wb); if (added) addEdge(heroLuid,added,'ds_to_wb'); });
     meaningfulFlows.forEach(function(mf) { var fl=mf.flow, flId=fl.luid||fl.name; downFlows.push({luid:fl.luid,name:fl.name}); addEdge(heroLuid,flId,'ds_to_downflow'); mf.outputs.forEach(function(ds) { var dsId=ds.luid||ds.name; if (!downDsIds.has(dsId)){downDsIds.add(dsId);downDs.push({luid:ds.luid,name:ds.name});} addEdge(flId,dsId,'downflow_to_ds'); (ds.downstreamWorkbooks||[]).forEach(function(wb){var wbId=addDownWb(wb);if(wbId)addEdge(dsId,wbId,'downds_to_wb');}); }); });
