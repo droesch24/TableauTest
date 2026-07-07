@@ -741,6 +741,18 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     Object.values(nodeMap).forEach(function(n){if(n.isDownstream)n.col=wbCol+1;});
     var downTypes={'ds_to_downflow':1,'downflow_to_ds':1,'downds_to_wb':1,'ds_to_wb':1},dchanged=true,diter=0;
     while(dchanged&&diter<50){dchanged=false;diter++;edges.forEach(function(e){if(!downTypes[e.type])return;var src=nodeMap[e.from],dst=nodeMap[e.to];if(!src||!dst||!dst.isDownstream)return;if(dst.col<src.col+1){dst.col=src.col+1;dchanged=true;}});}
+    // Pin WebI and SharePoint nodes to sit left of database nodes
+    if (isDsHero && (graph.webi_links||[]).length > 0) {
+      var dbNodes2 = Object.values(nodeMap).filter(function(n){return n.type==='database';});
+      if (dbNodes2.length > 0) {
+        var minDbCol = dbNodes2.reduce(function(m,n){return Math.min(m,n.col);}, 99);
+        Object.values(nodeMap).forEach(function(n) {
+          if (n.type === 'onedrive') n.col = minDbCol - 1;
+          if (n.type === 'webi')     n.col = minDbCol - 2;
+        });
+      }
+    }
+
     var allVals=Object.values(nodeMap),usedCols=Array.from(new Set(allVals.map(function(n){return n.col;}))).sort(function(a,b){return a-b;}),colRemap={};
     usedCols.forEach(function(c,i){colRemap[c]=i;}); allVals.forEach(function(n){n.col=colRemap[n.col];}); var maxCol=usedCols.length-1;
     var cols=[]; for(var ci=0;ci<=maxCol;ci++)cols.push([]); Object.values(nodeMap).forEach(function(n){cols[n.col].push(n);}); var allNodes=Object.values(nodeMap);
