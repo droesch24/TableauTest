@@ -710,12 +710,21 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (!reportName) return;
       var webiKey  = 'webi:' + reportName;
       var spKey    = 'sp:'   + fileName;
+      var dbKey    = 'db:'   + fileName;
       if (!nodeMap[webiKey]) nodeMap[webiKey] = { id: webiKey, label: reportName, type: 'webi', col: 0, luid: null };
       if (!nodeMap[spKey])   nodeMap[spKey]   = { id: spKey,   label: fileName,   type: 'onedrive', col: 0, luid: null };
-      // edges: webi → onedrive → hero DS
-      var heroId = graph.hero_luid || graph.workbook.luid;
-      if (!edges.find(function(e){return e.from===webiKey&&e.to===spKey;}))   edges.push({from:webiKey,to:spKey,type:'webi_to_sp'});
-      if (!edges.find(function(e){return e.from===spKey&&e.to===heroId;}))    edges.push({from:spKey,to:heroId,type:'sp_to_ds'});
+      // edges: webi → sharepoint → database (if exists) → hero already handled by db node
+      if (!edges.find(function(e){return e.from===webiKey&&e.to===spKey;}))
+        edges.push({from:webiKey, to:spKey, type:'webi_to_sp'});
+      // Connect SharePoint to the database node if it exists, otherwise directly to hero
+      if (nodeMap[dbKey]) {
+        if (!edges.find(function(e){return e.from===spKey&&e.to===dbKey;}))
+          edges.push({from:spKey, to:dbKey, type:'sp_to_db'});
+      } else {
+        var heroId = graph.hero_luid || graph.workbook.luid;
+        if (!edges.find(function(e){return e.from===spKey&&e.to===heroId;}))
+          edges.push({from:spKey, to:heroId, type:'sp_to_ds'});
+      }
     });
     (graph.flows||[]).filter(function(f){return !hiddenNodes.has(f.luid||f.name);}).forEach(function(f){nodeMap[f.luid||f.name]={id:f.luid||f.name,label:f.name,type:'flow',col:0,luid:f.luid};});
     (graph.datasources||[]).filter(function(d){var did=d.luid||d.name;return !hiddenNodes.has(did)&&did!==(graph.hero_luid||graph.workbook.luid);}).forEach(function(d){nodeMap[d.luid||d.name]={id:d.luid||d.name,label:d.name,type:'datasource',col:0,luid:d.luid};});
