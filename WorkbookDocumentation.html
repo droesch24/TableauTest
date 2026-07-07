@@ -658,17 +658,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var chart=$('lineage-chart'),loading=$('lineage-loading'),empty=$('lineage-empty');
     chart.innerHTML=''; empty.style.display='none'; loading.style.display='flex';
     try {
-      var results = await Promise.all([
-        callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType }),
-        wb.itemType === 'Datasource' ? callFlow({ action: 'get_webi_links', name: wb.name }) : Promise.resolve(null),
-      ]);
-      var res = results[0], webiRes = results[1];
+      var res = await callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType });
+      var webiRes = null;
+      if (wb.itemType === 'Datasource') {
+        try { webiRes = await callFlow({ action: 'get_webi_links', name: wb.name }); } catch(e) {}
+      }
       loading.style.display='none';
       if (res && res.graph) {
         var graph = wb.itemType === 'Datasource'
           ? transformDatasourceGraph(res.graph)
           : transformGraphQLToGraph(res.graph);
-        // Merge WebI links into graph
         if (webiRes && webiRes.webi_links && webiRes.webi_links.length) {
           graph.webi_links = webiRes.webi_links;
         }
