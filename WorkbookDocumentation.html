@@ -607,11 +607,12 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     function addVcTable(vct) { if (!vct) return null; var vc=vct.virtualConnection||{}, vcId=vc.luid||vc.name, nm=vct.name||''; if (!nm||!vcId) return null; var key='vc:'+vcId+'.'+nm; if (!tablesSeen.has(key)) { tablesSeen.add(key); tables.push({key,name:nm,db:vc.name||'',schema:'Virtual Connection',is_vc:true,vc_luid:vcId}); } return key; }
     function addVcEdge(vct,targetId,type) { var key=addVcTable(vct); if (!key) return; if (!vcTableEdged.has(key)) { vcTableEdged.add(key); addEdge(key,targetId,type); } }
 
-    // Add a database node and edge to its direct consumer
+    // Add a database node and edge to its direct consumer — never directly to a flow
     function addDbEdge(upstreamTables, targetId) {
+      if (flowsSeen.has(targetId)) return; // never connect db directly to a flow
       (upstreamTables || []).forEach(function(t) {
         var dbName = t.database && t.database.name ? t.database.name : null;
-        if (!dbName) return; // skip tables with no database
+        if (!dbName) return;
         var dbKey = 'db:' + dbName;
         if (!dbNodes[dbKey]) dbNodes[dbKey] = { key: dbKey, name: dbName };
         var edgeKey = dbKey + '|' + targetId;
