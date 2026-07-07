@@ -677,10 +677,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var meaningfulFlows=[];
     (raw.downstreamFlows||[]).forEach(function(fl) {
       var dsOutputs=(fl.downstreamDatasources||[]).filter(function(ds) {
-        // Only include this output if it feeds a workbook that directly uses the hero
-        return (ds.downstreamWorkbooks||[]).some(function(wb) {
+        // Only include this output if:
+        // 1. The hero is listed as one of its upstream datasources, AND
+        // 2. It feeds at least one workbook that directly uses the hero
+        var heroIsInput = (ds.upstreamDatasources||[]).some(function(up) {
+          return (up.luid || up.name) === heroLuid;
+        });
+        var feedsHeroWb = (ds.downstreamWorkbooks||[]).some(function(wb) {
           return heroWbIds.has(wb.luid || wb.name);
         });
+        return heroIsInput && feedsHeroWb;
       });
       if (dsOutputs.length>0) meaningfulFlows.push({flow:fl,outputs:dsOutputs});
     });
