@@ -671,13 +671,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     allDs.push({name:heroName,luid:heroLuid});
     var downWbs=[],downWbIds=new Set(),downDs=[],downDsIds=new Set(),downFlows=[];
     function addDownWb(wb) { var wbId=wb.luid||wb.name; if (!wbId||downWbIds.has(wbId)) return wbId; downWbIds.add(wbId); downWbs.push({luid:wb.luid,name:wb.name}); return wbId; }
-    // Build set of workbook luids that actually consume the hero
+    // Only the workbooks that directly consume the hero
     var heroWbIds = new Set((raw.downstreamWorkbooks || []).map(function(wb) { return wb.luid || wb.name; }));
 
     var meaningfulFlows=[];
     (raw.downstreamFlows||[]).forEach(function(fl) {
-      // Only include downstream datasource outputs that lead to workbooks consuming the hero
       var dsOutputs=(fl.downstreamDatasources||[]).filter(function(ds) {
+        // Only include this output if it feeds a workbook that directly uses the hero
         return (ds.downstreamWorkbooks||[]).some(function(wb) {
           return heroWbIds.has(wb.luid || wb.name);
         });
