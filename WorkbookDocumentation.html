@@ -221,7 +221,7 @@
       <div class="edit-section">
         <div class="edit-section-label">Documentation</div>
         <div class="field-group"><div class="field-label">Intended Audience</div><textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea></div>
-        <div class="field-group"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea></div>
+        <div class="field-group" id="f-metrics-group"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea></div>
         <div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea></div>
       </div>
       <div class="edit-section" id="ds-fields" style="display:none">
@@ -486,7 +486,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       if (sec.querySelectorAll('.detail-field').length) body.appendChild(sec);
     }
     var isDs = activeWb && activeWb.itemType === 'Datasource';
-    section('Documentation', [['Intended Audience', doc.audience, 'text'], [isDs ? 'Key Fields / Tables' : 'Key Metrics / Fields', doc.metrics, 'text'], ['Known Limitations / Caveats', doc.caveats, 'text']]);
+    var docFields = [['Intended Audience', doc.audience, 'text']];
+    if (!isDs) docFields.push(['Key Metrics / Fields', doc.metrics, 'text']);
+    docFields.push(['Known Limitations / Caveats', doc.caveats, 'text']);
+    section('Documentation', docFields);
     if (isDs) {
       section('Data Source Details', [
         ['Status',              doc.status,       'text'],
@@ -541,6 +544,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var doc = docCache[activeWb.luid] || {};
     $('ds-fields').style.display = isDs ? '' : 'none';
     $('ds-key-fields').style.display = isDs ? '' : 'none';
+    $('f-metrics-group').style.display = isDs ? 'none' : '';
     if (isDs) {
       $('f-status').value      = doc.status      || '';
       $('f-best-used').value   = doc.bestUsed    || '';
