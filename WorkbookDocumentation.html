@@ -226,6 +226,15 @@
       </div>
       <div class="edit-section" id="ds-fields" style="display:none">
         <div class="edit-section-label">Data Source Details</div>
+        <div class="field-group"><div class="field-label">Status</div>
+          <select id="f-status" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px">
+            <option value="">— Select status —</option>
+            <option value="Active">Active</option>
+            <option value="Deprecated">Deprecated</option>
+            <option value="In Development">In Development</option>
+          </select>
+        </div>
+        <div class="field-group"><div class="field-label">Best Used For</div><input type="text" id="f-best-used" placeholder="e.g. Weekly margin reporting for the Energy team" /></div>
         <div class="field-group"><div class="field-label">Source System</div><input type="text" id="f-source-system" placeholder="e.g. Agvance, SAP, SharePoint, Excel" /></div>
         <div class="field-group"><div class="field-label">Refresh Schedule</div><input type="text" id="f-refresh" placeholder="e.g. Daily at 6am, Manual, Live connection" /></div>
         <div class="field-group"><div class="field-label">Data Owner / Steward</div><input type="text" id="f-steward" placeholder="Name or email of the person responsible for this data" /></div>
@@ -239,6 +248,17 @@
           </div>
           <textarea id="f-rls-desc" rows="2" placeholder="Describe how row-level security works…" style="display:none"></textarea>
         </div>
+        <div class="field-group">
+          <div class="field-label" style="margin-bottom:8px">Known Issues</div>
+          <textarea id="f-known-issues" rows="2" placeholder="e.g. Net Volume is incorrect for inter-company transfers prior to Jan 2024"></textarea>
+        </div>
+      </div>
+
+      <!-- Key Fields catalog — datasource only -->
+      <div class="edit-section" id="ds-key-fields" style="display:none">
+        <div class="edit-section-label">Key Fields</div>
+        <div id="key-fields-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+        <button class="btn btn-ghost btn-sm" id="btn-add-field" type="button">+ Add Field</button>
       </div>
       <div class="edit-section">
         <div class="edit-section-label">Ownership</div>
@@ -288,7 +308,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   if (new URLSearchParams(window.location.search).get('config') === '1') return;
 
   var flowUrl = '', workbooks = [], vcTables = [], docCache = {}, lineageCache = {};
-  var activeWb = null, activeType = 'Workbook', editTags = [], editLog = [];
+  var activeWb = null, activeType = 'Workbook', editTags = [], editLog = [], editFields = [];
   var hiddenNodes = new Set(), currentGraph = null;
 
   function $(id) { return document.getElementById(id); }
@@ -467,7 +487,46 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     section('Documentation', [['Intended Audience', doc.audience, 'text'], [isDs ? 'Key Fields / Tables' : 'Key Metrics / Fields', doc.metrics, 'text'], ['Known Limitations / Caveats', doc.caveats, 'text']]);
-    if (isDs) { section('Data Source Details', [['Source System', doc.sourceSystem, 'text'], ['Refresh Schedule', doc.refresh, 'text'], ['Data Owner / Steward', doc.steward, 'text'], ['Row-Level Security', doc.rlsEnabled ? ('Yes \u2014 ' + (doc.rlsDesc||'No description provided.')) : 'No', 'text']]); }
+    if (isDs) {
+      section('Data Source Details', [
+        ['Status',              doc.status,       'text'],
+        ['Best Used For',       doc.bestUsed,     'text'],
+        ['Source System',       doc.sourceSystem, 'text'],
+        ['Refresh Schedule',    doc.refresh,      'text'],
+        ['Data Owner / Steward',doc.steward,      'text'],
+        ['Known Issues',        doc.knownIssues,  'text'],
+        ['Row-Level Security',  doc.rlsEnabled ? ('Yes \u2014 ' + (doc.rlsDesc||'No description provided.')) : 'No', 'text'],
+      ]);
+      if (doc.keyFields && doc.keyFields.length) {
+        // Render key fields as a special section
+        var sec = document.createElement('div'); sec.className = 'detail-section';
+        sec.innerHTML = '<div class="detail-section-label">Key Fields</div>';
+        doc.keyFields.forEach(function(f) {
+          if (!f.name) return;
+          var d = document.createElement('div');
+          d.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--border)';
+          d.innerHTML =
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+              '<span style="font-size:12px;font-weight:600;color:var(--text)">' + escHtml(f.name) + '</span>' +
+              (f.calculated ? '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--accent-dim);color:var(--accent)" title="' + escHtml(f.formula||'') + '">CALC</span>' : '') +
+            '</div>' +
+            (f.desc ? '<div style="font-size:12px;color:var(--text2)">' + escHtml(f.desc) + '</div>' : '') +
+            (f.calculated && f.formula ? '<div style="font-size:11px;font-family:var(--mono);color:var(--text2);margin-top:4px;display:none" class="field-formula">' + escHtml(f.formula) + '</div>' : '');
+          // Hover to show formula
+          if (f.calculated && f.formula) {
+            var calcBadge = d.querySelector('span[title]');
+            var formulaEl = d.querySelector('.field-formula');
+            if (calcBadge && formulaEl) {
+              calcBadge.style.cursor = 'pointer';
+              calcBadge.addEventListener('mouseenter', function(){ formulaEl.style.display='block'; });
+              calcBadge.addEventListener('mouseleave', function(){ formulaEl.style.display='none'; });
+            }
+          }
+          sec.appendChild(d);
+        });
+        body.appendChild(sec);
+      }
+    }
     section('Ownership', [['Last Reviewed', doc.reviewed, 'text']]);
     section('Tags', [['Tags', doc.tags, 'tags']]);
     section('Change Log', [['Change Log', doc.changelog, 'log']]);
@@ -481,7 +540,20 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = docCache[activeWb.luid] || {};
     $('ds-fields').style.display = isDs ? '' : 'none';
-    if (isDs) { $('f-source-system').value = doc.sourceSystem||''; $('f-refresh').value = doc.refresh||''; $('f-steward').value = doc.steward||''; $('f-rls-enabled').checked = !!doc.rlsEnabled; $('f-rls-desc').value = doc.rlsDesc||''; $('f-rls-desc').style.display = doc.rlsEnabled ? '' : 'none'; }
+    $('ds-key-fields').style.display = isDs ? '' : 'none';
+    if (isDs) {
+      $('f-status').value      = doc.status      || '';
+      $('f-best-used').value   = doc.bestUsed    || '';
+      $('f-source-system').value = doc.sourceSystem||'';
+      $('f-refresh').value       = doc.refresh       || '';
+      $('f-steward').value       = doc.steward       || '';
+      $('f-known-issues').value  = doc.knownIssues   || '';
+      $('f-rls-enabled').checked = !!doc.rlsEnabled;
+      $('f-rls-desc').value      = doc.rlsDesc       || '';
+      $('f-rls-desc').style.display = doc.rlsEnabled ? '' : 'none';
+      editFields = [].concat(doc.keyFields || []);
+      renderEditFields();
+    }
     editTags = [].concat(doc.tags||[]); editLog = [].concat(doc.changelog||[]);
     $('f-audience').value = doc.audience||''; $('f-metrics').value = doc.metrics||''; $('f-caveats').value = doc.caveats||''; $('f-reviewed').value = doc.reviewed||'';
     $('new-log-date').value = todayISO(); $('new-log-note').value = '';
@@ -536,12 +608,56 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   });
   $('new-log-note').addEventListener('keydown', function(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); } });
 
-  $('btn-save').addEventListener('click', async function() {
+  function renderEditFields() {
+    var list = $('key-fields-list'); list.innerHTML = '';
+    editFields.forEach(function(f, i) {
+      var row = document.createElement('div');
+      row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;display:flex;flex-direction:column;gap:8px';
+      row.innerHTML =
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<input type="text" placeholder="Field name" value="' + escHtml(f.name||'') + '" style="flex:1" data-fi="' + i + '" data-fk="name" />' +
+          '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);white-space:nowrap;cursor:pointer">' +
+            '<input type="checkbox"' + (f.calculated ? ' checked' : '') + ' style="accent-color:var(--accent);width:auto;padding:0" data-fi="' + i + '" data-fk="calculated" /> Calculated' +
+          '</label>' +
+          '<button data-fi="' + i + '" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0" title="Remove">\u00d7</button>' +
+        '</div>' +
+        '<div data-calc-row="' + i + '" style="' + (f.calculated ? '' : 'display:none') + '">' +
+          '<input type="text" placeholder="Formula e.g. SUM([Sales]) / [Units]" value="' + escHtml(f.formula||'') + '" style="font-family:var(--mono);font-size:11px" data-fi="' + i + '" data-fk="formula" />' +
+        '</div>' +
+        '<textarea placeholder="Description — what this field means and any caveats" rows="2" data-fi="' + i + '" data-fk="desc">' + escHtml(f.desc||'') + '</textarea>';
+      // Remove button
+      row.querySelector('button').addEventListener('click', function() { editFields.splice(i,1); renderEditFields(); });
+      // Input changes
+      row.querySelectorAll('input[data-fk],textarea[data-fk]').forEach(function(el) {
+        el.addEventListener('change', function() {
+          var idx = parseInt(this.dataset.fi), key = this.dataset.fk;
+          if (key === 'calculated') {
+            editFields[idx][key] = this.checked;
+            row.querySelector('[data-calc-row="'+idx+'"]').style.display = this.checked ? '' : 'none';
+          } else {
+            editFields[idx][key] = this.value;
+          }
+        });
+        el.addEventListener('input', function() {
+          if (this.dataset.fk !== 'calculated') editFields[parseInt(this.dataset.fi)][this.dataset.fk] = this.value;
+        });
+      });
+      list.appendChild(row);
+    });
+  }
+
+  $('btn-add-field').addEventListener('click', function() {
+    editFields.push({ name: '', calculated: false, formula: '', desc: '' });
+    renderEditFields();
+    // Focus the new field name input
+    var inputs = $('key-fields-list').querySelectorAll('input[data-fk="name"]');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  });
     if (!flowUrl) { showError('edit-error', 'Flow URL not configured.'); return; }
     setStatus('Saving\u2026', 'saving'); $('btn-save').disabled = true; showError('edit-error', '');
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     var doc = { luid: activeWb.luid, name: activeWb.name, project: activeWb.project, owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType, audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(), caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value, tags: editTags, changelog: editLog, savedAt: new Date().toISOString() };
-    if (isDs) { doc.sourceSystem = $('f-source-system').value.trim(); doc.refresh = $('f-refresh').value.trim(); doc.steward = $('f-steward').value.trim(); doc.rlsEnabled = $('f-rls-enabled').checked; doc.rlsDesc = $('f-rls-desc').value.trim(); }
+    if (isDs) { doc.status = $('f-status').value; doc.bestUsed = $('f-best-used').value.trim(); doc.sourceSystem = $('f-source-system').value.trim(); doc.refresh = $('f-refresh').value.trim(); doc.steward = $('f-steward').value.trim(); doc.knownIssues = $('f-known-issues').value.trim(); doc.rlsEnabled = $('f-rls-enabled').checked; doc.rlsDesc = $('f-rls-desc').value.trim(); doc.keyFields = editFields.filter(function(f){ return f.name; }); }
     try {
       await callFlow({ action: 'save', luid: activeWb.luid, doc: doc });
       docCache[activeWb.luid] = doc; renderList(); setStatus('Saved', 'saved');
