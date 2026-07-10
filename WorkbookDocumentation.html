@@ -653,6 +653,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var inputs = $('key-fields-list').querySelectorAll('input[data-fk="name"]');
     if (inputs.length) inputs[inputs.length-1].focus();
   });
+
+  $('btn-save').addEventListener('click', async function() {
     if (!flowUrl) { showError('edit-error', 'Flow URL not configured.'); return; }
     setStatus('Saving\u2026', 'saving'); $('btn-save').disabled = true; showError('edit-error', '');
     var isDs = activeWb && activeWb.itemType === 'Datasource';
