@@ -232,6 +232,7 @@
             <option value="Active">Active</option>
             <option value="Deprecated">Deprecated</option>
             <option value="In Development">In Development</option>
+            <option value="Test">Test</option>
           </select>
         </div>
         <div class="field-group"><div class="field-label">Best Used For</div><input type="text" id="f-best-used" placeholder="e.g. Weekly margin reporting for the Energy team" /></div>
@@ -403,6 +404,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         if (status === 'Active')              badgeHtml = '<span class="doc-badge" style="background:var(--success-bg);color:var(--success)">Active</span>';
         else if (status === 'Deprecated')     badgeHtml = '<span class="doc-badge" style="background:var(--danger-bg);color:var(--danger)">Deprecated</span>';
         else if (status === 'In Development') badgeHtml = '<span class="doc-badge" style="background:rgba(245,158,11,.15);color:var(--warn)">In Dev</span>';
+        else if (status === 'Test')           badgeHtml = '<span class="doc-badge" style="background:rgba(99,102,241,.15);color:#6366f1">Test</span>';
         else if (status === 'Documented')     badgeHtml = '<span class="doc-badge yes">Documented</span>';
         else                                  badgeHtml = '<span class="doc-badge no">No docs</span>';
       }
