@@ -396,7 +396,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (!list.length) { empty.style.display = 'block'; return; }
     empty.style.display = 'none';
     list.forEach(function(wb) {
-      var isVct = !!wb.isVcTable, hasDoc = !isVct && !!docCache[wb.luid];
+      var isVct = !!wb.isVcTable;
+      var status = !isVct ? docCache[wb.luid] : null;
+      var badgeHtml = '';
+      if (!isVct) {
+        if (status === 'Active')              badgeHtml = '<span class="doc-badge" style="background:var(--success-bg);color:var(--success)">Active</span>';
+        else if (status === 'Deprecated')     badgeHtml = '<span class="doc-badge" style="background:var(--danger-bg);color:var(--danger)">Deprecated</span>';
+        else if (status === 'In Development') badgeHtml = '<span class="doc-badge" style="background:rgba(245,158,11,.15);color:var(--warn)">In Dev</span>';
+        else if (status === 'Documented')     badgeHtml = '<span class="doc-badge yes">Documented</span>';
+        else                                  badgeHtml = '<span class="doc-badge no">No docs</span>';
+      }
       var row = document.createElement('div');
       row.className = 'wb-row'; row.dataset.luid = wb.luid;
       var metaParts = isVct
@@ -406,7 +415,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         '<div class="wb-row-main"><div class="wb-row-name">' + escHtml(wb.name||'\u2014') + '</div><div class="wb-row-meta">' + escHtml(metaParts) + '</div></div>' +
         (isVct ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;flex-shrink:0">VC TABLE</span>' : '') +
         (!isVct && wb.certified ? '<span class="cert-badge" title="Certified">\ud83c\udfc5</span>' : '') +
-        (!isVct ? '<span class="doc-badge ' + (hasDoc?'yes':'no') + '">' + (hasDoc?'Documented':'No docs') + '</span>' : '') +
+        (!isVct ? badgeHtml : '') +
         '<span class="wb-row-arrow">\u203a</span>';
       row.addEventListener('click', function() { openDetail(wb); });
       scroll.appendChild(row);
@@ -441,7 +450,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       wb.description ? '<span style="color:var(--text);font-family:var(--sans)">' + escHtml(wb.description) + '</span>' : null,
     ].filter(Boolean).join('<br>');
 
-    if (!wb.isVcTable && (docCache[wb.luid] === undefined || docCache[wb.luid] === true || docCache[wb.luid] === null)) {
+    if (!wb.isVcTable && (docCache[wb.luid] === undefined || docCache[wb.luid] === null || typeof docCache[wb.luid] === 'string')) {
       setStatus('Loading\u2026');
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
@@ -821,6 +830,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var res = await callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType });
       var webiRes = null;
       if (wb.itemType === 'Datasource') {
+        await new Promise(function(r){ setTimeout(r, 3000); });
         try {
           var wr = await callFlow({ action: 'get_webi_links', name: wb.name });
           if (wr && Array.isArray(wr.webi_links)) webiRes = wr;
@@ -1002,9 +1012,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       try {
         var res = await callFlow({ action: 'list' });
         var rawLuids=(res&&res.luids)?res.luids:[];
-        var flatLuids=[].concat.apply([],rawLuids).map(function(x){return x.luid||x;});
-        var documented=new Set(flatLuids);
-        workbooks.forEach(function(w){if(documented.has(w.luid))docCache[w.luid]=true;});
+        var flat=[].concat.apply([],rawLuids);
+        flat.forEach(function(x){
+          var filename=(x.luid||x).replace('.json','');
+          // filename is either "{luid}" or "{luid}_{status}" e.g. "abc-123_Active"
+          // luids contain hyphens but not underscores, so split on first underscore after the luid
+          // luid format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars)
+          var luid = filename.substring(0, 36);
+          var status = filename.length > 36 ? filename.substring(37) : 'Documented';
+          if (luid) docCache[luid] = status || 'Documented';
+        });
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
       try {
