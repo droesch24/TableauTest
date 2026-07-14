@@ -821,7 +821,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var res = await callFlow({ action: 'lineage', luid: wb.luid, itemType: wb.itemType });
       var webiRes = null;
       if (wb.itemType === 'Datasource') {
-        try { webiRes = await callFlow({ action: 'get_webi_links', name: wb.name }); } catch(e) {}
+        try {
+          var wr = await callFlow({ action: 'get_webi_links', name: wb.name });
+          if (wr && Array.isArray(wr.webi_links)) webiRes = wr;
+        } catch(e) { /* webi links optional — don't block lineage */ }
       }
       loading.style.display='none';
       if (res && res.graph) {
@@ -833,7 +836,14 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         }
         lineageCache[wb.luid] = graph;
         currentGraph = graph;
-        renderLineageGraph(graph);
+        try {
+          renderLineageGraph(graph);
+        } catch(renderErr) {
+          console.error('renderLineageGraph error:', renderErr);
+          loading.style.display='none';
+          empty.textContent='Render error: '+renderErr.message;
+          empty.style.display='block';
+        }
       } else {
         empty.style.display='block';
       }
