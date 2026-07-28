@@ -1,3 +1,4 @@
+//2:51
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -196,10 +197,13 @@
 
     <!-- Dashboards tab -->
     <div id="panel-dashboards" class="tab-panel">
-      <div id="dashboards-scroll" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
-        <div id="dashboards-loading" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px;color:var(--text2);font-size:12px"><div class="spinner"></div><span>Loading dashboards&#8230;</span></div>
-        <div id="dashboards-empty" style="display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px;font-style:italic">No dashboards found.</div>
-        <div id="dashboards-list"></div>
+      <div id="dashboards-loading" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px;color:var(--text2);font-size:12px"><div class="spinner"></div><span>Loading dashboards&#8230;</span></div>
+      <div id="dashboards-empty" style="display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px;font-style:italic">No dashboards found.</div>
+      <div id="dashboards-container" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+        <div id="dashboards-tab-bar" style="display:flex;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;padding:0 14px;gap:4px"></div>
+        <div id="dashboards-scroll" style="flex:1;overflow-y:auto;padding:14px">
+          <div id="dashboards-list"></div>
+        </div>
       </div>
     </div>
     <div id="panel-lineage" class="tab-panel">
@@ -855,166 +859,207 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   }
 
   async function loadDashboards(wb) {
-    var list    = $('dashboards-list');
     var loading = $('dashboards-loading');
     var empty   = $('dashboards-empty');
+    var container = $('dashboards-container');
     if (dashboardCache[wb.luid]) { renderDashboards(wb); return; }
-    list.innerHTML = ''; empty.style.display = 'none'; loading.style.display = 'flex';
+    container.style.display = 'none'; empty.style.display = 'none'; loading.style.display = 'flex';
     try {
       var res = await callFlow({ action: 'get_sheets', luid: wb.luid });
       loading.style.display = 'none';
       if (res && res.sheets) {
         var sheets = Array.isArray(res.sheets) ? res.sheets : [res.sheets];
-        var dashboards = sheets.filter(function(s) { return s && s.name; }); // all results are dashboards
+        var dashboards = sheets.filter(function(s) { return s && s.name; });
         var existingDoc = (typeof docCache[wb.luid] === 'object' && docCache[wb.luid]) ? docCache[wb.luid] : {};
         var savedDashboards = existingDoc.dashboards || [];
         dashboardCache[wb.luid] = dashboards.map(function(s) {
           var saved = savedDashboards.find(function(d) { return d.name === s.name; }) || {};
-          return { name: s.name, index: s.index, desc: saved.desc || '', refresh: saved.refresh || '', filters: saved.filters || '', caveats: saved.caveats || '' };
+          return { name: s.name, index: s.index, desc: saved.desc || '', refresh: saved.refresh || '', caveats: saved.caveats || '', filters: saved.filters || [], keyMetrics: saved.keyMetrics || [] };
         });
         renderDashboards(wb);
       } else { empty.style.display = 'block'; }
     } catch(e) { loading.style.display = 'none'; empty.textContent = 'Could not load dashboards: ' + e.message; empty.style.display = 'block'; }
   }
 
+  var activeDashboardIdx = 0;
+
   function renderDashboards(wb) {
-    var list = $('dashboards-list'); list.innerHTML = '';
+    var tabBar   = $('dashboards-tab-bar');
+    var list     = $('dashboards-list');
+    var container = $('dashboards-container');
+    var empty    = $('dashboards-empty');
     var dashboards = dashboardCache[wb.luid] || [];
-    if (!dashboards.length) { $('dashboards-empty').style.display = 'block'; return; }
-    $('dashboards-empty').style.display = 'none';
+    if (!dashboards.length) { empty.style.display = 'block'; container.style.display = 'none'; return; }
+    empty.style.display = 'none';
+    container.style.display = 'flex';
+
+    // Build tab bar
+    tabBar.innerHTML = '';
     dashboards.forEach(function(d, i) {
-      var card = document.createElement('div');
-      card.className = 'detail-section';
-      card.style.cssText = 'display:flex;flex-direction:column;gap:10px';
-
-      // View mode
-      var viewEl = document.createElement('div');
-      viewEl.id = 'db-view-' + i;
-      var hasContent = d.desc || d.caveats || d.refresh || (d.filters && d.filters.length) || (d.keyMetrics && d.keyMetrics.length);
-      var viewHtml =
-        (d.desc    ? '<div class="detail-field"><div class="detail-field-label">Purpose</div><div class="detail-field-value">' + escHtml(d.desc) + '</div></div>' : '') +
-        (d.refresh ? '<div class="detail-field"><div class="detail-field-label">Refresh Frequency</div><div class="detail-field-value">' + escHtml(d.refresh) + '</div></div>' : '') +
-        (d.caveats ? '<div class="detail-field"><div class="detail-field-label">Known Limitations / Caveats</div><div class="detail-field-value">' + escHtml(d.caveats) + '</div></div>' : '');
-      if (d.filters && d.filters.length) {
-        viewHtml += '<div class="detail-field"><div class="detail-field-label">Filters</div>';
-        d.filters.forEach(function(f) {
-          if (!f.name) return;
-          viewHtml += '<div style="padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;font-weight:600;color:var(--text)">' + escHtml(f.name) + '</span>' + (f.desc ? '<div style="font-size:12px;color:var(--text2);margin-top:2px">' + escHtml(f.desc) + '</div>' : '') + '</div>';
+      var tab = document.createElement('button');
+      tab.style.cssText = 'padding:8px 14px;font-size:12px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 150ms ease;margin-bottom:-1px;font-family:var(--sans);white-space:nowrap;color:var(--text2)';
+      tab.textContent = d.name;
+      tab.dataset.idx = i;
+      tab.addEventListener('click', function() {
+        activeDashboardIdx = i;
+        renderDashboardTab(wb, i);
+        tabBar.querySelectorAll('button').forEach(function(b) {
+          var active = parseInt(b.dataset.idx) === i;
+          b.style.color = active ? 'var(--accent)' : 'var(--text2)';
+          b.style.borderBottomColor = active ? 'var(--accent)' : 'transparent';
         });
-        viewHtml += '</div>';
-      }
-      if (d.keyMetrics && d.keyMetrics.length) {
-        viewHtml += '<div class="detail-field"><div class="detail-field-label">Key Metrics</div>';
-        d.keyMetrics.forEach(function(f) {
-          if (!f.name) return;
-          viewHtml += '<div style="padding:5px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span style="font-size:12px;font-weight:600;color:var(--text)">' + escHtml(f.name) + '</span>' + (f.calculated ? '<span class="calc-badge" style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--accent-dim);color:var(--accent);cursor:pointer" data-formula="' + escHtml(f.formula||'') + '">CALC</span>' : '') + '</div>' + (f.desc ? '<div style="font-size:12px;color:var(--text2)">' + escHtml(f.desc) + '</div>' : '') + (f.calculated && f.formula ? '<div style="font-size:11px;font-family:var(--mono);color:var(--text2);margin-top:2px;display:none" class="db-formula">' + escHtml(f.formula) + '</div>' : '') + '</div>';
-        });
-        viewHtml += '</div>';
-      }
-      if (!hasContent) viewHtml += '<div style="font-size:12px;color:var(--text2);font-style:italic">No documentation yet.</div>';
-      viewEl.innerHTML = viewHtml;
-      viewEl.querySelectorAll('.calc-badge').forEach(function(badge) {
-        var formulaEl = badge.parentElement.parentElement.querySelector('.db-formula');
-        if (formulaEl) { badge.addEventListener('mouseenter', function(){ formulaEl.style.display='block'; }); badge.addEventListener('mouseleave', function(){ formulaEl.style.display='none'; }); }
       });
-
-      // Edit mode
-      var editEl = document.createElement('div');
-      editEl.id = 'db-edit-' + i;
-      editEl.style.cssText = 'display:none;flex-direction:column;gap:8px';
-      editEl.innerHTML =
-        '<div class="field-group"><div class="field-label">Purpose</div><textarea rows="2" placeholder="What is this dashboard for?" id="db-desc-' + i + '">' + escHtml(d.desc||'') + '</textarea></div>' +
-        '<div class="field-group"><div class="field-label">Refresh Frequency</div><input type="text" id="db-refresh-' + i + '" value="' + escHtml(d.refresh||'') + '" placeholder="e.g. Daily at 6am, Real-time, Manual" /></div>' +
-        '<div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea rows="2" placeholder="Anything that could mislead a reader" id="db-caveats-' + i + '">' + escHtml(d.caveats||'') + '</textarea></div>';
-
-      // Filters catalog
-      var dbFilters = [].concat(d.filters || []);
-      var filtersSection = document.createElement('div');
-      filtersSection.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-      filtersSection.innerHTML = '<div class="field-label" style="margin-bottom:2px">Filters</div>';
-      var filtersList = document.createElement('div');
-      filtersList.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-      function renderFiltersList() {
-        filtersList.innerHTML = '';
-        dbFilters.forEach(function(f, fi) {
-          var row = document.createElement('div');
-          row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;display:flex;flex-direction:column;gap:6px';
-          row.innerHTML = '<div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Filter name" value="' + escHtml(f.name||'') + '" style="flex:1" /><button style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0">×</button></div><textarea rows="1" placeholder="How does this filter work?" style="resize:none">' + escHtml(f.desc||'') + '</textarea>';
-          row.querySelector('button').addEventListener('click', function(){ dbFilters.splice(fi,1); renderFiltersList(); });
-          var els = row.querySelectorAll('input,textarea');
-          els[0].addEventListener('input', function(){ dbFilters[fi].name=this.value; });
-          els[1].addEventListener('input', function(){ dbFilters[fi].desc=this.value; });
-          filtersList.appendChild(row);
-        });
-      }
-      renderFiltersList();
-      var addFilterBtn = document.createElement('button');
-      addFilterBtn.className = 'btn btn-ghost btn-sm'; addFilterBtn.textContent = '+ Add Filter';
-      addFilterBtn.addEventListener('click', function(){ dbFilters.push({name:'',desc:''}); renderFiltersList(); });
-      filtersSection.appendChild(filtersList); filtersSection.appendChild(addFilterBtn);
-      editEl.appendChild(filtersSection);
-
-      // Key Metrics catalog
-      var dbMetrics = [].concat(d.keyMetrics || []);
-      var metricsSection = document.createElement('div');
-      metricsSection.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-      metricsSection.innerHTML = '<div class="field-label" style="margin-bottom:2px">Key Metrics</div>';
-      var metricsList = document.createElement('div');
-      metricsList.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-      function renderMetricsList() {
-        metricsList.innerHTML = '';
-        dbMetrics.forEach(function(f, mi) {
-          var row = document.createElement('div');
-          row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;display:flex;flex-direction:column;gap:6px';
-          row.innerHTML = '<div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Metric name" value="' + escHtml(f.name||'') + '" style="flex:1" /><label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);white-space:nowrap;cursor:pointer"><input type="checkbox"' + (f.calculated?' checked':'') + ' style="accent-color:var(--accent);width:auto;padding:0" /> Calculated</label><button style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0">×</button></div><div style="' + (f.calculated?'':'display:none') + '"><input type="text" placeholder="Formula" value="' + escHtml(f.formula||'') + '" style="font-family:var(--mono);font-size:11px" /></div><textarea rows="1" placeholder="What this metric means" style="resize:none">' + escHtml(f.desc||'') + '</textarea>';
-          var nameIn = row.querySelectorAll('input[type=text]')[0];
-          var calcCb = row.querySelector('input[type=checkbox]');
-          var formulaDiv = row.querySelectorAll('div')[0];
-          var formulaIn = row.querySelectorAll('input[type=text]')[1];
-          var descTa = row.querySelector('textarea');
-          nameIn.addEventListener('input', function(){ dbMetrics[mi].name=this.value; });
-          calcCb.addEventListener('change', function(){ dbMetrics[mi].calculated=this.checked; formulaDiv.style.display=this.checked?'':'none'; });
-          if (formulaIn) formulaIn.addEventListener('input', function(){ dbMetrics[mi].formula=this.value; });
-          descTa.addEventListener('input', function(){ dbMetrics[mi].desc=this.value; });
-          row.querySelector('button').addEventListener('click', function(){ dbMetrics.splice(mi,1); renderMetricsList(); });
-          metricsList.appendChild(row);
-        });
-      }
-      renderMetricsList();
-      var addMetricBtn = document.createElement('button');
-      addMetricBtn.className = 'btn btn-ghost btn-sm'; addMetricBtn.textContent = '+ Add Metric';
-      addMetricBtn.addEventListener('click', function(){ dbMetrics.push({name:'',calculated:false,formula:'',desc:''}); renderMetricsList(); });
-      metricsSection.appendChild(metricsList); metricsSection.appendChild(addMetricBtn);
-      editEl.appendChild(metricsSection);
-
-      // Save/Cancel
-      var btnRow = document.createElement('div');
-      btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
-      btnRow.innerHTML = '<button class="btn btn-ghost btn-sm" id="db-cancel-' + i + '">Cancel</button><button class="btn btn-primary btn-sm" id="db-save-' + i + '">Save</button>';
-      editEl.appendChild(btnRow);
-
-      var headerDiv = document.createElement('div');
-      headerDiv.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
-      headerDiv.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--text)">' + escHtml(d.name) + '</div><button class="btn btn-ghost btn-sm" id="db-edit-btn-' + i + '">Edit</button>';
-      card.appendChild(headerDiv); card.appendChild(viewEl); card.appendChild(editEl);
-
-      card.querySelector('#db-edit-btn-' + i).addEventListener('click', function(){ viewEl.style.display='none'; editEl.style.display='flex'; });
-      card.querySelector('#db-cancel-' + i).addEventListener('click', function(){ editEl.style.display='none'; viewEl.style.display=''; });
-      (function(idx, dbF, dbM){
-        card.querySelector('#db-save-' + idx).addEventListener('click', async function() {
-          dashboardCache[wb.luid][idx].desc       = $('db-desc-'+idx).value.trim();
-          dashboardCache[wb.luid][idx].refresh    = $('db-refresh-'+idx).value.trim();
-          dashboardCache[wb.luid][idx].caveats    = $('db-caveats-'+idx).value.trim();
-          dashboardCache[wb.luid][idx].filters    = dbF.filter(function(f){return f.name;});
-          dashboardCache[wb.luid][idx].keyMetrics = dbM.filter(function(f){return f.name;});
-          var doc = (typeof docCache[wb.luid]==='object'&&docCache[wb.luid]) ? docCache[wb.luid] : {};
-          doc.dashboards = dashboardCache[wb.luid]; doc.luid = wb.luid; doc.name = wb.name; doc.itemType = wb.itemType; doc.savedAt = new Date().toISOString();
-          try { setStatus('Saving\u2026','saving'); await callFlow({ action:'save', luid:wb.luid, doc:doc }); docCache[wb.luid] = doc; setStatus('Saved','saved'); setTimeout(function(){setStatus('Ready');},2500); delete dashboardCache[wb.luid]; loadDashboards(wb); }
-          catch(e) { setStatus('Save failed','error'); }
-        });
-      })(i, dbFilters, dbMetrics);
-      list.appendChild(card);
+      tabBar.appendChild(tab);
     });
+
+    // Activate first tab
+    activeDashboardIdx = 0;
+    renderDashboardTab(wb, 0);
+    var firstTab = tabBar.querySelector('button');
+    if (firstTab) { firstTab.style.color = 'var(--accent)'; firstTab.style.borderBottomColor = 'var(--accent)'; }
+  }
+
+  function renderDashboardTab(wb, i) {
+    var list = $('dashboards-list');
+    list.innerHTML = '';
+    var dashboards = dashboardCache[wb.luid] || [];
+    var d = dashboards[i];
+    if (!d) return;
+
+    var card = document.createElement('div');
+    card.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+
+    // View mode
+    var viewEl = document.createElement('div');
+    viewEl.id = 'db-view-0';
+    var hasContent = d.desc || d.caveats || d.refresh || (d.filters && d.filters.length) || (d.keyMetrics && d.keyMetrics.length);
+    var viewHtml =
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-ghost btn-sm" id="db-edit-btn-0">Edit</button></div>' +
+      (d.desc    ? '<div class="detail-field"><div class="detail-field-label">Purpose</div><div class="detail-field-value">' + escHtml(d.desc) + '</div></div>' : '') +
+      (d.refresh ? '<div class="detail-field"><div class="detail-field-label">Refresh Frequency</div><div class="detail-field-value">' + escHtml(d.refresh) + '</div></div>' : '') +
+      (d.caveats ? '<div class="detail-field"><div class="detail-field-label">Known Limitations / Caveats</div><div class="detail-field-value">' + escHtml(d.caveats) + '</div></div>' : '');
+    if (d.filters && d.filters.length) {
+      viewHtml += '<div class="detail-section"><div class="detail-section-label">Filters</div>';
+      d.filters.forEach(function(f) {
+        if (!f.name) return;
+        viewHtml += '<div class="detail-field"><div class="detail-field-label">' + escHtml(f.name) + '</div>' + (f.desc ? '<div class="detail-field-value">' + escHtml(f.desc) + '</div>' : '') + '</div>';
+      });
+      viewHtml += '</div>';
+    }
+    if (d.keyMetrics && d.keyMetrics.length) {
+      viewHtml += '<div class="detail-section"><div class="detail-section-label">Key Metrics</div>';
+      d.keyMetrics.forEach(function(f) {
+        if (!f.name) return;
+        viewHtml += '<div class="detail-field"><div style="display:flex;align-items:center;gap:8px;margin-bottom:2px"><span style="font-size:12px;font-weight:600;color:var(--text)">' + escHtml(f.name) + '</span>' + (f.calculated ? '<span class="calc-badge" style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--accent-dim);color:var(--accent);cursor:pointer" data-formula="' + escHtml(f.formula||'') + '">CALC</span>' : '') + '</div>' + (f.desc ? '<div class="detail-field-value">' + escHtml(f.desc) + '</div>' : '') + (f.calculated && f.formula ? '<div style="font-size:11px;font-family:var(--mono);color:var(--text2);margin-top:2px;display:none" class="db-formula">' + escHtml(f.formula) + '</div>' : '') + '</div>';
+      });
+      viewHtml += '</div>';
+    }
+    if (!hasContent) viewHtml += '<div style="font-size:12px;color:var(--text2);font-style:italic;padding:16px 0">No documentation yet. Click Edit to add some.</div>';
+    viewEl.innerHTML = viewHtml;
+    viewEl.querySelectorAll('.calc-badge').forEach(function(badge) {
+      var formulaEl = badge.parentElement.parentElement.querySelector('.db-formula');
+      if (formulaEl) { badge.addEventListener('mouseenter', function(){ formulaEl.style.display='block'; }); badge.addEventListener('mouseleave', function(){ formulaEl.style.display='none'; }); }
+    });
+    card.appendChild(viewEl);
+
+    // Edit mode
+    var editEl = document.createElement('div');
+    editEl.id = 'db-edit-0';
+    editEl.style.cssText = 'display:none;flex-direction:column;gap:8px';
+    editEl.innerHTML =
+      '<div class="field-group"><div class="field-label">Purpose</div><textarea rows="2" placeholder="What is this dashboard for?" id="db-desc-0">' + escHtml(d.desc||'') + '</textarea></div>' +
+      '<div class="field-group"><div class="field-label">Refresh Frequency</div><input type="text" id="db-refresh-0" value="' + escHtml(d.refresh||'') + '" placeholder="e.g. Daily at 6am, Real-time, Manual" /></div>' +
+      '<div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea rows="2" placeholder="Anything that could mislead a reader" id="db-caveats-0">' + escHtml(d.caveats||'') + '</textarea></div>';
+
+    // Filters
+    var dbFilters = [].concat(d.filters || []);
+    var filtersSection = document.createElement('div');
+    filtersSection.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+    filtersSection.innerHTML = '<div class="field-label" style="margin-bottom:2px">Filters</div>';
+    var filtersList = document.createElement('div');
+    filtersList.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+    function renderFiltersList() {
+      filtersList.innerHTML = '';
+      dbFilters.forEach(function(f, fi) {
+        var row = document.createElement('div');
+        row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;display:flex;flex-direction:column;gap:6px';
+        row.innerHTML = '<div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Filter name" value="' + escHtml(f.name||'') + '" style="flex:1" /><button style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0">×</button></div><textarea rows="1" placeholder="How does this filter work?" style="resize:none">' + escHtml(f.desc||'') + '</textarea>';
+        row.querySelector('button').addEventListener('click', function(){ dbFilters.splice(fi,1); renderFiltersList(); });
+        var els = row.querySelectorAll('input,textarea');
+        els[0].addEventListener('input', function(){ dbFilters[fi].name=this.value; });
+        els[1].addEventListener('input', function(){ dbFilters[fi].desc=this.value; });
+        filtersList.appendChild(row);
+      });
+    }
+    renderFiltersList();
+    var addFilterBtn = document.createElement('button');
+    addFilterBtn.className = 'btn btn-ghost btn-sm'; addFilterBtn.textContent = '+ Add Filter';
+    addFilterBtn.addEventListener('click', function(){ dbFilters.push({name:'',desc:''}); renderFiltersList(); });
+    filtersSection.appendChild(filtersList); filtersSection.appendChild(addFilterBtn);
+    editEl.appendChild(filtersSection);
+
+    // Key Metrics
+    var dbMetrics = [].concat(d.keyMetrics || []);
+    var metricsSection = document.createElement('div');
+    metricsSection.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+    metricsSection.innerHTML = '<div class="field-label" style="margin-bottom:2px">Key Metrics</div>';
+    var metricsList = document.createElement('div');
+    metricsList.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+    function renderMetricsList() {
+      metricsList.innerHTML = '';
+      dbMetrics.forEach(function(f, mi) {
+        var row = document.createElement('div');
+        row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;display:flex;flex-direction:column;gap:6px';
+        row.innerHTML = '<div style="display:flex;gap:8px;align-items:center"><input type="text" placeholder="Metric name" value="' + escHtml(f.name||'') + '" style="flex:1" /><label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);white-space:nowrap;cursor:pointer"><input type="checkbox"' + (f.calculated?' checked':'') + ' style="accent-color:var(--accent);width:auto;padding:0" /> Calculated</label><button style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0">×</button></div><div style="' + (f.calculated?'':'display:none') + '"><input type="text" placeholder="Formula" value="' + escHtml(f.formula||'') + '" style="font-family:var(--mono);font-size:11px" /></div><textarea rows="1" placeholder="What this metric means" style="resize:none">' + escHtml(f.desc||'') + '</textarea>';
+        var nameIn = row.querySelectorAll('input[type=text]')[0];
+        var calcCb = row.querySelector('input[type=checkbox]');
+        var formulaDiv = row.querySelectorAll('div')[0];
+        var formulaIn = row.querySelectorAll('input[type=text]')[1];
+        var descTa = row.querySelector('textarea');
+        nameIn.addEventListener('input', function(){ dbMetrics[mi].name=this.value; });
+        calcCb.addEventListener('change', function(){ dbMetrics[mi].calculated=this.checked; formulaDiv.style.display=this.checked?'':'none'; });
+        if (formulaIn) formulaIn.addEventListener('input', function(){ dbMetrics[mi].formula=this.value; });
+        descTa.addEventListener('input', function(){ dbMetrics[mi].desc=this.value; });
+        row.querySelector('button').addEventListener('click', function(){ dbMetrics.splice(mi,1); renderMetricsList(); });
+        metricsList.appendChild(row);
+      });
+    }
+    renderMetricsList();
+    var addMetricBtn = document.createElement('button');
+    addMetricBtn.className = 'btn btn-ghost btn-sm'; addMetricBtn.textContent = '+ Add Metric';
+    addMetricBtn.addEventListener('click', function(){ dbMetrics.push({name:'',calculated:false,formula:'',desc:''}); renderMetricsList(); });
+    metricsSection.appendChild(metricsList); metricsSection.appendChild(addMetricBtn);
+    editEl.appendChild(metricsSection);
+
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
+    btnRow.innerHTML = '<button class="btn btn-ghost btn-sm" id="db-cancel-0">Cancel</button><button class="btn btn-primary btn-sm" id="db-save-0">Save</button>';
+    editEl.appendChild(btnRow);
+    card.appendChild(editEl);
+    list.appendChild(card);
+
+    // Wire edit/cancel/save
+    viewEl.querySelector('#db-edit-btn-0').addEventListener('click', function(){ viewEl.style.display='none'; editEl.style.display='flex'; });
+    editEl.querySelector('#db-cancel-0').addEventListener('click', function(){ editEl.style.display='none'; viewEl.style.display=''; });
+    (function(idx, dbF, dbM){
+      editEl.querySelector('#db-save-0').addEventListener('click', async function() {
+        dashboardCache[wb.luid][idx].desc       = $('db-desc-0').value.trim();
+        dashboardCache[wb.luid][idx].refresh    = $('db-refresh-0').value.trim();
+        dashboardCache[wb.luid][idx].caveats    = $('db-caveats-0').value.trim();
+        dashboardCache[wb.luid][idx].filters    = dbF.filter(function(f){return f.name;});
+        dashboardCache[wb.luid][idx].keyMetrics = dbM.filter(function(f){return f.name;});
+        var doc = (typeof docCache[wb.luid]==='object'&&docCache[wb.luid]) ? docCache[wb.luid] : {};
+        doc.dashboards = dashboardCache[wb.luid]; doc.luid = wb.luid; doc.name = wb.name; doc.itemType = wb.itemType; doc.savedAt = new Date().toISOString();
+        try {
+          setStatus('Saving\u2026','saving');
+          await callFlow({ action:'save', luid:wb.luid, doc:doc });
+          docCache[wb.luid] = doc; setStatus('Saved','saved');
+          setTimeout(function(){setStatus('Ready');},2500);
+          delete dashboardCache[wb.luid];
+          loadDashboards(wb);
+        } catch(e) { setStatus('Save failed','error'); }
+      });
+    })(i, dbFilters, dbMetrics);
   }
 
   async function loadLineage(wb) {
