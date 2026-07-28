@@ -946,7 +946,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       loading.style.display = 'none';
       if (res && res.sheets) {
         var sheets = Array.isArray(res.sheets) ? res.sheets : [res.sheets];
-        var dashboards = sheets.filter(function(s) { return s.sheetType === 'dashboard'; });
+        var dashboards = sheets.filter(function(s) { return s && s.name; }); // all results are dashboards
         var existingDoc = (typeof docCache[wb.luid] === 'object' && docCache[wb.luid]) ? docCache[wb.luid] : {};
         var savedDashboards = existingDoc.dashboards || [];
         dashboardCache[wb.luid] = dashboards.map(function(s) {
