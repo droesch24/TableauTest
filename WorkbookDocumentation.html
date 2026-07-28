@@ -484,7 +484,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       wb.description ? '<span style="color:var(--text);font-family:var(--sans)">' + escHtml(wb.description) + '</span>' : null,
     ].filter(Boolean).join('<br>');
 
-    if (!wb.isVcTable && (docCache[wb.luid] === undefined || docCache[wb.luid] === null || typeof docCache[wb.luid] === 'string')) {
+    if (!wb.isVcTable && typeof docCache[wb.luid] !== 'object') {
       setStatus('Loading\u2026');
       try {
         var res = await callFlow({ action: 'get', luid: wb.luid });
@@ -615,7 +615,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('f-audience').placeholder = isDs ? 'Who consumes this data source and for what purpose?' : 'Who uses this workbook and for what decisions?';
     $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables - what they mean and any definition caveats.' : 'Important measures and dimensions - what they mean and any definition caveats.';
     $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
-    var doc = docCache[activeWb.luid] || {};
+    var doc = (typeof docCache[activeWb.luid] === 'object' && docCache[activeWb.luid]) ? docCache[activeWb.luid] : {};
     $('ds-fields').style.display    = isDs ? '' : 'none';
     $('ds-key-fields').style.display = isDs ? '' : 'none';
     $('wb-key-metrics').style.display = isDs ? 'none' : '';
