@@ -576,8 +576,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   function openEdit() {
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     $('f-audience').placeholder = isDs ? 'Who consumes this data source and for what purpose?' : 'Who uses this workbook and for what decisions?';
-    $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables - what they mean and any definition caveats.' : 'Important measures and dimensions - what they mean and any definition caveats.';
-    $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = (typeof docCache[activeWb.luid] === 'object' && docCache[activeWb.luid]) ? docCache[activeWb.luid] : {};
     $('ds-fields').style.display    = isDs ? '' : 'none';
     $('ds-key-fields').style.display = isDs ? '' : 'none';
@@ -599,7 +597,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       $('f-wb-issues').value   = doc.knownIssues || '';
     }
     editTags = [].concat(doc.tags||[]); editLog = [].concat(doc.changelog||[]);
-    $('f-audience').value = doc.audience||''; $('f-metrics').value = doc.metrics||''; $('f-caveats').value = doc.caveats||''; $('f-reviewed').value = doc.reviewed||'';
+    $('f-audience').value = doc.audience||''; $('f-reviewed').value = doc.reviewed||'';
     $('new-log-date').value = todayISO(); $('new-log-note').value = '';
     renderEditTags(); renderEditLog();
     showView('edit'); $('topbar-title').textContent = 'Editing: ' + (activeWb.name||''); showError('edit-error', '');
@@ -703,7 +701,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     if (!flowUrl) { showError('edit-error', 'Flow URL not configured.'); return; }
     setStatus('Saving\u2026', 'saving'); $('btn-save').disabled = true; showError('edit-error', '');
     var isDs = activeWb && activeWb.itemType === 'Datasource';
-    var doc = { luid: activeWb.luid, name: activeWb.name, project: activeWb.project, owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType, audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(), caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value, tags: editTags, changelog: editLog, savedAt: new Date().toISOString() };
+    var doc = { luid: activeWb.luid, name: activeWb.name, project: activeWb.project, owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType, audience: $('f-audience').value.trim(), reviewed: $('f-reviewed').value, tags: editTags, changelog: editLog, savedAt: new Date().toISOString() };
     if (isDs) { doc.status = $('f-status').value; doc.bestUsed = $('f-best-used').value.trim(); doc.sourceSystem = $('f-source-system').value.trim(); doc.refresh = $('f-refresh').value.trim(); doc.steward = $('f-steward').value.trim(); doc.knownIssues = $('f-known-issues').value.trim(); doc.rlsEnabled = $('f-rls-enabled').checked; doc.rlsDesc = $('f-rls-desc').value.trim(); doc.keyFields = editFields.filter(function(f){ return f.name; }); }
     else { doc.status = $('f-wb-status').value; doc.knownIssues = $('f-wb-issues').value.trim(); }
     try {
