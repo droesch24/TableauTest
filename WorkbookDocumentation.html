@@ -241,9 +241,6 @@
           </select>
         </div>
         <div class="field-group"><div class="field-label">Intended Audience</div><textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea></div>
-        <div class="field-group"><div class="field-label">Refresh Frequency</div><input type="text" id="f-wb-refresh" placeholder="e.g. Daily at 6am, Real-time, Manual" /></div>
-        <div class="field-group"><div class="field-label">Filter Instructions</div><textarea id="f-wb-filters" rows="3" placeholder="Describe any non-obvious filters or interactions users need to know about"></textarea></div>
-        <div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea id="f-caveats" rows="3" placeholder="Data freshness, edge cases, or anything that could mislead a reader."></textarea></div>
         <div class="field-group"><div class="field-label">Known Issues</div><textarea id="f-wb-issues" rows="2" placeholder="e.g. YTD totals are incorrect for Q1 2024 due to a data migration gap"></textarea></div>
         <div class="field-group" id="f-metrics-group" style="display:none"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions - what they mean and any definition caveats."></textarea></div>
       </div>
@@ -278,12 +275,6 @@
         </div>
       </div>
 
-      <!-- Key Metrics catalog — workbooks only -->
-      <div class="edit-section" id="wb-key-metrics" style="display:none">
-        <div class="edit-section-label">Key Metrics</div>
-        <div id="key-metrics-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
-        <button class="btn btn-ghost btn-sm" id="btn-add-metric" type="button">+ Add Metric</button>
-      </div>
       <!-- Key Fields catalog — datasource only -->
       <div class="edit-section" id="ds-key-fields" style="display:none">
         <div class="edit-section-label">Key Fields</div>
@@ -532,40 +523,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     var docFields = [['Intended Audience', doc.audience, 'text']];
-    if (!isDs) docFields.push(['Refresh Frequency', doc.refresh, 'text']);
-    if (!isDs) docFields.push(['Filter Instructions', doc.filters, 'text']);
-    docFields.push(['Known Limitations / Caveats', doc.caveats, 'text']);
     docFields.push(['Known Issues', doc.knownIssues, 'text']);
     if (doc.status) docFields.unshift(['Status', doc.status, 'text']);
     section('Documentation', docFields);
 
-    // Key metrics for workbooks
-    if (!isDs && doc.keyMetrics && doc.keyMetrics.length) {
-      var secM = document.createElement('div'); secM.className = 'detail-section';
-      secM.innerHTML = '<div class="detail-section-label">Key Metrics</div>';
-      doc.keyMetrics.forEach(function(f) {
-        if (!f.name) return;
-        var d = document.createElement('div');
-        d.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--border)';
-        d.innerHTML =
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
-            '<span style="font-size:12px;font-weight:600;color:var(--text)">' + escHtml(f.name) + '</span>' +
-            (f.calculated ? '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--accent-dim);color:var(--accent);cursor:pointer" title="' + escHtml(f.formula||'') + '">CALC</span>' : '') +
-          '</div>' +
-          (f.desc ? '<div style="font-size:12px;color:var(--text2)">' + escHtml(f.desc) + '</div>' : '') +
-          (f.calculated && f.formula ? '<div style="font-size:11px;font-family:var(--mono);color:var(--text2);margin-top:4px;display:none" class="metric-formula">' + escHtml(f.formula) + '</div>' : '');
-        if (f.calculated && f.formula) {
-          var badge = d.querySelector('span[title]');
-          var formulaEl = d.querySelector('.metric-formula');
-          if (badge && formulaEl) {
-            badge.addEventListener('mouseenter', function(){ formulaEl.style.display='block'; });
-            badge.addEventListener('mouseleave', function(){ formulaEl.style.display='none'; });
-          }
-        }
-        secM.appendChild(d);
-      });
-      body.appendChild(secM);
-    }
     if (isDs) {
       section('Data Source Details', [
         ['Status',              doc.status,       'text'],
@@ -620,8 +581,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var doc = (typeof docCache[activeWb.luid] === 'object' && docCache[activeWb.luid]) ? docCache[activeWb.luid] : {};
     $('ds-fields').style.display    = isDs ? '' : 'none';
     $('ds-key-fields').style.display = isDs ? '' : 'none';
-    $('wb-key-metrics').style.display = isDs ? 'none' : '';
-    $('f-metrics-group').style.display = 'none'; // always hidden now
+    $('f-metrics-group').style.display = 'none';
     if (isDs) {
       $('f-status').value      = doc.status      || '';
       $('f-best-used').value   = doc.bestUsed    || '';
@@ -636,11 +596,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       renderEditFields();
     } else {
       $('f-wb-status').value   = doc.status    || '';
-      $('f-wb-refresh').value  = doc.refresh   || '';
-      $('f-wb-filters').value  = doc.filters   || '';
       $('f-wb-issues').value   = doc.knownIssues || '';
-      editFields = [].concat(doc.keyMetrics || []);
-      renderEditMetrics();
     }
     editTags = [].concat(doc.tags||[]); editLog = [].concat(doc.changelog||[]);
     $('f-audience').value = doc.audience||''; $('f-metrics').value = doc.metrics||''; $('f-caveats').value = doc.caveats||''; $('f-reviewed').value = doc.reviewed||'';
@@ -696,44 +652,6 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   });
   $('new-log-note').addEventListener('keydown', function(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); } });
 
-  function renderEditMetrics() {
-    var list = $('key-metrics-list'); list.innerHTML = '';
-    editFields.forEach(function(f, i) {
-      var row = document.createElement('div');
-      row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;display:flex;flex-direction:column;gap:8px';
-      row.innerHTML =
-        '<div style="display:flex;gap:8px;align-items:center">' +
-          '<input type="text" placeholder="Metric name" value="' + escHtml(f.name||'') + '" style="flex:1" data-mi="' + i + '" data-mk="name" />' +
-          '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);white-space:nowrap;cursor:pointer">' +
-            '<input type="checkbox"' + (f.calculated ? ' checked' : '') + ' style="accent-color:var(--accent);width:auto;padding:0" data-mi="' + i + '" data-mk="calculated" /> Calculated' +
-          '</label>' +
-          '<button data-mi="' + i + '" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0" title="Remove">\u00d7</button>' +
-        '</div>' +
-        '<div data-calc-row-m="' + i + '" style="' + (f.calculated ? '' : 'display:none') + '">' +
-          '<input type="text" placeholder="Formula e.g. SUM([Sales]) / [Units]" value="' + escHtml(f.formula||'') + '" style="font-family:var(--mono);font-size:11px" data-mi="' + i + '" data-mk="formula" />' +
-        '</div>' +
-        '<textarea placeholder="Description — what this metric means and any caveats" rows="2" data-mi="' + i + '" data-mk="desc">' + escHtml(f.desc||'') + '</textarea>';
-      row.querySelector('button').addEventListener('click', function() { editFields.splice(i,1); renderEditMetrics(); });
-      row.querySelectorAll('input[data-mk],textarea[data-mk]').forEach(function(el) {
-        el.addEventListener('change', function() {
-          var idx = parseInt(this.dataset.mi), key = this.dataset.mk;
-          if (key === 'calculated') {
-            editFields[idx][key] = this.checked;
-            row.querySelector('[data-calc-row-m="'+idx+'"]').style.display = this.checked ? '' : 'none';
-          } else { editFields[idx][key] = this.value; }
-        });
-        el.addEventListener('input', function() { if (this.dataset.mk !== 'calculated') editFields[parseInt(this.dataset.mi)][this.dataset.mk] = this.value; });
-      });
-      list.appendChild(row);
-    });
-  }
-
-  $('btn-add-metric').addEventListener('click', function() {
-    editFields.push({ name: '', calculated: false, formula: '', desc: '' });
-    renderEditMetrics();
-    var inputs = $('key-metrics-list').querySelectorAll('input[data-mk="name"]');
-    if (inputs.length) inputs[inputs.length-1].focus();
-  });
 
   function renderEditFields() {
     var list = $('key-fields-list'); list.innerHTML = '';
@@ -787,7 +705,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     var doc = { luid: activeWb.luid, name: activeWb.name, project: activeWb.project, owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType, audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(), caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value, tags: editTags, changelog: editLog, savedAt: new Date().toISOString() };
     if (isDs) { doc.status = $('f-status').value; doc.bestUsed = $('f-best-used').value.trim(); doc.sourceSystem = $('f-source-system').value.trim(); doc.refresh = $('f-refresh').value.trim(); doc.steward = $('f-steward').value.trim(); doc.knownIssues = $('f-known-issues').value.trim(); doc.rlsEnabled = $('f-rls-enabled').checked; doc.rlsDesc = $('f-rls-desc').value.trim(); doc.keyFields = editFields.filter(function(f){ return f.name; }); }
-    else { doc.status = $('f-wb-status').value; doc.refresh = $('f-wb-refresh').value.trim(); doc.filters = $('f-wb-filters').value.trim(); doc.knownIssues = $('f-wb-issues').value.trim(); doc.keyMetrics = editFields.filter(function(f){ return f.name; }); }
+    else { doc.status = $('f-wb-status').value; doc.knownIssues = $('f-wb-issues').value.trim(); }
     try {
       await callFlow({ action: 'save', luid: activeWb.luid, doc: doc });
       docCache[activeWb.luid] = doc; renderList(); setStatus('Saved', 'saved');
@@ -954,7 +872,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         var savedDashboards = existingDoc.dashboards || [];
         dashboardCache[wb.luid] = dashboards.map(function(s) {
           var saved = savedDashboards.find(function(d) { return d.name === s.name; }) || {};
-          return { name: s.name, index: s.index, desc: saved.desc || '', caveats: saved.caveats || '' };
+          return { name: s.name, index: s.index, desc: saved.desc || '', refresh: saved.refresh || '', filters: saved.filters || '', caveats: saved.caveats || '' };
         });
         renderDashboards(wb);
       } else { empty.style.display = 'block'; }
@@ -970,7 +888,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       var card = document.createElement('div');
       card.className = 'detail-section';
       card.style.cssText = 'display:flex;flex-direction:column;gap:10px';
-      var hasContent = d.desc || d.caveats;
+      var hasContent = d.desc || d.caveats || d.refresh || d.filters;
       card.innerHTML =
         '<div style="display:flex;align-items:center;justify-content:space-between">' +
           '<div style="font-size:13px;font-weight:600;color:var(--text)">' + escHtml(d.name) + '</div>' +
@@ -978,12 +896,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
         '</div>' +
         '<div id="db-view-' + i + '">' +
           (d.desc ? '<div class="detail-field"><div class="detail-field-label">Purpose</div><div class="detail-field-value">' + escHtml(d.desc) + '</div></div>' : '') +
-          (d.caveats ? '<div class="detail-field"><div class="detail-field-label">Caveats</div><div class="detail-field-value">' + escHtml(d.caveats) + '</div></div>' : '') +
+          (d.refresh ? '<div class="detail-field"><div class="detail-field-label">Refresh Frequency</div><div class="detail-field-value">' + escHtml(d.refresh) + '</div></div>' : '') +
+          (d.filters ? '<div class="detail-field"><div class="detail-field-label">Filter Instructions</div><div class="detail-field-value">' + escHtml(d.filters) + '</div></div>' : '') +
+          (d.caveats ? '<div class="detail-field"><div class="detail-field-label">Known Limitations / Caveats</div><div class="detail-field-value">' + escHtml(d.caveats) + '</div></div>' : '') +
           (!hasContent ? '<div style="font-size:12px;color:var(--text2);font-style:italic">No documentation yet.</div>' : '') +
         '</div>' +
         '<div id="db-edit-' + i + '" style="display:none;flex-direction:column;gap:8px">' +
           '<div class="field-group"><div class="field-label">Purpose</div><textarea rows="2" placeholder="What is this dashboard for?" id="db-desc-' + i + '">' + escHtml(d.desc||'') + '</textarea></div>' +
-          '<div class="field-group"><div class="field-label">Caveats</div><textarea rows="2" placeholder="Any caveats specific to this dashboard?" id="db-caveats-' + i + '">' + escHtml(d.caveats||'') + '</textarea></div>' +
+          '<div class="field-group"><div class="field-label">Refresh Frequency</div><input type="text" id="db-refresh-' + i + '" value="' + escHtml(d.refresh||'') + '" placeholder="e.g. Daily at 6am, Real-time, Manual" /></div>' +
+          '<div class="field-group"><div class="field-label">Filter Instructions</div><textarea rows="2" placeholder="Describe any non-obvious filters" id="db-filters-' + i + '">' + escHtml(d.filters||'') + '</textarea></div>' +
+          '<div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea rows="2" placeholder="Anything that could mislead a reader" id="db-caveats-' + i + '">' + escHtml(d.caveats||'') + '</textarea></div>' +
           '<div style="display:flex;gap:8px;justify-content:flex-end">' +
             '<button class="btn btn-ghost btn-sm" id="db-cancel-' + i + '">Cancel</button>' +
             '<button class="btn btn-primary btn-sm" id="db-save-' + i + '">Save</button>' +
@@ -999,7 +921,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       (function(idx){
         card.querySelector('#db-save-' + idx).addEventListener('click', async function() {
           dashboardCache[wb.luid][idx].desc    = $('db-desc-'+idx).value.trim();
-          dashboardCache[wb.luid][idx].caveats = $('db-caveats-'+idx).value.trim();
+          dashboardCache[wb.luid][idx].refresh  = $('db-refresh-'+idx).value.trim();
+          dashboardCache[wb.luid][idx].filters  = $('db-filters-'+idx).value.trim();
+          dashboardCache[wb.luid][idx].caveats  = $('db-caveats-'+idx).value.trim();
           var doc = (typeof docCache[wb.luid]==='object'&&docCache[wb.luid]) ? docCache[wb.luid] : {};
           doc.dashboards = dashboardCache[wb.luid];
           doc.luid = wb.luid; doc.name = wb.name; doc.itemType = wb.itemType;
