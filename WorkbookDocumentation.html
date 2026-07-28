@@ -731,6 +731,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var inputs = $('key-metrics-list').querySelectorAll('input[data-mk="name"]');
     if (inputs.length) inputs[inputs.length-1].focus();
   });
+
+  function renderEditFields() {
     var list = $('key-fields-list'); list.innerHTML = '';
     editFields.forEach(function(f, i) {
       var row = document.createElement('div');
