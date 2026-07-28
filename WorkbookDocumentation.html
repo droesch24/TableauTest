@@ -172,7 +172,8 @@
 
   <div id="view-detail" class="view">
     <div id="detail-tabs">
-      <button class="tab-btn active" id="tab-doc" onclick="switchTab('doc')">Documentation</button>
+      <button class="tab-btn active" id="tab-doc" onclick="switchTab('doc')">Overview</button>
+      <button class="tab-btn" id="tab-dashboards" onclick="switchTab('dashboards')">Dashboards</button>
       <button class="tab-btn" id="tab-lineage" onclick="switchTab('lineage')">Lineage</button>
     </div>
     <div id="panel-doc" class="tab-panel active">
@@ -190,6 +191,15 @@
         </div>
         <div id="detail-undocumented">No documentation yet. Click Edit to add some.</div>
         <div id="detail-body"></div>
+      </div>
+    </div>
+
+    <!-- Dashboards tab -->
+    <div id="panel-dashboards" class="tab-panel">
+      <div id="dashboards-scroll" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div id="dashboards-loading" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px;color:var(--text2);font-size:12px"><div class="spinner"></div><span>Loading dashboards&#8230;</span></div>
+        <div id="dashboards-empty" style="display:none;padding:32px;text-align:center;color:var(--text2);font-size:12px;font-style:italic">No dashboards found.</div>
+        <div id="dashboards-list"></div>
       </div>
     </div>
     <div id="panel-lineage" class="tab-panel">
@@ -220,9 +230,22 @@
     <div id="edit-scroll">
       <div class="edit-section">
         <div class="edit-section-label">Documentation</div>
+        <div class="field-group">
+          <div class="field-label">Status</div>
+          <select id="f-wb-status" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px">
+            <option value="">— Select status —</option>
+            <option value="Active">Active</option>
+            <option value="Deprecated">Deprecated</option>
+            <option value="In Development">In Development</option>
+            <option value="Test">Test</option>
+          </select>
+        </div>
         <div class="field-group"><div class="field-label">Intended Audience</div><textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea></div>
-        <div class="field-group" id="f-metrics-group"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea></div>
-        <div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea id="f-caveats" rows="3" placeholder="Filter interactions, data freshness, edge cases, or anything that could mislead a reader."></textarea></div>
+        <div class="field-group"><div class="field-label">Refresh Frequency</div><input type="text" id="f-wb-refresh" placeholder="e.g. Daily at 6am, Real-time, Manual" /></div>
+        <div class="field-group"><div class="field-label">Filter Instructions</div><textarea id="f-wb-filters" rows="3" placeholder="Describe any non-obvious filters — e.g. 'Apply Region before selecting Product or totals won't reconcile'"></textarea></div>
+        <div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea id="f-caveats" rows="3" placeholder="Data freshness, edge cases, or anything that could mislead a reader."></textarea></div>
+        <div class="field-group"><div class="field-label">Known Issues</div><textarea id="f-wb-issues" rows="2" placeholder="e.g. YTD totals are incorrect for Q1 2024 due to a data migration gap"></textarea></div>
+        <div class="field-group" id="f-metrics-group" style="display:none"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea></div>
       </div>
       <div class="edit-section" id="ds-fields" style="display:none">
         <div class="edit-section-label">Data Source Details</div>
@@ -255,8 +278,12 @@
         </div>
       </div>
 
-      <!-- Key Fields catalog — datasource only -->
-      <div class="edit-section" id="ds-key-fields" style="display:none">
+      <!-- Key Metrics catalog — workbooks only -->
+      <div class="edit-section" id="wb-key-metrics" style="display:none">
+        <div class="edit-section-label">Key Metrics</div>
+        <div id="key-metrics-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+        <button class="btn btn-ghost btn-sm" id="btn-add-metric" type="button">+ Add Metric</button>
+      </div>
         <div class="edit-section-label">Key Fields</div>
         <div id="key-fields-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
         <button class="btn btn-ghost btn-sm" id="btn-add-field" type="button">+ Add Field</button>
@@ -308,7 +335,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   'use strict';
   if (new URLSearchParams(window.location.search).get('config') === '1') return;
 
-  var flowUrl = '', workbooks = [], vcTables = [], docCache = {}, lineageCache = {};
+  var flowUrl = '', workbooks = [], vcTables = [], docCache = {}, lineageCache = {}, dashboardCache = {};
   var activeWb = null, activeType = 'Workbook', editTags = [], editLog = [], editFields = [];
   var hiddenNodes = new Set(), currentGraph = null;
 
@@ -344,13 +371,16 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   };
 
   window.switchTab = function(tab) {
-    ['doc','lineage'].forEach(function(t) {
+    ['doc','dashboards','lineage'].forEach(function(t) {
       $(('tab-' + t)).classList.toggle('active', t === tab);
       $(('panel-' + t)).classList.toggle('active', t === tab);
     });
     if (tab === 'lineage' && activeWb) {
       if (lineageCache[activeWb.luid]) renderLineageGraph(lineageCache[activeWb.luid]);
       else loadLineage(activeWb);
+    }
+    if (tab === 'dashboards' && activeWb && activeWb.itemType === 'Workbook') {
+      loadDashboards(activeWb);
     }
   };
 
@@ -432,8 +462,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     showView('detail'); switchTab('doc');
     showError('detail-error', '');
     $('topbar-title').textContent = wb.name || 'Item';
-    $('tab-lineage').style.display = wb.isVcTable ? 'none' : '';
-    $('btn-edit').style.display    = wb.isVcTable ? 'none' : '';
+    $('tab-lineage').style.display    = wb.isVcTable ? 'none' : '';
+    $('btn-edit').style.display       = wb.isVcTable ? 'none' : '';
+    $('tab-dashboards').style.display = (wb.itemType === 'Workbook') ? '' : 'none';
 
     $('detail-wb-name').innerHTML = escHtml(wb.name||'\u2014') +
       (wb.isVcTable ? ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(163,113,247,.2);color:#a371f7;vertical-align:middle;margin-left:6px">VC TABLE</span>' : '') +
@@ -498,9 +529,40 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     }
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     var docFields = [['Intended Audience', doc.audience, 'text']];
-    if (!isDs) docFields.push(['Key Metrics / Fields', doc.metrics, 'text']);
+    if (!isDs) docFields.push(['Refresh Frequency', doc.refresh, 'text']);
+    if (!isDs) docFields.push(['Filter Instructions', doc.filters, 'text']);
     docFields.push(['Known Limitations / Caveats', doc.caveats, 'text']);
+    docFields.push(['Known Issues', doc.knownIssues, 'text']);
+    if (doc.status) docFields.unshift(['Status', doc.status, 'text']);
     section('Documentation', docFields);
+
+    // Key metrics for workbooks
+    if (!isDs && doc.keyMetrics && doc.keyMetrics.length) {
+      var secM = document.createElement('div'); secM.className = 'detail-section';
+      secM.innerHTML = '<div class="detail-section-label">Key Metrics</div>';
+      doc.keyMetrics.forEach(function(f) {
+        if (!f.name) return;
+        var d = document.createElement('div');
+        d.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--border)';
+        d.innerHTML =
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<span style="font-size:12px;font-weight:600;color:var(--text)">' + escHtml(f.name) + '</span>' +
+            (f.calculated ? '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--accent-dim);color:var(--accent);cursor:pointer" title="' + escHtml(f.formula||'') + '">CALC</span>' : '') +
+          '</div>' +
+          (f.desc ? '<div style="font-size:12px;color:var(--text2)">' + escHtml(f.desc) + '</div>' : '') +
+          (f.calculated && f.formula ? '<div style="font-size:11px;font-family:var(--mono);color:var(--text2);margin-top:4px;display:none" class="metric-formula">' + escHtml(f.formula) + '</div>' : '');
+        if (f.calculated && f.formula) {
+          var badge = d.querySelector('span[title]');
+          var formulaEl = d.querySelector('.metric-formula');
+          if (badge && formulaEl) {
+            badge.addEventListener('mouseenter', function(){ formulaEl.style.display='block'; });
+            badge.addEventListener('mouseleave', function(){ formulaEl.style.display='none'; });
+          }
+        }
+        secM.appendChild(d);
+      });
+      body.appendChild(secM);
+    }
     if (isDs) {
       section('Data Source Details', [
         ['Status',              doc.status,       'text'],
@@ -553,9 +615,10 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables — what they mean and any definition caveats.' : 'Important measures and dimensions — what they mean and any definition caveats.';
     $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = docCache[activeWb.luid] || {};
-    $('ds-fields').style.display = isDs ? '' : 'none';
+    $('ds-fields').style.display    = isDs ? '' : 'none';
     $('ds-key-fields').style.display = isDs ? '' : 'none';
-    $('f-metrics-group').style.display = isDs ? 'none' : '';
+    $('wb-key-metrics').style.display = isDs ? 'none' : '';
+    $('f-metrics-group').style.display = 'none'; // always hidden now
     if (isDs) {
       $('f-status').value      = doc.status      || '';
       $('f-best-used').value   = doc.bestUsed    || '';
@@ -568,6 +631,13 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       $('f-rls-desc').style.display = doc.rlsEnabled ? '' : 'none';
       editFields = [].concat(doc.keyFields || []);
       renderEditFields();
+    } else {
+      $('f-wb-status').value   = doc.status    || '';
+      $('f-wb-refresh').value  = doc.refresh   || '';
+      $('f-wb-filters').value  = doc.filters   || '';
+      $('f-wb-issues').value   = doc.knownIssues || '';
+      editFields = [].concat(doc.keyMetrics || []);
+      renderEditMetrics();
     }
     editTags = [].concat(doc.tags||[]); editLog = [].concat(doc.changelog||[]);
     $('f-audience').value = doc.audience||''; $('f-metrics').value = doc.metrics||''; $('f-caveats').value = doc.caveats||''; $('f-reviewed').value = doc.reviewed||'';
@@ -623,7 +693,44 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   });
   $('new-log-note').addEventListener('keydown', function(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); $('btn-add-log').click(); } });
 
-  function renderEditFields() {
+  function renderEditMetrics() {
+    var list = $('key-metrics-list'); list.innerHTML = '';
+    editFields.forEach(function(f, i) {
+      var row = document.createElement('div');
+      row.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;display:flex;flex-direction:column;gap:8px';
+      row.innerHTML =
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<input type="text" placeholder="Metric name" value="' + escHtml(f.name||'') + '" style="flex:1" data-mi="' + i + '" data-mk="name" />' +
+          '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);white-space:nowrap;cursor:pointer">' +
+            '<input type="checkbox"' + (f.calculated ? ' checked' : '') + ' style="accent-color:var(--accent);width:auto;padding:0" data-mi="' + i + '" data-mk="calculated" /> Calculated' +
+          '</label>' +
+          '<button data-mi="' + i + '" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:0" title="Remove">\u00d7</button>' +
+        '</div>' +
+        '<div data-calc-row-m="' + i + '" style="' + (f.calculated ? '' : 'display:none') + '">' +
+          '<input type="text" placeholder="Formula e.g. SUM([Sales]) / [Units]" value="' + escHtml(f.formula||'') + '" style="font-family:var(--mono);font-size:11px" data-mi="' + i + '" data-mk="formula" />' +
+        '</div>' +
+        '<textarea placeholder="Description — what this metric means and any caveats" rows="2" data-mi="' + i + '" data-mk="desc">' + escHtml(f.desc||'') + '</textarea>';
+      row.querySelector('button').addEventListener('click', function() { editFields.splice(i,1); renderEditMetrics(); });
+      row.querySelectorAll('input[data-mk],textarea[data-mk]').forEach(function(el) {
+        el.addEventListener('change', function() {
+          var idx = parseInt(this.dataset.mi), key = this.dataset.mk;
+          if (key === 'calculated') {
+            editFields[idx][key] = this.checked;
+            row.querySelector('[data-calc-row-m="'+idx+'"]').style.display = this.checked ? '' : 'none';
+          } else { editFields[idx][key] = this.value; }
+        });
+        el.addEventListener('input', function() { if (this.dataset.mk !== 'calculated') editFields[parseInt(this.dataset.mi)][this.dataset.mk] = this.value; });
+      });
+      list.appendChild(row);
+    });
+  }
+
+  $('btn-add-metric').addEventListener('click', function() {
+    editFields.push({ name: '', calculated: false, formula: '', desc: '' });
+    renderEditMetrics();
+    var inputs = $('key-metrics-list').querySelectorAll('input[data-mk="name"]');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  });
     var list = $('key-fields-list'); list.innerHTML = '';
     editFields.forEach(function(f, i) {
       var row = document.createElement('div');
@@ -675,6 +782,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     var doc = { luid: activeWb.luid, name: activeWb.name, project: activeWb.project, owner: activeWb.owner, updatedAt: activeWb.updated, itemType: activeWb.itemType, audience: $('f-audience').value.trim(), metrics: $('f-metrics').value.trim(), caveats: $('f-caveats').value.trim(), reviewed: $('f-reviewed').value, tags: editTags, changelog: editLog, savedAt: new Date().toISOString() };
     if (isDs) { doc.status = $('f-status').value; doc.bestUsed = $('f-best-used').value.trim(); doc.sourceSystem = $('f-source-system').value.trim(); doc.refresh = $('f-refresh').value.trim(); doc.steward = $('f-steward').value.trim(); doc.knownIssues = $('f-known-issues').value.trim(); doc.rlsEnabled = $('f-rls-enabled').checked; doc.rlsDesc = $('f-rls-desc').value.trim(); doc.keyFields = editFields.filter(function(f){ return f.name; }); }
+    else { doc.status = $('f-wb-status').value; doc.refresh = $('f-wb-refresh').value.trim(); doc.filters = $('f-wb-filters').value.trim(); doc.knownIssues = $('f-wb-issues').value.trim(); doc.keyMetrics = editFields.filter(function(f){ return f.name; }); }
     try {
       await callFlow({ action: 'save', luid: activeWb.luid, doc: doc });
       docCache[activeWb.luid] = doc; renderList(); setStatus('Saved', 'saved');
@@ -823,6 +931,87 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
     var dsViaFlow=new Set(edges.filter(function(e){return e.type==='ds_to_flow';}).map(function(e){return e.from;}));
     var finalEdges=edges.filter(function(e){if(e.type==='ds_to_ds'&&dsViaFlow.has(e.from))return false;return true;});
     return { workbook:{luid:heroLuid,name:heroName}, extra_workbooks:downWbs, downstream_ds:downDs, downstream_flows:downFlows, hero_luid:heroLuid, hero_type:'datasource', central_type:'datasource', tables, db_nodes:Object.values(dbNodes), datasources:allDs, flows:allFlows, edges:finalEdges };
+  }
+
+  async function loadDashboards(wb) {
+    var list    = $('dashboards-list');
+    var loading = $('dashboards-loading');
+    var empty   = $('dashboards-empty');
+    if (dashboardCache[wb.luid]) { renderDashboards(wb); return; }
+    list.innerHTML = ''; empty.style.display = 'none'; loading.style.display = 'flex';
+    try {
+      var res = await callFlow({ action: 'get_sheets', luid: wb.luid });
+      loading.style.display = 'none';
+      if (res && res.sheets) {
+        var sheets = Array.isArray(res.sheets) ? res.sheets : [res.sheets];
+        var dashboards = sheets.filter(function(s) { return s.sheetType === 'dashboard'; });
+        var existingDoc = (typeof docCache[wb.luid] === 'object' && docCache[wb.luid]) ? docCache[wb.luid] : {};
+        var savedDashboards = existingDoc.dashboards || [];
+        dashboardCache[wb.luid] = dashboards.map(function(s) {
+          var saved = savedDashboards.find(function(d) { return d.name === s.name; }) || {};
+          return { name: s.name, index: s.index, desc: saved.desc || '', caveats: saved.caveats || '' };
+        });
+        renderDashboards(wb);
+      } else { empty.style.display = 'block'; }
+    } catch(e) { loading.style.display = 'none'; empty.textContent = 'Could not load dashboards: ' + e.message; empty.style.display = 'block'; }
+  }
+
+  function renderDashboards(wb) {
+    var list = $('dashboards-list'); list.innerHTML = '';
+    var dashboards = dashboardCache[wb.luid] || [];
+    if (!dashboards.length) { $('dashboards-empty').style.display = 'block'; return; }
+    $('dashboards-empty').style.display = 'none';
+    dashboards.forEach(function(d, i) {
+      var card = document.createElement('div');
+      card.className = 'detail-section';
+      card.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+      var hasContent = d.desc || d.caveats;
+      card.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between">' +
+          '<div style="font-size:13px;font-weight:600;color:var(--text)">' + escHtml(d.name) + '</div>' +
+          '<button class="btn btn-ghost btn-sm" id="db-edit-btn-' + i + '">Edit</button>' +
+        '</div>' +
+        '<div id="db-view-' + i + '">' +
+          (d.desc ? '<div class="detail-field"><div class="detail-field-label">Purpose</div><div class="detail-field-value">' + escHtml(d.desc) + '</div></div>' : '') +
+          (d.caveats ? '<div class="detail-field"><div class="detail-field-label">Caveats</div><div class="detail-field-value">' + escHtml(d.caveats) + '</div></div>' : '') +
+          (!hasContent ? '<div style="font-size:12px;color:var(--text2);font-style:italic">No documentation yet.</div>' : '') +
+        '</div>' +
+        '<div id="db-edit-' + i + '" style="display:none;flex-direction:column;gap:8px">' +
+          '<div class="field-group"><div class="field-label">Purpose</div><textarea rows="2" placeholder="What is this dashboard for?" id="db-desc-' + i + '">' + escHtml(d.desc||'') + '</textarea></div>' +
+          '<div class="field-group"><div class="field-label">Caveats</div><textarea rows="2" placeholder="Any caveats specific to this dashboard?" id="db-caveats-' + i + '">' + escHtml(d.caveats||'') + '</textarea></div>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+            '<button class="btn btn-ghost btn-sm" id="db-cancel-' + i + '">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" id="db-save-' + i + '">Save</button>' +
+          '</div>' +
+        '</div>';
+
+      card.querySelector('#db-edit-btn-' + i).addEventListener('click', function() {
+        $('db-view-'+i).style.display='none'; $('db-edit-'+i).style.display='flex';
+      });
+      card.querySelector('#db-cancel-' + i).addEventListener('click', function() {
+        $('db-edit-'+i).style.display='none'; $('db-view-'+i).style.display='';
+      });
+      (function(idx){
+        card.querySelector('#db-save-' + idx).addEventListener('click', async function() {
+          dashboardCache[wb.luid][idx].desc    = $('db-desc-'+idx).value.trim();
+          dashboardCache[wb.luid][idx].caveats = $('db-caveats-'+idx).value.trim();
+          var doc = (typeof docCache[wb.luid]==='object'&&docCache[wb.luid]) ? docCache[wb.luid] : {};
+          doc.dashboards = dashboardCache[wb.luid];
+          doc.luid = wb.luid; doc.name = wb.name; doc.itemType = wb.itemType;
+          doc.savedAt = new Date().toISOString();
+          try {
+            setStatus('Saving\u2026','saving');
+            await callFlow({ action:'save', luid:wb.luid, doc:doc });
+            docCache[wb.luid] = doc;
+            setStatus('Saved','saved');
+            setTimeout(function(){setStatus('Ready');},2500);
+            delete dashboardCache[wb.luid];
+            loadDashboards(wb);
+          } catch(e) { setStatus('Save failed','error'); }
+        });
+      })(i);
+      list.appendChild(card);
+    });
   }
 
   async function loadLineage(wb) {
