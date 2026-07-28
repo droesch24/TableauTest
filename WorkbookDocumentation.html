@@ -372,8 +372,9 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
 
   window.switchTab = function(tab) {
     ['doc','dashboards','lineage'].forEach(function(t) {
-      $(('tab-' + t)).classList.toggle('active', t === tab);
-      $(('panel-' + t)).classList.toggle('active', t === tab);
+      var tabEl = $('tab-' + t), panelEl = $('panel-' + t);
+      if (tabEl)   tabEl.classList.toggle('active', t === tab);
+      if (panelEl) panelEl.classList.toggle('active', t === tab);
     });
     if (tab === 'lineage' && activeWb) {
       if (lineageCache[activeWb.luid]) renderLineageGraph(lineageCache[activeWb.luid]);
