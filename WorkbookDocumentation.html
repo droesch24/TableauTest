@@ -242,10 +242,10 @@
         </div>
         <div class="field-group"><div class="field-label">Intended Audience</div><textarea id="f-audience" rows="2" placeholder="Who uses this workbook and for what decisions?"></textarea></div>
         <div class="field-group"><div class="field-label">Refresh Frequency</div><input type="text" id="f-wb-refresh" placeholder="e.g. Daily at 6am, Real-time, Manual" /></div>
-        <div class="field-group"><div class="field-label">Filter Instructions</div><textarea id="f-wb-filters" rows="3" placeholder="Describe any non-obvious filters — e.g. 'Apply Region before selecting Product or totals won't reconcile'"></textarea></div>
+        <div class="field-group"><div class="field-label">Filter Instructions</div><textarea id="f-wb-filters" rows="3" placeholder="Describe any non-obvious filters or interactions users need to know about"></textarea></div>
         <div class="field-group"><div class="field-label">Known Limitations / Caveats</div><textarea id="f-caveats" rows="3" placeholder="Data freshness, edge cases, or anything that could mislead a reader."></textarea></div>
         <div class="field-group"><div class="field-label">Known Issues</div><textarea id="f-wb-issues" rows="2" placeholder="e.g. YTD totals are incorrect for Q1 2024 due to a data migration gap"></textarea></div>
-        <div class="field-group" id="f-metrics-group" style="display:none"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions — what they mean and any definition caveats."></textarea></div>
+        <div class="field-group" id="f-metrics-group" style="display:none"><div class="field-label">Key Metrics / Fields</div><textarea id="f-metrics" rows="3" placeholder="Important measures and dimensions - what they mean and any definition caveats."></textarea></div>
       </div>
       <div class="edit-section" id="ds-fields" style="display:none">
         <div class="edit-section-label">Data Source Details</div>
@@ -612,7 +612,7 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
   function openEdit() {
     var isDs = activeWb && activeWb.itemType === 'Datasource';
     $('f-audience').placeholder = isDs ? 'Who consumes this data source and for what purpose?' : 'Who uses this workbook and for what decisions?';
-    $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables — what they mean and any definition caveats.' : 'Important measures and dimensions — what they mean and any definition caveats.';
+    $('f-metrics').placeholder  = isDs ? 'Key fields, measures, or tables - what they mean and any definition caveats.' : 'Important measures and dimensions - what they mean and any definition caveats.';
     $('f-caveats').placeholder  = isDs ? 'Refresh schedule, known data quality issues, row-level filters, or edge cases.' : 'Filter interactions, data freshness, edge cases, or anything that could mislead a reader.';
     var doc = docCache[activeWb.luid] || {};
     $('ds-fields').style.display    = isDs ? '' : 'none';
