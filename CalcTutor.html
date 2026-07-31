@@ -42,8 +42,6 @@
 
   /* Syntax anatomy */
   .formula-box{background:var(--code-bg);color:var(--code-text);border-radius:8px;padding:16px 18px;font-family:'Consolas',monospace;font-size:14px;line-height:1.7;margin-bottom:14px;white-space:pre-wrap;word-break:break-word;}
-  .formula-box .tok{border-bottom:2px dotted #556; cursor:help; padding:1px 2px; border-radius:3px;}
-  .formula-box .tok:hover{background:rgba(255,255,255,.12);}
   .anatomy-list{list-style:none;margin:0;padding:0;}
   .anatomy-list li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border);font-size:13px;}
   .anatomy-list li:first-child{border-top:none;}
@@ -59,37 +57,54 @@
   .neg{color:var(--warn);}
   .table-scroll{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;}
 
-  /* exercise */
+  /* Build-It exercise */
   .exercise{border:1px solid var(--border);border-radius:10px;padding:18px 22px;max-width:900px;background:#fbfbfc;}
   .exercise h3{margin:0 0 4px;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
-  .exercise-q{font-size:14px;margin:8px 0 14px;}
-  .mc-options{display:flex;flex-direction:column;gap:8px;max-width:480px;}
-  .mc-option{border:1px solid var(--border);background:#fff;border-radius:7px;padding:9px 14px;cursor:pointer;font-size:13.5px;text-align:left;}
-  .mc-option:hover{border-color:var(--accent);}
-  .mc-option.correct{background:var(--accent-light);border-color:var(--accent);}
-  .mc-option.incorrect{background:var(--warn-light);border-color:var(--warn);}
-  .fill-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-  .fill-row input{font-family:'Consolas',monospace;font-size:13.5px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;width:260px;}
-  .fill-row button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600;}
-  .fill-row button:hover{opacity:.9;}
-  .feedback{margin-top:12px;font-size:13px;padding:9px 12px;border-radius:6px;display:none;}
-  .feedback.show.ok{display:block;background:var(--accent-light);color:var(--accent);}
+  .build-prompt{font-size:14px;margin:8px 0 14px;}
+  .palette{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px;}
+  .palette-group{display:flex;flex-direction:column;gap:5px;}
+  .palette-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;}
+  .palette-tokens{display:flex;flex-wrap:wrap;gap:5px;max-width:520px;}
+  .token-btn{font-family:'Consolas',monospace;font-size:12px;background:#fff;border:1px solid var(--border);border-radius:5px;padding:4px 9px;cursor:pointer;color:var(--blue);}
+  .token-btn:hover{background:var(--blue-light);border-color:var(--blue);}
+  .token-btn.kw{color:var(--accent);}
+  .token-btn.op{color:var(--text);}
+  #formulaInput{width:100%;min-height:70px;font-family:'Consolas',monospace;font-size:13.5px;border:1px solid var(--border);border-radius:8px;padding:12px 14px;resize:vertical;background:var(--code-bg);color:var(--code-text);}
+  #formulaInput:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .build-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+  .build-actions button{border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--text);}
+  .build-actions button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .build-actions button.primary:hover{opacity:.9;}
+  .build-actions button:not(.primary):hover{border-color:var(--accent);color:var(--accent);}
+  .hint-text, .solution-text{font-size:12.5px;color:var(--muted);margin-top:10px;display:none;}
+  .hint-text.show, .solution-text.show{display:block;}
+  .solution-text code{background:var(--code-bg);color:var(--code-text);padding:6px 10px;border-radius:6px;display:inline-block;margin-top:4px;font-family:'Consolas',monospace;}
+  .feedback{margin-top:14px;font-size:13px;padding:10px 12px;border-radius:6px;display:none;}
+  .feedback.show.ok{display:block;background:var(--accent-light);color:var(--accent);font-weight:600;}
   .feedback.show.bad{display:block;background:var(--warn-light);color:var(--warn);}
-  .hint-btn{background:none;border:none;color:var(--muted);text-decoration:underline;font-size:12px;cursor:pointer;padding:0;margin-top:10px;}
-  .hint-text{font-size:12.5px;color:var(--muted);margin-top:8px;display:none;}
-  .hint-text.show{display:block;}
+  .feedback.show.err{display:block;background:#fff4e5;color:#9a5b00;font-family:'Consolas',monospace;font-size:12.5px;}
+  .result-table-wrap{margin-top:14px;}
+  .match-yes{color:var(--accent);font-weight:700;}
+  .match-no{color:var(--warn);font-weight:700;}
 
   .nav-buttons{display:flex;justify-content:space-between;max-width:900px;margin-top:26px;}
   .nav-buttons button{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:9px 16px;font-size:13px;cursor:pointer;color:var(--text);}
   .nav-buttons button:hover{border-color:var(--accent);color:var(--accent);}
   .nav-buttons button:disabled{opacity:.35;cursor:default;}
+
+  /* Concept-check (lod-why, tc-basics) */
+  .mc-options{display:flex;flex-direction:column;gap:8px;max-width:480px;}
+  .mc-option{border:1px solid var(--border);background:#fff;border-radius:7px;padding:9px 14px;cursor:pointer;font-size:13.5px;text-align:left;}
+  .mc-option:hover{border-color:var(--accent);}
+  .mc-option.correct{background:var(--accent-light);border-color:var(--accent);}
+  .mc-option.incorrect{background:var(--warn-light);border-color:var(--warn);}
 </style>
 </head>
 <body>
 <div id="app">
   <nav id="sidebar">
     <h1>Calculation Tutor</h1>
-    <div class="subtitle">Learn Tableau calc syntax with a live Superstore-style dataset</div>
+    <div class="subtitle">Learn Tableau calc syntax by building real formulas against a live sample dataset</div>
     <div class="progress-wrap">
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-label" id="progressLabel">0 of 0 lessons complete</div>
@@ -124,12 +139,260 @@ const sampleData = [
   {id:20, date:'2024-02-23', region:'East',    category:'Furniture',       subCategory:'Bookcases',   customer:'E. Novak', sales:412.30,  profit:-32.10, qty:2},
 ];
 const money = n => (n<0? '-$'+Math.abs(n).toFixed(2) : '$'+n.toFixed(2));
-const numCell = n => `<td class="num ${n<0?'neg':''}">${money(n)}</td>`;
+const pct = n => (n*100).toFixed(1)+'%';
 const sum = (arr,f) => arr.reduce((a,r)=>a+f(r),0);
 const groupBy = (arr,f) => { const m={}; arr.forEach(r=>{const k=f(r); (m[k]=m[k]||[]).push(r);}); return m; };
 const uniq = arr => [...new Set(arr)];
 
+/* ============================= CALC FORMULA ENGINE ============================= */
+class CalcError extends Error {}
+const FIELD_MAP = {
+  'sales':'sales', 'profit':'profit', 'quantity':'qty', 'qty':'qty',
+  'category':'category', 'sub-category':'subCategory', 'subcategory':'subCategory',
+  'region':'region', 'customer':'customer', 'order date':'date', 'date':'date'
+};
+const DIMENSION_FIELDS = new Set(['category','subCategory','region','customer','date']);
+function resolveField(raw){
+  const inner = raw.slice(1,-1).trim().toLowerCase();
+  const key = FIELD_MAP[inner];
+  if(!key) throw new CalcError(`Unknown field ${raw}. Available: [Sales], [Profit], [Quantity], [Category], [Sub-Category], [Region], [Customer], [Order Date]`);
+  return key;
+}
+function tokenize(str){
+  const tokens = []; let i = 0;
+  const KEYWORDS = new Set(['IF','THEN','ELSEIF','ELSE','END','CASE','WHEN','FIXED','INCLUDE','EXCLUDE','AND','OR','NOT']);
+  while(i < str.length){
+    const c = str[i];
+    if(/\s/.test(c)){ i++; continue; }
+    if(c === '['){
+      const j = str.indexOf(']', i);
+      if(j === -1) throw new CalcError(`Missing closing "]" for a field reference`);
+      tokens.push({type:'FIELD', value: str.slice(i, j+1)}); i = j+1; continue;
+    }
+    if(c === "'"){
+      let j = i+1, buf = '';
+      while(j < str.length && str[j] !== "'"){ if(str[j] === '\\'){ buf += str[j+1]; j += 2; } else { buf += str[j]; j++; } }
+      if(j >= str.length) throw new CalcError(`Missing closing quote for a text value`);
+      tokens.push({type:'STRING', value: buf}); i = j+1; continue;
+    }
+    if(/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(str[i+1]||''))){
+      let j = i; while(j < str.length && /[0-9.]/.test(str[j])) j++;
+      tokens.push({type:'NUMBER', value: parseFloat(str.slice(i,j))}); i = j; continue;
+    }
+    if(/[A-Za-z_]/.test(c)){
+      let j = i; while(j < str.length && /[A-Za-z_0-9]/.test(str[j])) j++;
+      const word = str.slice(i,j); const upper = word.toUpperCase();
+      tokens.push({type: KEYWORDS.has(upper) ? 'KEYWORD' : 'IDENT', value: word}); i = j; continue;
+    }
+    if(c === '>' && str[i+1] === '='){ tokens.push({type:'OP', value:'>='}); i+=2; continue; }
+    if(c === '<' && str[i+1] === '='){ tokens.push({type:'OP', value:'<='}); i+=2; continue; }
+    if(c === '<' && str[i+1] === '>'){ tokens.push({type:'OP', value:'<>'}); i+=2; continue; }
+    if('(){}:,+-*/><='.includes(c)){ tokens.push({type:'PUNCT', value:c}); i++; continue; }
+    throw new CalcError(`Unexpected character "${c}" in formula`);
+  }
+  tokens.push({type:'EOF', value:null});
+  return tokens;
+}
+function parse(str){
+  const tokens = tokenize(str); let pos = 0;
+  const peek = () => tokens[pos];
+  const isKw = (w) => peek().type === 'KEYWORD' && peek().value.toUpperCase() === w;
+  const next = () => tokens[pos++];
+  const describe = (t) => t.type==='EOF' ? 'end of formula' : `"${t.value}"`;
+  const expectPunct = (p) => { if(peek().type!=='PUNCT' || peek().value!==p) throw new CalcError(`Expected "${p}" but found ${describe(peek())}`); return next(); };
+  const expectKw = (w) => { if(!isKw(w)) throw new CalcError(`Expected ${w} but found ${describe(peek())}`); return next(); };
+  function parseExpr(){ return parseOr(); }
+  function parseOr(){ let l = parseAnd(); while(isKw('OR')){ next(); const r = parseAnd(); l = {type:'Bin', op:'OR', l, r}; } return l; }
+  function parseAnd(){ let l = parseNot(); while(isKw('AND')){ next(); const r = parseNot(); l = {type:'Bin', op:'AND', l, r}; } return l; }
+  function parseNot(){ if(isKw('NOT')){ next(); return {type:'Unary', op:'NOT', arg: parseNot()}; } return parseComparison(); }
+  function parseComparison(){
+    let l = parseAdd();
+    if(peek().type==='OP' || (peek().type==='PUNCT' && (peek().value==='>'||peek().value==='<'||peek().value==='='))){
+      const op = next().value; const r = parseAdd(); l = {type:'Bin', op, l, r};
+    }
+    return l;
+  }
+  function parseAdd(){ let l = parseMul(); while(peek().type==='PUNCT' && (peek().value==='+' || peek().value==='-')){ const op = next().value; const r = parseMul(); l = {type:'Bin', op, l, r}; } return l; }
+  function parseMul(){ let l = parseUnary(); while(peek().type==='PUNCT' && (peek().value==='*' || peek().value==='/')){ const op = next().value; const r = parseUnary(); l = {type:'Bin', op, l, r}; } return l; }
+  function parseUnary(){ if(peek().type==='PUNCT' && peek().value==='-'){ next(); return {type:'Unary', op:'-', arg: parseUnary()}; } return parsePrimary(); }
+  function parseFieldTok(){ if(peek().type!=='FIELD') throw new CalcError(`Expected a field like [Sales] but found ${describe(peek())}`); return next(); }
+  function parsePrimary(){
+    const t = peek();
+    if(t.type==='NUMBER'){ next(); return {type:'Num', value:t.value}; }
+    if(t.type==='STRING'){ next(); return {type:'Str', value:t.value}; }
+    if(t.type==='FIELD'){ next(); return {type:'Field', raw:t.value}; }
+    if(t.type==='PUNCT' && t.value==='('){ next(); const e = parseExpr(); expectPunct(')'); return e; }
+    if(t.type==='PUNCT' && t.value==='{'){
+      next();
+      let kindTok;
+      if(isKw('FIXED')||isKw('INCLUDE')||isKw('EXCLUDE')) kindTok = next().value.toUpperCase();
+      else throw new CalcError(`Expected FIXED, INCLUDE, or EXCLUDE after "{" but found ${describe(peek())}`);
+      const dims = [parseFieldTok()];
+      while(peek().type==='PUNCT' && peek().value===','){ next(); dims.push(parseFieldTok()); }
+      expectPunct(':'); const inner = parseExpr(); expectPunct('}');
+      return {type:'Lod', kind:kindTok, dims, expr:inner};
+    }
+    if(isKw('IF')){
+      next(); const conds = [];
+      const cond0 = parseExpr(); expectKw('THEN'); const then0 = parseExpr();
+      conds.push({cond:cond0, then:then0});
+      while(isKw('ELSEIF')){ next(); const c = parseExpr(); expectKw('THEN'); const th = parseExpr(); conds.push({cond:c, then:th}); }
+      let elseExpr = null; if(isKw('ELSE')){ next(); elseExpr = parseExpr(); }
+      expectKw('END');
+      return {type:'If', conds, else:elseExpr};
+    }
+    if(isKw('CASE')){
+      next(); const subject = parseExpr(); const whens = [];
+      while(isKw('WHEN')){ next(); const m = parseExpr(); expectKw('THEN'); const th = parseExpr(); whens.push({match:m, then:th}); }
+      if(whens.length===0) throw new CalcError('CASE needs at least one WHEN ... THEN branch');
+      let elseExpr = null; if(isKw('ELSE')){ next(); elseExpr = parseExpr(); }
+      expectKw('END');
+      return {type:'Case', subject, whens, else:elseExpr};
+    }
+    if(t.type==='IDENT'){
+      next(); const name = t.value.toUpperCase();
+      if(peek().type==='PUNCT' && peek().value==='('){
+        next(); const args = [];
+        if(!(peek().type==='PUNCT' && peek().value===')')){ args.push(parseExpr()); while(peek().type==='PUNCT' && peek().value===','){ next(); args.push(parseExpr()); } }
+        expectPunct(')');
+        return {type:'Call', name, args};
+      }
+      throw new CalcError(`"${t.value}" isn't a recognized function or keyword`);
+    }
+    throw new CalcError(`Unexpected ${describe(t)} in formula`);
+  }
+  if(peek().type==='EOF') throw new CalcError('Formula is empty');
+  const ast = parseExpr();
+  if(peek().type!=='EOF') throw new CalcError(`Unexpected ${describe(peek())} after end of formula`);
+  return ast;
+}
+function groupByDims(rows, dims){
+  const map = new Map();
+  rows.forEach(r=>{ const key = dims.map(d=>r[d]).join('||'); if(!map.has(key)) map.set(key, []); map.get(key).push(r); });
+  return map;
+}
+function makeFullDataGroups(fullData){
+  const cache = new Map();
+  return (dims) => { const sig = dims.join(','); if(!cache.has(sig)) cache.set(sig, groupByDims(fullData, dims)); return cache.get(sig); };
+}
+function truthy(v){ return v !== null && v !== undefined && v !== false && v !== 0 && v !== ''; }
+function lodDimsFor(kind, dims, viewDims){
+  if(kind==='FIXED') return dims;
+  if(kind==='INCLUDE') return [...new Set([...(viewDims||[]), ...dims])];
+  return (viewDims||[]).filter(d=>!dims.includes(d));
+}
+function evalNode(node, ctx){
+  switch(node.type){
+    case 'Num': return node.value;
+    case 'Str': return node.value;
+    case 'Field': {
+      const key = resolveField(node.raw);
+      if(ctx.mode==='row') return ctx.row[key];
+      if(DIMENSION_FIELDS.has(key)) return ctx.rows[0] ? ctx.rows[0][key] : null;
+      return ctx.rows.reduce((a,r)=>a+(r[key]||0),0);
+    }
+    case 'Unary': { const v = evalNode(node.arg, ctx); return node.op==='-' ? -v : !truthy(v); }
+    case 'Bin': {
+      if(node.op==='AND') return truthy(evalNode(node.l,ctx)) && truthy(evalNode(node.r,ctx));
+      if(node.op==='OR') return truthy(evalNode(node.l,ctx)) || truthy(evalNode(node.r,ctx));
+      const l = evalNode(node.l,ctx), r = evalNode(node.r,ctx);
+      switch(node.op){
+        case '+': return (typeof l==='string'||typeof r==='string') ? String(l)+String(r) : l+r;
+        case '-': return l-r; case '*': return l*r; case '/': return r===0 ? null : l/r;
+        case '>': return l>r; case '<': return l<r; case '>=': return l>=r; case '<=': return l<=r;
+        case '=': return l===r; case '<>': return l!==r;
+        default: throw new CalcError(`Unknown operator ${node.op}`);
+      }
+    }
+    case 'If': { for(const c of node.conds){ if(truthy(evalNode(c.cond, ctx))) return evalNode(c.then, ctx); } return node.else ? evalNode(node.else, ctx) : null; }
+    case 'Case': {
+      const subj = evalNode(node.subject, ctx);
+      for(const w of node.whens){ if(evalNode(w.match, ctx) === subj) return evalNode(w.then, ctx); }
+      return node.else ? evalNode(node.else, ctx) : null;
+    }
+    case 'Lod': {
+      const dims = node.dims.map(d=>resolveField(d.value));
+      const lodDims = lodDimsFor(node.kind, dims, ctx.viewDims);
+      const repRow = ctx.mode==='row' ? ctx.row : ctx.rows[0];
+      const key = lodDims.map(d=>repRow[d]).join('||');
+      const group = ctx.fullDataGroups(lodDims).get(key) || [];
+      return evalNode(node.expr, {mode:'mark', rows:group, viewDims: lodDims, fullDataGroups: ctx.fullDataGroups});
+    }
+    case 'Call': {
+      const fn = node.name;
+      if(['SUM','AVG','COUNTD','COUNT','MIN','MAX'].includes(fn)){
+        if(node.args.length!==1) throw new CalcError(`${fn}() takes exactly one argument`);
+        const arg = node.args[0];
+        let rows = ctx.mode==='row' ? [ctx.row] : ctx.rows;
+        if(arg.type==='Lod'){
+          const dims = arg.dims.map(d=>resolveField(d.value));
+          const lodDims = lodDimsFor(arg.kind, dims, ctx.viewDims);
+          const seen = new Set(); const deduped = [];
+          for(const r of rows){ const k = lodDims.map(d=>r[d]).join('||'); if(!seen.has(k)){ seen.add(k); deduped.push(r); } }
+          rows = deduped;
+        }
+        const values = rows.map(r => evalNode(arg, {mode:'row', row:r, viewDims:ctx.viewDims, fullDataGroups:ctx.fullDataGroups}));
+        switch(fn){
+          case 'SUM': return values.reduce((a,b)=>a+(b||0),0);
+          case 'AVG': return values.length ? values.reduce((a,b)=>a+(b||0),0)/values.length : null;
+          case 'COUNTD': return new Set(values.filter(v=>v!=null)).size;
+          case 'COUNT': return values.filter(v=>v!=null).length;
+          case 'MIN': return Math.min(...values);
+          case 'MAX': return Math.max(...values);
+        }
+      }
+      if(['RUNNING_SUM','RANK','WINDOW_AVG','WINDOW_SUM','TOTAL'].includes(fn)){
+        if(!ctx.tableCalc) throw new CalcError(`${fn}() is a table calculation and can only be used in a table-calculation exercise`);
+        if(node.args.length!==1) throw new CalcError(`${fn}() takes exactly one argument`);
+        return ctx.tableCalc(fn, node.args[0]);
+      }
+      if(fn==='ABS') return Math.abs(evalNode(node.args[0], ctx));
+      throw new CalcError(`Unknown function ${fn}(). Available: SUM, AVG, COUNTD, COUNT, MIN, MAX, RUNNING_SUM, RANK, WINDOW_AVG, TOTAL`);
+    }
+    default: throw new CalcError('Internal error: unknown node type');
+  }
+}
+function runFormula(formulaStr, build, fullData){
+  const ast = parse(formulaStr);
+  const fullDataGroups = makeFullDataGroups(fullData);
+  const marks = build.getMarks(fullData);
+  if(build.calcKind === 'tablecalc'){
+    let ordered = build.addressDim
+      ? [...marks].sort((a,b)=> a.rows[0][build.addressDim] > b.rows[0][build.addressDim] ? 1 : -1)
+      : marks.slice();
+    ordered.forEach(m => { m._partKey = (build.partitionDims||[]).map(d=>m.rows[0][d]).join('||'); });
+    const innerCache = new Map();
+    function getInnerValues(argNode){
+      if(innerCache.has(argNode)) return innerCache.get(argNode);
+      const vals = ordered.map(m => evalNode(argNode, {mode:'mark', rows:m.rows, viewDims: build.viewDims, fullDataGroups}));
+      innerCache.set(argNode, vals); return vals;
+    }
+    function tableCalc(fnName, argNode, currentMark){
+      const vals = getInnerValues(argNode);
+      const idx = ordered.indexOf(currentMark);
+      const partKey = currentMark._partKey;
+      const partIdxs = ordered.map((m,i)=>i).filter(i=>ordered[i]._partKey===partKey);
+      const partVals = partIdxs.map(i=>vals[i]);
+      switch(fnName){
+        case 'RUNNING_SUM': return partIdxs.filter(i=>i<=idx).reduce((a,i)=>a+vals[i],0);
+        case 'RANK': { const cur = vals[idx]; return 1 + partVals.filter(v=>v>cur).length; }
+        case 'WINDOW_AVG': return partVals.reduce((a,b)=>a+b,0)/partVals.length;
+        case 'WINDOW_SUM': case 'TOTAL': return partVals.reduce((a,b)=>a+b,0);
+      }
+    }
+    return marks.map(m => evalNode(ast, {mode:'mark', rows:m.rows, viewDims: build.viewDims, fullDataGroups, tableCalc: (fn,argNode)=>tableCalc(fn,argNode,m)}));
+  }
+  return marks.map(m => evalNode(ast, {mode:'mark', rows:m.rows, viewDims: build.viewDims, fullDataGroups}));
+}
+function approxEq(a,b,eps=0.01){ return Math.abs(a-b) < eps; }
+function valuesEqual(a,b){
+  if(typeof a==='number' && typeof b==='number') return approxEq(a,b);
+  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+}
+
 /* ============================= LESSON DEFINITIONS ============================= */
+const ALL_FIELDS = ['[Sales]','[Profit]','[Quantity]','[Category]','[Sub-Category]','[Region]','[Customer]','[Order Date]'];
+
 const lessons = [
 {id:'agg-basics', track:'Basics: Aggregation & Logic', title:'Aggregation Basics',
   concept:`Every measure in Tableau is wrapped in an <b>aggregation function</b> by default &mdash; usually <code>SUM</code>. Aggregations collapse many rows down to one number per mark. The three you'll use constantly are <code>SUM</code>, <code>AVG</code>, and <code>COUNTD</code> (count distinct).`,
@@ -144,14 +407,17 @@ const lessons = [
     const rows = Object.entries(byRegion).map(([region,rs])=>({
       region, sales:sum(rs,r=>r.sales), profit:sum(rs,r=>r.profit)/rs.length, cust:uniq(rs.map(r=>r.customer)).length
     }));
-    return {
-      cols:['Region','SUM(Sales)','AVG(Profit)','COUNTD(Customer)'],
-      rows: rows.map(r=>[r.region, money(r.sales), money(r.profit), r.cust])
-    };
+    return {cols:['Region','SUM(Sales)','AVG(Profit)','COUNTD(Customer)'], rows: rows.map(r=>[r.region, money(r.sales), money(r.profit), r.cust])};
   },
-  exercise:{type:'mc', q:'Which function returns the number of unique customers, ignoring duplicates?',
-    options:['SUM([Customer])','COUNT([Customer])','COUNTD([Customer])','AVG([Customer])'], answer:2,
-    hint:'The "D" stands for Distinct.'}
+  build:{
+    prompt:'Build a calc that returns each region\'s average Profit.',
+    calcKind:'aggregate', viewDims:['region'],
+    getMarks:(data)=>['East','West','Central'].map(reg=>({label:reg, rows:data.filter(r=>r.region===reg)})),
+    solution:"AVG([Profit])",
+    hint:'Wrap the Profit field in an aggregation function that averages it.',
+    format: v => money(v),
+    palette:{functions:['SUM','AVG','COUNTD','MIN','MAX'], keywords:[], operators:['+','-','*','/']}
+  }
 },
 {id:'if-logic', track:'Basics: Aggregation & Logic', title:'IF / ELSEIF / END',
   concept:`<code>IF</code> statements classify rows based on a condition. They're evaluated <b>row by row</b> before any aggregation happens, which is why this is called a row-level calculation.`,
@@ -167,8 +433,15 @@ const lessons = [
     const rows = sampleData.slice(0,8).map(r=>[r.customer, r.subCategory, money(r.profit), tier(r.profit)]);
     return {cols:['Customer','Sub-Category','Profit','Profit Tier'], rows};
   },
-  exercise:{type:'fill', q:'Fill in the missing keyword: <code>IF [Profit] > 100 THEN \'High\' ____ [Profit] > 0 THEN \'Low\' ELSE \'Loss\' END</code>',
-    answer:'elseif', hint:'It combines ELSE and IF into one word.'}
+  build:{
+    prompt:'Build the IF/ELSEIF/ELSE calc that classifies each row into \'High\' (Profit > 100), \'Low\' (Profit > 0), or \'Loss\'.',
+    calcKind:'row', viewDims:[],
+    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.subCategory}`, rows:[r]})),
+    solution:"IF [Profit] > 100 THEN 'High' ELSEIF [Profit] > 0 THEN 'Low' ELSE 'Loss' END",
+    hint:'Start with IF [Profit] > 100 THEN \'High\', then chain an ELSEIF, then ELSE, then close with END.',
+    format: v => String(v),
+    palette:{functions:[], keywords:['IF','THEN','ELSEIF','ELSE','END'], operators:['>','<','>=','<=','=']}
+  }
 },
 {id:'case-stmt', track:'Basics: Aggregation & Logic', title:'CASE Statements',
   concept:`<code>CASE</code> is a cleaner alternative to IF/ELSEIF when you're testing one field against several exact values, rather than a range condition.`,
@@ -184,8 +457,15 @@ const lessons = [
     const rows = sampleData.slice(0,8).map(r=>[r.customer, r.region, grp(r)]);
     return {cols:['Customer','Region','Region Group'], rows};
   },
-  exercise:{type:'mc', q:'What keyword must appear at the end of every CASE statement?',
-    options:['STOP','END','CLOSE','RETURN'], answer:1, hint:'Same closing keyword IF statements use.'}
+  build:{
+    prompt:'Build a CASE calc: East and West map to \'Coastal\', everything else maps to \'Inland\'.',
+    calcKind:'row', viewDims:[],
+    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.region}`, rows:[r]})),
+    solution:"CASE [Region] WHEN 'East' THEN 'Coastal' WHEN 'West' THEN 'Coastal' ELSE 'Inland' END",
+    hint:'CASE [Region] WHEN \'East\' THEN ... WHEN \'West\' THEN ... ELSE ... END',
+    format: v => String(v),
+    palette:{functions:[], keywords:['CASE','WHEN','THEN','ELSE','END'], operators:[]}
+  }
 },
 {id:'row-vs-agg', track:'Basics: Aggregation & Logic', title:'Row-Level vs. Aggregate Calcs',
   concept:`<code>SUM(IF [Category]='Technology' THEN [Sales] END)</code> and <code>IF SUM([Sales])... END</code> look similar but behave very differently. The first filters, then sums row values (correct for "sales of just Technology"). The second sums everything first, then tests one number &mdash; usually not what you want when the goal is a conditional total.`,
@@ -197,17 +477,20 @@ const lessons = [
   compute(){
     const techSales = sum(sampleData.filter(r=>r.category==='Technology'), r=>r.sales);
     const allSales = sum(sampleData, r=>r.sales);
-    return {
-      cols:['Expression','Result','What it means'],
-      rows:[
-        ["SUM(IF [Category]='Technology' THEN [Sales] END)", money(techSales), 'Total Sales, Technology rows only'],
-        ['SUM([Sales])', money(allSales), 'Total Sales, every row'],
-      ]
-    };
+    return {cols:['Expression','Result','What it means'], rows:[
+      ["SUM(IF [Category]='Technology' THEN [Sales] END)", money(techSales), 'Total Sales, Technology rows only'],
+      ['SUM([Sales])', money(allSales), 'Total Sales, every row'],
+    ]};
   },
-  exercise:{type:'mc', q:'Which pattern correctly sums Sales for Technology rows only?',
-    options:["IF SUM([Category])='Technology' THEN [Sales] END","SUM(IF [Category]='Technology' THEN [Sales] END)","SUM([Sales]) WHERE [Category]='Technology'"],
-    answer:1, hint:'The IF needs to run before the SUM wraps it, so it can evaluate row by row.'}
+  build:{
+    prompt:'Build a calc that sums Sales for Technology rows only (a single total across the whole dataset).',
+    calcKind:'aggregate', viewDims:[],
+    getMarks:(data)=>[{label:'All rows (Technology-only total)', rows:data}],
+    solution:"SUM(IF [Category] = 'Technology' THEN [Sales] END)",
+    hint:'Put the IF condition inside the SUM so it filters row by row before adding.',
+    format: v => money(v),
+    palette:{functions:['SUM'], keywords:['IF','THEN','END'], operators:['=']}
+  }
 },
 {id:'lod-why', track:'LOD Expressions', title:'Why Level of Detail?',
   concept:`Every mark in a Tableau view is aggregated to whatever dimensions are in that view. Level of Detail (LOD) expressions let you compute at a <b>different granularity</b> than the view &mdash; coarser (<code>FIXED</code>, <code>EXCLUDE</code>) or finer (<code>INCLUDE</code>) &mdash; independent of filters and the marks card.`,
@@ -219,18 +502,17 @@ const lessons = [
     {tag:'EXCLUDE', text:'Compute at the view\'s dimensions MINUS the one(s) listed &mdash; a coarser grain.'},
   ],
   compute(){
-    return {cols:['Type','Granularity vs. the view','Typical use'],
-      rows:[
-        ['FIXED','Independent of the view entirely','Customer lifetime sales shown on every row'],
-        ['INCLUDE','Finer than the view','Avg sub-category profit, rolled up to category'],
-        ['EXCLUDE','Coarser than the view','Category total, repeated at sub-category grain, for % of total'],
-      ]};
+    return {cols:['Type','Granularity vs. the view','Typical use'], rows:[
+      ['FIXED','Independent of the view entirely','Customer lifetime sales shown on every row'],
+      ['INCLUDE','Finer than the view','Avg sub-category profit, rolled up to category'],
+      ['EXCLUDE','Coarser than the view','Category total, repeated at sub-category grain, for % of total'],
+    ]};
   },
-  exercise:{type:'mc', q:'What problem do LOD expressions primarily solve?',
+  exercise:{type:'concept', q:'What problem do LOD expressions primarily solve?',
     options:['Making charts render faster','Computing a measure at a granularity different from the view','Formatting numbers as currency'],
     answer:1, hint:'Think "granularity", not performance or formatting.'}
 },
-{id:'lod-fixed', track:'LOD Expressions', title:'FIXED', 
+{id:'lod-fixed', track:'LOD Expressions', title:'FIXED',
   concept:`<code>{FIXED [Customer] : SUM([Sales])}</code> computes each customer's total Sales across <i>all</i> their orders, then attaches that single number to every row for that customer &mdash; regardless of what else is in the view.`,
   formula:'{ FIXED [Customer] : SUM([Sales]) }',
   anatomy:[
@@ -244,8 +526,15 @@ const lessons = [
     const rows = sampleData.slice(0,8).map(r=>[r.customer, money(r.sales), money(totals[r.customer])]);
     return {cols:['Customer','This Order Sales','FIXED [Customer]: SUM(Sales)'], rows, highlightLast:true};
   },
-  exercise:{type:'fill', q:'Fill in the missing keyword: <code>{ ____ [Customer] : SUM([Sales]) }</code>',
-    answer:'fixed', hint:'The word that means "locked to exactly this dimension".'}
+  build:{
+    prompt:'Build a calc that returns each customer\'s total Sales across all their orders, fixed regardless of the view.',
+    calcKind:'lod', viewDims:[],
+    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.subCategory}`, rows:[r]})),
+    solution:"{FIXED [Customer] : SUM([Sales])}",
+    hint:'{ FIXED [Customer] : SUM([Sales]) }',
+    format: v => money(v),
+    palette:{functions:['SUM'], keywords:['FIXED'], operators:[]}
+  }
 },
 {id:'lod-include', track:'LOD Expressions', title:'INCLUDE',
   concept:`<code>{INCLUDE [Sub-Category] : AVG([Profit])}</code> first averages Profit at the Sub-Category grain (finer than Category), then that result gets re-aggregated up to whatever the view shows &mdash; e.g. Category. It's useful when you need a calculation to respect a dimension that isn't in your view.`,
@@ -265,9 +554,15 @@ const lessons = [
     });
     return {cols:['Category','Sub-Categories included','AVG of sub-category AVG(Profit)'], rows};
   },
-  exercise:{type:'mc', q:'INCLUDE computes at a grain that is _____ than the view.',
-    options:['Coarser (fewer dimensions)','Finer (more dimensions)','Exactly the same'], answer:1,
-    hint:'It INCLUDEs an extra dimension the view doesn\'t have.'}
+  build:{
+    prompt:'At a Category-level view, build a calc that averages each sub-category\'s average Profit, rolled up to Category.',
+    calcKind:'lod', viewDims:['category'],
+    getMarks:(data)=>['Technology','Furniture','Office Supplies'].map(cat=>({label:cat, rows:data.filter(r=>r.category===cat)})),
+    solution:"AVG({INCLUDE [Sub-Category] : AVG([Profit])})",
+    hint:'Wrap an INCLUDE LOD (averaging Profit per sub-category) inside an outer AVG.',
+    format: v => money(v),
+    palette:{functions:['AVG'], keywords:['INCLUDE'], operators:[]}
+  }
 },
 {id:'lod-exclude', track:'LOD Expressions', title:'EXCLUDE',
   concept:`<code>{EXCLUDE [Sub-Category] : SUM([Sales])}</code> removes Sub-Category from the calc, producing the Category total &mdash; then repeats that total on every Sub-Category row. This is the classic pattern for "% of parent total".`,
@@ -284,13 +579,23 @@ const lessons = [
     const rows = Object.entries(bySub).map(([key,rs])=>{
       const [cat,sub]=key.split('|');
       const subTotal = sum(rs,r=>r.sales);
-      const pct = (subTotal/catTotals[cat]*100).toFixed(1)+'%';
-      return [cat, sub, money(subTotal), money(catTotals[cat]), pct];
+      const pctVal = (subTotal/catTotals[cat]*100).toFixed(1)+'%';
+      return [cat, sub, money(subTotal), money(catTotals[cat]), pctVal];
     });
     return {cols:['Category','Sub-Category','Sub-Cat Sales','EXCLUDE: Category Sales','% of Category'], rows};
   },
-  exercise:{type:'fill', q:'Fill in the missing keyword: <code>{ ____ [Sub-Category] : SUM([Sales]) }</code> to roll sub-category up to category',
-    answer:'exclude', hint:'The opposite of INCLUDE.'}
+  build:{
+    prompt:'At a Sub-Category-level view, build a calc for % of the parent Category\'s total Sales.',
+    calcKind:'lod', viewDims:['category','subCategory'],
+    getMarks:(data)=>{
+      const bySub = groupBy(data, r=>r.category+'|'+r.subCategory);
+      return Object.keys(bySub).map(key=>{ const [cat,sub]=key.split('|'); return {label:`${cat} \u2014 ${sub}`, rows:data.filter(r=>r.category===cat && r.subCategory===sub)}; });
+    },
+    solution:"[Sales] / {EXCLUDE [Sub-Category] : SUM([Sales])}",
+    hint:'Divide the row-level [Sales] by an EXCLUDE LOD that rolls Sales up to Category.',
+    format: v => pct(v),
+    palette:{functions:['SUM'], keywords:['EXCLUDE'], operators:['/']}
+  }
 },
 {id:'tc-basics', track:'Table Calculations', title:'What Makes Table Calcs Different',
   concept:`Table calculations run <b>after</b> the data has already been queried and aggregated &mdash; they operate on the numbers already shown in the view. That's the opposite order from LOD expressions, which run as part of the query itself. Table calcs need two settings: <b>addressing</b> (which direction to compute across, e.g. down a Date axis) and <b>partitioning</b> (which dimensions restart the calculation).`,
@@ -300,15 +605,13 @@ const lessons = [
     {tag:'Partitioning', text:'The dimension(s) that reset the calc into separate groups, e.g. a new running total per Region.'},
   ],
   compute(){
-    return {cols:['Concept','LOD Expression','Table Calculation'],
-      rows:[
-        ['Runs', 'Inside the data source query', 'After the query, on the aggregated view'],
-        ['Controlled by', 'FIXED / INCLUDE / EXCLUDE + dimension', 'Addressing + partitioning fields'],
-        ['Typical use', 'Custom granularity (customer totals, % of parent)', 'Running totals, ranks, moving averages'],
-      ]};
+    return {cols:['Concept','LOD Expression','Table Calculation'], rows:[
+      ['Runs', 'Inside the data source query', 'After the query, on the aggregated view'],
+      ['Controlled by', 'FIXED / INCLUDE / EXCLUDE + dimension', 'Addressing + partitioning fields'],
+      ['Typical use', 'Custom granularity (customer totals, % of parent)', 'Running totals, ranks, moving averages'],
+    ]};
   },
-  exercise:{type:'mc', q:'Table calculations run:', options:['Before the data is aggregated','After the data is aggregated into the view','Inside the SQL query'], answer:1,
-    hint:'They operate on the marks already showing.'}
+  exercise:{type:'concept', q:'Table calculations run:', options:['Before the data is aggregated','After the data is aggregated into the view','Inside the SQL query'], answer:1, hint:'They operate on the marks already showing.'}
 },
 {id:'tc-running', track:'Table Calculations', title:'Running Total',
   concept:`<code>RUNNING_SUM(SUM([Sales]))</code> adds each mark's value to the running sum of everything before it, in whatever order the view is sorted &mdash; here, by Order Date.`,
@@ -323,8 +626,15 @@ const lessons = [
     const rows = sorted.slice(0,10).map(r=>{running+=r.sales; return [r.date, r.customer, money(r.sales), money(running)];});
     return {cols:['Order Date','Customer','Sales','RUNNING_SUM(SUM(Sales))'], rows, highlightLast:true};
   },
-  exercise:{type:'fill', q:'Fill in the function: <code>____(SUM([Sales]))</code> to accumulate Sales over time',
-    answer:'running_sum', hint:'Two words joined with an underscore, starting with RUNNING.'}
+  build:{
+    prompt:'Build a calc that accumulates Sales over time, ordered by Order Date.',
+    calcKind:'tablecalc', viewDims:['id'], addressDim:'date', partitionDims:[],
+    getMarks:(data)=>[...data].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10).map(r=>({label:`${r.date} \u2014 ${r.customer}`, rows:[r]})),
+    solution:"RUNNING_SUM(SUM([Sales]))",
+    hint:'RUNNING_SUM wraps an aggregated measure: RUNNING_SUM(SUM([Sales]))',
+    format: v => money(v),
+    palette:{functions:['SUM','RUNNING_SUM'], keywords:[], operators:[]}
+  }
 },
 {id:'tc-rank', track:'Table Calculations', title:'RANK',
   concept:`<code>RANK(SUM([Sales]))</code> orders marks by value and assigns 1 to the highest. Add a <code>partition</code> (e.g. by Region) to restart the ranking within each group instead of across the whole table.`,
@@ -344,9 +654,23 @@ const lessons = [
     });
     return {cols:['Region (partition)','Customer','SUM(Sales)','RANK'], rows, highlightLast:true};
   },
-  exercise:{type:'mc', q:'If you partition RANK by Region, what happens?', 
-    options:['Ranking ignores Region entirely','Ranking restarts at 1 within each Region','Only the top Region is ranked'], answer:1,
-    hint:'Partitioning creates separate groups for the calc.'}
+  build:{
+    prompt:'Build a calc that ranks each customer\'s total Sales, restarting at 1 within each Region.',
+    calcKind:'tablecalc', viewDims:['region','customer'], addressDim:null, partitionDims:['region'],
+    getMarks:(data)=>{
+      const byRegion = groupBy(data, r=>r.region);
+      let marks=[];
+      ['East','West','Central'].forEach(region=>{
+        const byCust = groupBy(byRegion[region]||[], r=>r.customer);
+        Object.keys(byCust).forEach(c=>marks.push({label:`${region} \u2014 ${c}`, rows:byCust[c]}));
+      });
+      return marks;
+    },
+    solution:"RANK(SUM([Sales]))",
+    hint:'RANK(SUM([Sales])) \u2014 partitioning by Region is handled by the exercise setup.',
+    format: v => String(v),
+    palette:{functions:['SUM','RANK'], keywords:[], operators:[]}
+  }
 },
 {id:'tc-window', track:'Table Calculations', title:'Window Functions & % of Total',
   concept:`<code>WINDOW_AVG(SUM([Sales]))</code> returns the same average across every mark in its window &mdash; handy for a reference line. <code>SUM([Sales]) / TOTAL(SUM([Sales]))</code> is the standard "percent of total" pattern: <code>TOTAL()</code> returns the grand sum regardless of partitioning, so dividing the row by it gives a share.`,
@@ -364,8 +688,15 @@ const lessons = [
     const rows = totals.map(([c,s])=>[c, money(s), money(avg), (s/grand*100).toFixed(1)+'%']);
     return {cols:['Category','SUM(Sales)','WINDOW_AVG(SUM(Sales))','SUM(Sales)/TOTAL(SUM(Sales))'], rows, highlightLast:true};
   },
-  exercise:{type:'fill', q:'Fill in the function: <code>SUM([Sales]) / ____(SUM([Sales]))</code> for percent of total',
-    answer:'total', hint:'Returns the grand total regardless of partitioning.'}
+  build:{
+    prompt:'Build a calc for each Category\'s % of total Sales across the whole table.',
+    calcKind:'tablecalc', viewDims:['category'], addressDim:null, partitionDims:[],
+    getMarks:(data)=>['Technology','Furniture','Office Supplies'].map(cat=>({label:cat, rows:data.filter(r=>r.category===cat)})),
+    solution:"SUM([Sales]) / TOTAL(SUM([Sales]))",
+    hint:'Divide SUM([Sales]) by TOTAL(SUM([Sales])).',
+    format: v => pct(v),
+    palette:{functions:['SUM','TOTAL','WINDOW_AVG'], keywords:[], operators:['/']}
+  }
 },
 ];
 
@@ -373,7 +704,6 @@ const lessons = [
 const STORAGE_KEY = 'calcTutorProgress';
 let completed = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
 let currentIdx = 0;
-
 function saveProgress(){ localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed])); }
 
 /* ============================= RENDER: SIDEBAR ============================= */
@@ -394,17 +724,13 @@ function renderSidebar(){
   container.querySelectorAll('.lesson-item').forEach(el=>{
     el.addEventListener('click', ()=>{ currentIdx = parseInt(el.dataset.idx,10); renderAll(); });
   });
-  const pct = Math.round((completed.size/lessons.length)*100);
-  document.getElementById('progressFill').style.width = pct+'%';
+  const pctDone = Math.round((completed.size/lessons.length)*100);
+  document.getElementById('progressFill').style.width = pctDone+'%';
   document.getElementById('progressLabel').textContent = `${completed.size} of ${lessons.length} lessons complete`;
 }
 
-/* ============================= RENDER: SYNTAX ANATOMY ============================= */
-function renderFormulaBox(formula){
-  return `<div class="formula-box">${formula.replace(/</g,'&lt;')}</div>`;
-}
-
-/* ============================= RENDER: DATA TABLE ============================= */
+/* ============================= RENDER: SYNTAX ANATOMY / DATA TABLE ============================= */
+function renderFormulaBox(formula){ return `<div class="formula-box">${formula.replace(/</g,'&lt;')}</div>`; }
 function renderTable(result){
   const {cols, rows, highlightLast} = result;
   return `<div class="table-scroll"><table class="data">
@@ -418,68 +744,140 @@ function renderTable(result){
 }
 
 /* ============================= RENDER: EXERCISE ============================= */
+function tokenBtnsHtml(list, cls, wrapField){
+  return list.map(v=>`<button type="button" class="token-btn ${cls}" data-token="${wrapField ? '['+v+']' : v}">${wrapField? '['+v+']' : v}</button>`).join('');
+}
 function renderExercise(lesson){
-  const ex = lesson.exercise;
-  const done = completed.has(lesson.id);
-  if(ex.type==='mc'){
+  if(lesson.exercise && lesson.exercise.type==='concept'){
+    const ex = lesson.exercise;
     return `<div class="exercise" id="exerciseBox">
-      <h3>Knowledge Check</h3>
-      <div class="exercise-q">${ex.q}</div>
-      <div class="mc-options">
-        ${ex.options.map((opt,i)=>`<button class="mc-option" data-idx="${i}">${opt}</button>`).join('')}
-      </div>
+      <h3>Concept Check</h3>
+      <div class="build-prompt">${ex.q}</div>
+      <div class="mc-options">${ex.options.map((opt,i)=>`<button class="mc-option" data-idx="${i}">${opt}</button>`).join('')}</div>
       <div class="feedback" id="feedback"></div>
-      <button class="hint-btn" id="hintBtn">Show hint</button>
-      <div class="hint-text" id="hintText">${ex.hint}</div>
-    </div>`;
-  } else {
-    return `<div class="exercise" id="exerciseBox">
-      <h3>Knowledge Check</h3>
-      <div class="exercise-q">${ex.q}</div>
-      <div class="fill-row">
-        <input type="text" id="fillInput" placeholder="Type your answer" autocomplete="off">
-        <button id="checkBtn">Check</button>
-      </div>
-      <div class="feedback" id="feedback"></div>
-      <button class="hint-btn" id="hintBtn">Show hint</button>
+      <button class="build-actions" style="border:none;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0;margin-top:10px;font-size:12px;" id="hintBtn">Show hint</button>
       <div class="hint-text" id="hintText">${ex.hint}</div>
     </div>`;
   }
+  const b = lesson.build;
+  const fieldNames = ALL_FIELDS.map(f=>f.slice(1,-1));
+  return `<div class="exercise" id="exerciseBox">
+    <h3>Build It</h3>
+    <div class="build-prompt">${b.prompt}</div>
+    <div class="palette">
+      <div class="palette-group">
+        <div class="palette-label">Fields</div>
+        <div class="palette-tokens">${tokenBtnsHtml(fieldNames, '', true)}</div>
+      </div>
+      ${b.palette.functions.length? `<div class="palette-group"><div class="palette-label">Functions</div><div class="palette-tokens">${b.palette.functions.map(f=>`<button type="button" class="token-btn" data-token="${f}(">${f}(</button>`).join('')}</div></div>` : ''}
+      ${b.palette.keywords.length? `<div class="palette-group"><div class="palette-label">Keywords</div><div class="palette-tokens">${tokenBtnsHtml(b.palette.keywords,'kw',false)}</div></div>` : ''}
+      ${b.palette.operators.length? `<div class="palette-group"><div class="palette-label">Operators</div><div class="palette-tokens">${tokenBtnsHtml(b.palette.operators,'op',false)}</div></div>` : ''}
+    </div>
+    <textarea id="formulaInput" placeholder="Build your formula here, e.g. AVG([Profit])" spellcheck="false"></textarea>
+    <div class="build-actions">
+      <button class="primary" id="checkFormulaBtn">Check Formula</button>
+      <button id="hintBtn">Hint</button>
+      <button id="solutionBtn">Show solution</button>
+    </div>
+    <div class="hint-text" id="hintText">${b.hint}</div>
+    <div class="solution-text" id="solutionText"><code>${b.solution}</code></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="result-table-wrap" id="resultTableWrap"></div>
+  </div>`;
 }
 
 function wireExercise(lesson){
-  const ex = lesson.exercise;
-  const feedback = document.getElementById('feedback');
-  const markDone = () => {
-    completed.add(lesson.id); saveProgress();
-    feedback.className='feedback show ok';
-    feedback.textContent = '\u2713 Correct! Lesson marked complete.';
-    renderSidebar();
-  };
-  const markWrong = (msg) => {
-    feedback.className='feedback show bad';
-    feedback.textContent = msg || '\u2717 Not quite \u2014 try again, or check the hint.';
-  };
-  if(ex.type==='mc'){
+  if(lesson.exercise && lesson.exercise.type==='concept'){
+    const ex = lesson.exercise;
+    const feedback = document.getElementById('feedback');
     document.querySelectorAll('.mc-option').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const idx = parseInt(btn.dataset.idx,10);
         document.querySelectorAll('.mc-option').forEach(b=>b.classList.remove('correct','incorrect'));
-        if(idx===ex.answer){ btn.classList.add('correct'); markDone(); }
-        else { btn.classList.add('incorrect'); markWrong(); }
+        if(idx===ex.answer){
+          btn.classList.add('correct');
+          completed.add(lesson.id); saveProgress();
+          feedback.className='feedback show ok'; feedback.textContent='\u2713 Correct! Lesson marked complete.';
+          renderSidebar();
+        } else {
+          btn.classList.add('incorrect');
+          feedback.className='feedback show bad'; feedback.textContent='\u2717 Not quite \u2014 try again, or check the hint.';
+        }
       });
     });
-  } else {
-    document.getElementById('checkBtn').addEventListener('click', ()=>{
-      const val = document.getElementById('fillInput').value.trim().toLowerCase();
-      if(val === ex.answer){ markDone(); } else { markWrong(); }
-    });
-    document.getElementById('fillInput').addEventListener('keydown', e=>{
-      if(e.key==='Enter') document.getElementById('checkBtn').click();
-    });
+    document.getElementById('hintBtn').addEventListener('click', ()=>document.getElementById('hintText').classList.toggle('show'));
+    return;
   }
-  document.getElementById('hintBtn').addEventListener('click', ()=>{
-    document.getElementById('hintText').classList.toggle('show');
+
+  const b = lesson.build;
+  const input = document.getElementById('formulaInput');
+  let lastSelStart = 0, lastSelEnd = 0;
+  const trackSel = () => { lastSelStart = input.selectionStart; lastSelEnd = input.selectionEnd; };
+  input.addEventListener('keyup', trackSel);
+  input.addEventListener('click', trackSel);
+  input.addEventListener('select', trackSel);
+
+  document.querySelectorAll('.token-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tok = btn.dataset.token;
+      const val = input.value;
+      const insert = (lastSelStart>0 && val[lastSelStart-1] && /\S/.test(val[lastSelStart-1]) && !val[lastSelStart-1].match(/[\(\[]/)) ? ' '+tok : tok;
+      input.value = val.slice(0,lastSelStart) + insert + val.slice(lastSelEnd);
+      const newPos = lastSelStart + insert.length;
+      input.focus(); input.setSelectionRange(newPos,newPos);
+      lastSelStart = lastSelEnd = newPos;
+    });
+  });
+
+  document.getElementById('hintBtn').addEventListener('click', ()=>document.getElementById('hintText').classList.toggle('show'));
+  document.getElementById('solutionBtn').addEventListener('click', ()=>document.getElementById('solutionText').classList.toggle('show'));
+
+  document.getElementById('checkFormulaBtn').addEventListener('click', ()=>{
+    const feedback = document.getElementById('feedback');
+    const resultWrap = document.getElementById('resultTableWrap');
+    const formulaStr = input.value.trim();
+    if(!formulaStr){
+      feedback.className='feedback show err'; feedback.textContent='Type or build a formula first.'; resultWrap.innerHTML=''; return;
+    }
+    let target;
+    try {
+      target = runFormula(b.solution, b, sampleData);
+    } catch(e){ /* shouldn't happen, reference solution is validated */ target = null; }
+
+    let result;
+    try {
+      result = runFormula(formulaStr, b, sampleData);
+    } catch(e){
+      feedback.className='feedback show err';
+      feedback.textContent = '\u26a0 ' + e.message;
+      resultWrap.innerHTML='';
+      return;
+    }
+
+    const marks = b.getMarks(sampleData);
+    const matches = result.map((v,i)=> valuesEqual(v, target[i]));
+    const allMatch = matches.every(Boolean) && result.length===target.length;
+
+    resultWrap.innerHTML = `<div class="table-scroll"><table class="data">
+      <thead><tr><th>Mark</th><th>Your Result</th><th>Target</th><th>Match</th></tr></thead>
+      <tbody>${marks.map((m,i)=>`<tr>
+        <td>${m.label}</td>
+        <td class="num">${b.format(result[i])}</td>
+        <td class="num">${b.format(target[i])}</td>
+        <td>${matches[i] ? '<span class="match-yes">\u2713</span>' : '<span class="match-no">\u2717</span>'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+
+    if(allMatch){
+      completed.add(lesson.id); saveProgress();
+      feedback.className='feedback show ok';
+      feedback.textContent = `\u2713 Correct! All ${result.length} marks match. Lesson complete.`;
+      renderSidebar();
+    } else {
+      const nMatch = matches.filter(Boolean).length;
+      feedback.className='feedback show bad';
+      feedback.textContent = `${nMatch} of ${result.length} marks match. Check the mismatched rows below, or use the hint.`;
+    }
   });
 }
 
@@ -496,9 +894,7 @@ function renderMain(){
     <section class="block">
       <h3>Syntax</h3>
       ${renderFormulaBox(lesson.formula)}
-      <ul class="anatomy-list">
-        ${lesson.anatomy.map(a=>`<li><span class="anatomy-tag">${a.tag}</span><span>${a.text}</span></li>`).join('')}
-      </ul>
+      <ul class="anatomy-list">${lesson.anatomy.map(a=>`<li><span class="anatomy-tag">${a.tag}</span><span>${a.text}</span></li>`).join('')}</ul>
     </section>
 
     <section class="block">
@@ -523,11 +919,9 @@ function renderAll(){ renderSidebar(); renderMain(); }
 
 /* ============================= INIT ============================= */
 function boot(){ renderAll(); }
-
 if(typeof tableau !== 'undefined' && tableau.extensions){
   tableau.extensions.initializeAsync().then(boot).catch(boot);
 } else {
-  // running standalone in a browser for dev/testing
   boot();
 }
 </script>
