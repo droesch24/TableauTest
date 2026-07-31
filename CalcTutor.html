@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Calculation Tutor</title>
+<script src="tableau.extensions.1.latest.js"></script>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#ffffff; --border:#e1e4e9; --text:#1f2430; --muted:#6b7280;
+    --accent:#0e6e55; --accent-light:#e6f4f0; --warn:#b5461f; --warn-light:#fbe9e2;
+    --code-bg:#1e2430; --code-text:#dbe4ee; --blue:#28577a; --blue-light:#e8f0f7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  #app{display:flex;height:100vh;min-height:600px;}
+
+  /* Sidebar */
+  #sidebar{width:270px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:16px 0;}
+  #sidebar h1{font-size:15px;margin:0 16px 4px;color:var(--text);}
+  #sidebar .subtitle{font-size:11.5px;color:var(--muted);margin:0 16px 14px;}
+  .progress-wrap{margin:0 16px 16px;}
+  .progress-bar-bg{height:6px;background:var(--border);border-radius:4px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:var(--accent);transition:width .3s;}
+  .progress-label{font-size:11px;color:var(--muted);margin-top:4px;}
+  .track{margin-bottom:6px;}
+  .track-header{padding:9px 16px;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+  .lesson-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;font-size:13px;color:var(--text);border-left:3px solid transparent;}
+  .lesson-item:hover{background:var(--bg);}
+  .lesson-item.active{background:var(--accent-light);border-left-color:var(--accent);font-weight:600;}
+  .lesson-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;}
+  .lesson-check.done{background:var(--accent);border-color:var(--accent);}
+
+  /* Main */
+  #main{flex:1;overflow-y:auto;padding:28px 40px 60px;}
+  .lesson-eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:700;margin-bottom:6px;}
+  .lesson-title{font-size:24px;margin:0 0 14px;}
+  .concept{font-size:14.5px;line-height:1.6;color:#333;margin-bottom:22px;max-width:760px;}
+  .concept code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12.5px;}
+
+  section.block{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin-bottom:20px;max-width:900px;}
+  section.block h3{margin:0 0 12px;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+
+  /* Syntax anatomy */
+  .formula-box{background:var(--code-bg);color:var(--code-text);border-radius:8px;padding:16px 18px;font-family:'Consolas',monospace;font-size:14px;line-height:1.7;margin-bottom:14px;white-space:pre-wrap;word-break:break-word;}
+  .formula-box .tok{border-bottom:2px dotted #556; cursor:help; padding:1px 2px; border-radius:3px;}
+  .formula-box .tok:hover{background:rgba(255,255,255,.12);}
+  .anatomy-list{list-style:none;margin:0;padding:0;}
+  .anatomy-list li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border);font-size:13px;}
+  .anatomy-list li:first-child{border-top:none;}
+  .anatomy-tag{font-family:'Consolas',monospace;background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 7px;font-size:12px;flex-shrink:0;height:fit-content;}
+
+  /* data table */
+  table.data{border-collapse:collapse;width:100%;font-size:12.5px;}
+  table.data th{text-align:left;background:var(--bg);color:var(--muted);font-weight:600;padding:7px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;}
+  table.data td{padding:6px 10px;border-bottom:1px solid #f0f1f3;}
+  table.data tr:hover td{background:#fafbfc;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+  .highlight-col{background:var(--accent-light)!important;font-weight:600;}
+  .neg{color:var(--warn);}
+  .table-scroll{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;}
+
+  /* exercise */
+  .exercise{border:1px solid var(--border);border-radius:10px;padding:18px 22px;max-width:900px;background:#fbfbfc;}
+  .exercise h3{margin:0 0 4px;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .exercise-q{font-size:14px;margin:8px 0 14px;}
+  .mc-options{display:flex;flex-direction:column;gap:8px;max-width:480px;}
+  .mc-option{border:1px solid var(--border);background:#fff;border-radius:7px;padding:9px 14px;cursor:pointer;font-size:13.5px;text-align:left;}
+  .mc-option:hover{border-color:var(--accent);}
+  .mc-option.correct{background:var(--accent-light);border-color:var(--accent);}
+  .mc-option.incorrect{background:var(--warn-light);border-color:var(--warn);}
+  .fill-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .fill-row input{font-family:'Consolas',monospace;font-size:13.5px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;width:260px;}
+  .fill-row button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600;}
+  .fill-row button:hover{opacity:.9;}
+  .feedback{margin-top:12px;font-size:13px;padding:9px 12px;border-radius:6px;display:none;}
+  .feedback.show.ok{display:block;background:var(--accent-light);color:var(--accent);}
+  .feedback.show.bad{display:block;background:var(--warn-light);color:var(--warn);}
+  .hint-btn{background:none;border:none;color:var(--muted);text-decoration:underline;font-size:12px;cursor:pointer;padding:0;margin-top:10px;}
+  .hint-text{font-size:12.5px;color:var(--muted);margin-top:8px;display:none;}
+  .hint-text.show{display:block;}
+
+  .nav-buttons{display:flex;justify-content:space-between;max-width:900px;margin-top:26px;}
+  .nav-buttons button{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:9px 16px;font-size:13px;cursor:pointer;color:var(--text);}
+  .nav-buttons button:hover{border-color:var(--accent);color:var(--accent);}
+  .nav-buttons button:disabled{opacity:.35;cursor:default;}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar">
+    <h1>Calculation Tutor</h1>
+    <div class="subtitle">Learn Tableau calc syntax with a live Superstore-style dataset</div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">0 of 0 lessons complete</div>
+    </div>
+    <div id="trackList"></div>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ============================= SAMPLE DATA ============================= */
+const sampleData = [
+  {id:1,  date:'2024-01-03', region:'East',    category:'Technology',      subCategory:'Phones',      customer:'A. Diaz',  sales:812.40,  profit:162.48, qty:2},
+  {id:2,  date:'2024-01-05', region:'East',    category:'Furniture',       subCategory:'Chairs',      customer:'A. Diaz',  sales:412.50,  profit:-38.20, qty:3},
+  {id:3,  date:'2024-01-08', region:'West',    category:'Office Supplies', subCategory:'Binders',     customer:'B. Chen',  sales:54.90,   profit:21.10,  qty:6},
+  {id:4,  date:'2024-01-10', region:'Central', category:'Technology',      subCategory:'Accessories', customer:'C. Wu',    sales:233.60,  profit:55.90,  qty:4},
+  {id:5,  date:'2024-01-12', region:'East',    category:'Office Supplies', subCategory:'Paper',       customer:'A. Diaz',  sales:29.85,   profit:9.40,   qty:5},
+  {id:6,  date:'2024-01-15', region:'West',    category:'Furniture',       subCategory:'Tables',      customer:'B. Chen',  sales:890.00,  profit:-120.50,qty:2},
+  {id:7,  date:'2024-01-18', region:'Central', category:'Furniture',       subCategory:'Chairs',      customer:'D. Patel', sales:356.20,  profit:40.10,  qty:3},
+  {id:8,  date:'2024-01-20', region:'East',    category:'Technology',      subCategory:'Phones',      customer:'E. Novak', sales:1204.75, profit:288.90, qty:1},
+  {id:9,  date:'2024-01-22', region:'West',    category:'Technology',      subCategory:'Accessories', customer:'B. Chen',  sales:145.30,  profit:32.60,  qty:3},
+  {id:10, date:'2024-01-25', region:'Central', category:'Office Supplies', subCategory:'Binders',     customer:'D. Patel', sales:62.40,   profit:18.75,  qty:8},
+  {id:11, date:'2024-01-28', region:'East',    category:'Furniture',       subCategory:'Bookcases',   customer:'A. Diaz',  sales:578.90,  profit:-45.30, qty:2},
+  {id:12, date:'2024-02-01', region:'West',    category:'Office Supplies', subCategory:'Paper',       customer:'F. Osei',  sales:18.60,   profit:6.20,   qty:3},
+  {id:13, date:'2024-02-04', region:'Central', category:'Technology',      subCategory:'Phones',      customer:'D. Patel', sales:950.00,  profit:210.40, qty:2},
+  {id:14, date:'2024-02-06', region:'East',    category:'Office Supplies', subCategory:'Storage',     customer:'E. Novak', sales:134.50,  profit:28.10,  qty:4},
+  {id:15, date:'2024-02-09', region:'West',    category:'Furniture',       subCategory:'Chairs',      customer:'F. Osei',  sales:421.75,  profit:-15.60, qty:2},
+  {id:16, date:'2024-02-12', region:'Central', category:'Office Supplies', subCategory:'Binders',     customer:'C. Wu',    sales:78.30,   profit:25.40,  qty:5},
+  {id:17, date:'2024-02-14', region:'East',    category:'Technology',      subCategory:'Accessories', customer:'A. Diaz',  sales:267.90,  profit:61.20,  qty:3},
+  {id:18, date:'2024-02-17', region:'West',    category:'Technology',      subCategory:'Phones',      customer:'B. Chen',  sales:1105.20, profit:245.80, qty:2},
+  {id:19, date:'2024-02-20', region:'Central', category:'Furniture',       subCategory:'Tables',      customer:'D. Patel', sales:745.60,  profit:-88.40, qty:1},
+  {id:20, date:'2024-02-23', region:'East',    category:'Furniture',       subCategory:'Bookcases',   customer:'E. Novak', sales:412.30,  profit:-32.10, qty:2},
+];
+const money = n => (n<0? '-$'+Math.abs(n).toFixed(2) : '$'+n.toFixed(2));
+const numCell = n => `<td class="num ${n<0?'neg':''}">${money(n)}</td>`;
+const sum = (arr,f) => arr.reduce((a,r)=>a+f(r),0);
+const groupBy = (arr,f) => { const m={}; arr.forEach(r=>{const k=f(r); (m[k]=m[k]||[]).push(r);}); return m; };
+const uniq = arr => [...new Set(arr)];
+
+/* ============================= LESSON DEFINITIONS ============================= */
+const lessons = [
+{id:'agg-basics', track:'Basics: Aggregation & Logic', title:'Aggregation Basics',
+  concept:`Every measure in Tableau is wrapped in an <b>aggregation function</b> by default &mdash; usually <code>SUM</code>. Aggregations collapse many rows down to one number per mark. The three you'll use constantly are <code>SUM</code>, <code>AVG</code>, and <code>COUNTD</code> (count distinct).`,
+  formula:'SUM([Sales])   AVG([Profit])   COUNTD([Customer])',
+  anatomy:[
+    {tag:'SUM(...)', text:'Adds every row\'s value together within the current level of detail.'},
+    {tag:'AVG(...)', text:'Averages the values &mdash; sensitive to outliers like our -$120.50 Tables order.'},
+    {tag:'COUNTD(...)', text:'Counts unique values. COUNT would count every row, even duplicate customers.'},
+  ],
+  compute(){
+    const byRegion = groupBy(sampleData, r=>r.region);
+    const rows = Object.entries(byRegion).map(([region,rs])=>({
+      region, sales:sum(rs,r=>r.sales), profit:sum(rs,r=>r.profit)/rs.length, cust:uniq(rs.map(r=>r.customer)).length
+    }));
+    return {
+      cols:['Region','SUM(Sales)','AVG(Profit)','COUNTD(Customer)'],
+      rows: rows.map(r=>[r.region, money(r.sales), money(r.profit), r.cust])
+    };
+  },
+  exercise:{type:'mc', q:'Which function returns the number of unique customers, ignoring duplicates?',
+    options:['SUM([Customer])','COUNT([Customer])','COUNTD([Customer])','AVG([Customer])'], answer:2,
+    hint:'The "D" stands for Distinct.'}
+},
+{id:'if-logic', track:'Basics: Aggregation & Logic', title:'IF / ELSEIF / END',
+  concept:`<code>IF</code> statements classify rows based on a condition. They're evaluated <b>row by row</b> before any aggregation happens, which is why this is called a row-level calculation.`,
+  formula:"IF [Profit] > 100 THEN 'High'\nELSEIF [Profit] > 0 THEN 'Low'\nELSE 'Loss'\nEND",
+  anatomy:[
+    {tag:'IF ... THEN', text:'Tests the first condition. If true, returns \'High\' and stops.'},
+    {tag:'ELSEIF', text:'Only checked if the IF was false. You can chain as many ELSEIFs as you need.'},
+    {tag:'ELSE', text:'Catches everything that didn\'t match &mdash; here, any profit &le; 0.'},
+    {tag:'END', text:'Required to close every IF block in Tableau.'},
+  ],
+  compute(){
+    const tier = p => p>100?'High':p>0?'Low':'Loss';
+    const rows = sampleData.slice(0,8).map(r=>[r.customer, r.subCategory, money(r.profit), tier(r.profit)]);
+    return {cols:['Customer','Sub-Category','Profit','Profit Tier'], rows};
+  },
+  exercise:{type:'fill', q:'Fill in the missing keyword: <code>IF [Profit] > 100 THEN \'High\' ____ [Profit] > 0 THEN \'Low\' ELSE \'Loss\' END</code>',
+    answer:'elseif', hint:'It combines ELSE and IF into one word.'}
+},
+{id:'case-stmt', track:'Basics: Aggregation & Logic', title:'CASE Statements',
+  concept:`<code>CASE</code> is a cleaner alternative to IF/ELSEIF when you're testing one field against several exact values, rather than a range condition.`,
+  formula:"CASE [Region]\nWHEN 'East' THEN 'Coastal'\nWHEN 'West' THEN 'Coastal'\nELSE 'Inland'\nEND",
+  anatomy:[
+    {tag:'CASE [field]', text:'Names the single field being tested &mdash; here, Region.'},
+    {tag:'WHEN ... THEN', text:'One branch per exact value match. Add as many WHEN lines as needed.'},
+    {tag:'ELSE', text:'Optional catch-all for anything not explicitly matched.'},
+    {tag:'END', text:'Closes the CASE block.'},
+  ],
+  compute(){
+    const grp = r => (r.region==='East'||r.region==='West') ? 'Coastal':'Inland';
+    const rows = sampleData.slice(0,8).map(r=>[r.customer, r.region, grp(r)]);
+    return {cols:['Customer','Region','Region Group'], rows};
+  },
+  exercise:{type:'mc', q:'What keyword must appear at the end of every CASE statement?',
+    options:['STOP','END','CLOSE','RETURN'], answer:1, hint:'Same closing keyword IF statements use.'}
+},
+{id:'row-vs-agg', track:'Basics: Aggregation & Logic', title:'Row-Level vs. Aggregate Calcs',
+  concept:`<code>SUM(IF [Category]='Technology' THEN [Sales] END)</code> and <code>IF SUM([Sales])... END</code> look similar but behave very differently. The first filters, then sums row values (correct for "sales of just Technology"). The second sums everything first, then tests one number &mdash; usually not what you want when the goal is a conditional total.`,
+  formula:"SUM(\n  IF [Category] = 'Technology' THEN [Sales] END\n)",
+  anatomy:[
+    {tag:'IF ... THEN [Sales] END', text:'Runs once per row. Returns Sales when the row is Technology, otherwise NULL.'},
+    {tag:'SUM( ... )', text:'Aggregates only the non-NULL results &mdash; i.e. only Technology rows get added.'},
+  ],
+  compute(){
+    const techSales = sum(sampleData.filter(r=>r.category==='Technology'), r=>r.sales);
+    const allSales = sum(sampleData, r=>r.sales);
+    return {
+      cols:['Expression','Result','What it means'],
+      rows:[
+        ["SUM(IF [Category]='Technology' THEN [Sales] END)", money(techSales), 'Total Sales, Technology rows only'],
+        ['SUM([Sales])', money(allSales), 'Total Sales, every row'],
+      ]
+    };
+  },
+  exercise:{type:'mc', q:'Which pattern correctly sums Sales for Technology rows only?',
+    options:["IF SUM([Category])='Technology' THEN [Sales] END","SUM(IF [Category]='Technology' THEN [Sales] END)","SUM([Sales]) WHERE [Category]='Technology'"],
+    answer:1, hint:'The IF needs to run before the SUM wraps it, so it can evaluate row by row.'}
+},
+{id:'lod-why', track:'LOD Expressions', title:'Why Level of Detail?',
+  concept:`Every mark in a Tableau view is aggregated to whatever dimensions are in that view. Level of Detail (LOD) expressions let you compute at a <b>different granularity</b> than the view &mdash; coarser (<code>FIXED</code>, <code>EXCLUDE</code>) or finer (<code>INCLUDE</code>) &mdash; independent of filters and the marks card.`,
+  formula:'{ FIXED [dimension] : AGG([measure]) }\n{ INCLUDE [dimension] : AGG([measure]) }\n{ EXCLUDE [dimension] : AGG([measure]) }',
+  anatomy:[
+    {tag:'{ ... }', text:'Curly braces mark the whole expression as an LOD calc.'},
+    {tag:'FIXED', text:'Compute at exactly the dimension(s) listed, ignoring the view\'s other dimensions and (usually) filters.'},
+    {tag:'INCLUDE', text:'Compute at the view\'s dimensions PLUS the one(s) listed &mdash; a finer grain.'},
+    {tag:'EXCLUDE', text:'Compute at the view\'s dimensions MINUS the one(s) listed &mdash; a coarser grain.'},
+  ],
+  compute(){
+    return {cols:['Type','Granularity vs. the view','Typical use'],
+      rows:[
+        ['FIXED','Independent of the view entirely','Customer lifetime sales shown on every row'],
+        ['INCLUDE','Finer than the view','Avg sub-category profit, rolled up to category'],
+        ['EXCLUDE','Coarser than the view','Category total, repeated at sub-category grain, for % of total'],
+      ]};
+  },
+  exercise:{type:'mc', q:'What problem do LOD expressions primarily solve?',
+    options:['Making charts render faster','Computing a measure at a granularity different from the view','Formatting numbers as currency'],
+    answer:1, hint:'Think "granularity", not performance or formatting.'}
+},
+{id:'lod-fixed', track:'LOD Expressions', title:'FIXED', 
+  concept:`<code>{FIXED [Customer] : SUM([Sales])}</code> computes each customer's total Sales across <i>all</i> their orders, then attaches that single number to every row for that customer &mdash; regardless of what else is in the view.`,
+  formula:'{ FIXED [Customer] : SUM([Sales]) }',
+  anatomy:[
+    {tag:'FIXED [Customer]', text:'Locks the calculation to the Customer dimension only.'},
+    {tag:'SUM([Sales])', text:'The aggregation performed at that fixed grain.'},
+    {tag:'Result', text:'The same total repeats on every row belonging to that customer.'},
+  ],
+  compute(){
+    const byCust = groupBy(sampleData, r=>r.customer);
+    const totals = {}; Object.entries(byCust).forEach(([c,rs])=>totals[c]=sum(rs,r=>r.sales));
+    const rows = sampleData.slice(0,8).map(r=>[r.customer, money(r.sales), money(totals[r.customer])]);
+    return {cols:['Customer','This Order Sales','FIXED [Customer]: SUM(Sales)'], rows, highlightLast:true};
+  },
+  exercise:{type:'fill', q:'Fill in the missing keyword: <code>{ ____ [Customer] : SUM([Sales]) }</code>',
+    answer:'fixed', hint:'The word that means "locked to exactly this dimension".'}
+},
+{id:'lod-include', track:'LOD Expressions', title:'INCLUDE',
+  concept:`<code>{INCLUDE [Sub-Category] : AVG([Profit])}</code> first averages Profit at the Sub-Category grain (finer than Category), then that result gets re-aggregated up to whatever the view shows &mdash; e.g. Category. It's useful when you need a calculation to respect a dimension that isn't in your view.`,
+  formula:'{ INCLUDE [Sub-Category] : AVG([Profit]) }',
+  anatomy:[
+    {tag:'INCLUDE [Sub-Category]', text:'Adds Sub-Category to the computation even though the view is only at Category level.'},
+    {tag:'AVG([Profit])', text:'Averaged per sub-category first.'},
+    {tag:'Category rollup', text:'Tableau then re-aggregates those sub-category averages up to Category using the view\'s default aggregation.'},
+  ],
+  compute(){
+    const byCat = groupBy(sampleData, r=>r.category);
+    const rows = Object.entries(byCat).map(([cat,rs])=>{
+      const bySub = groupBy(rs, r=>r.subCategory);
+      const subAvgs = Object.values(bySub).map(g=>sum(g,r=>r.profit)/g.length);
+      const rollup = subAvgs.reduce((a,b)=>a+b,0)/subAvgs.length;
+      return [cat, uniq(rs.map(r=>r.subCategory)).join(', '), money(rollup)];
+    });
+    return {cols:['Category','Sub-Categories included','AVG of sub-category AVG(Profit)'], rows};
+  },
+  exercise:{type:'mc', q:'INCLUDE computes at a grain that is _____ than the view.',
+    options:['Coarser (fewer dimensions)','Finer (more dimensions)','Exactly the same'], answer:1,
+    hint:'It INCLUDEs an extra dimension the view doesn\'t have.'}
+},
+{id:'lod-exclude', track:'LOD Expressions', title:'EXCLUDE',
+  concept:`<code>{EXCLUDE [Sub-Category] : SUM([Sales])}</code> removes Sub-Category from the calc, producing the Category total &mdash; then repeats that total on every Sub-Category row. This is the classic pattern for "% of parent total".`,
+  formula:"[Sales] / { EXCLUDE [Sub-Category] : SUM([Sales]) }",
+  anatomy:[
+    {tag:'EXCLUDE [Sub-Category]', text:'Removes Sub-Category from the calc, rolling up to Category (the next dimension up in the view).'},
+    {tag:'SUM([Sales])', text:'Category-level total, repeated on every sub-category row.'},
+    {tag:'[Sales] / { ... }', text:'Dividing the row-level Sales by the category total gives % of category.'},
+  ],
+  compute(){
+    const byCat = groupBy(sampleData, r=>r.category);
+    const catTotals = {}; Object.entries(byCat).forEach(([c,rs])=>catTotals[c]=sum(rs,r=>r.sales));
+    const bySub = groupBy(sampleData, r=>r.category+'|'+r.subCategory);
+    const rows = Object.entries(bySub).map(([key,rs])=>{
+      const [cat,sub]=key.split('|');
+      const subTotal = sum(rs,r=>r.sales);
+      const pct = (subTotal/catTotals[cat]*100).toFixed(1)+'%';
+      return [cat, sub, money(subTotal), money(catTotals[cat]), pct];
+    });
+    return {cols:['Category','Sub-Category','Sub-Cat Sales','EXCLUDE: Category Sales','% of Category'], rows};
+  },
+  exercise:{type:'fill', q:'Fill in the missing keyword: <code>{ ____ [Sub-Category] : SUM([Sales]) }</code> to roll sub-category up to category',
+    answer:'exclude', hint:'The opposite of INCLUDE.'}
+},
+{id:'tc-basics', track:'Table Calculations', title:'What Makes Table Calcs Different',
+  concept:`Table calculations run <b>after</b> the data has already been queried and aggregated &mdash; they operate on the numbers already shown in the view. That's the opposite order from LOD expressions, which run as part of the query itself. Table calcs need two settings: <b>addressing</b> (which direction to compute across, e.g. down a Date axis) and <b>partitioning</b> (which dimensions restart the calculation).`,
+  formula:'Query runs \u2192 aggregated marks appear in view \u2192 table calc runs on those marks',
+  anatomy:[
+    {tag:'Addressing', text:'The dimension(s) the calc moves across, e.g. Order Date for a running total over time.'},
+    {tag:'Partitioning', text:'The dimension(s) that reset the calc into separate groups, e.g. a new running total per Region.'},
+  ],
+  compute(){
+    return {cols:['Concept','LOD Expression','Table Calculation'],
+      rows:[
+        ['Runs', 'Inside the data source query', 'After the query, on the aggregated view'],
+        ['Controlled by', 'FIXED / INCLUDE / EXCLUDE + dimension', 'Addressing + partitioning fields'],
+        ['Typical use', 'Custom granularity (customer totals, % of parent)', 'Running totals, ranks, moving averages'],
+      ]};
+  },
+  exercise:{type:'mc', q:'Table calculations run:', options:['Before the data is aggregated','After the data is aggregated into the view','Inside the SQL query'], answer:1,
+    hint:'They operate on the marks already showing.'}
+},
+{id:'tc-running', track:'Table Calculations', title:'Running Total',
+  concept:`<code>RUNNING_SUM(SUM([Sales]))</code> adds each mark's value to the running sum of everything before it, in whatever order the view is sorted &mdash; here, by Order Date.`,
+  formula:'RUNNING_SUM(SUM([Sales]))',
+  anatomy:[
+    {tag:'SUM([Sales])', text:'The aggregated value being accumulated &mdash; total Sales per date in the view.'},
+    {tag:'RUNNING_SUM(...)', text:'Adds each row\'s value to the sum of every row addressed before it.'},
+  ],
+  compute(){
+    const sorted = [...sampleData].sort((a,b)=>a.date.localeCompare(b.date));
+    let running=0;
+    const rows = sorted.slice(0,10).map(r=>{running+=r.sales; return [r.date, r.customer, money(r.sales), money(running)];});
+    return {cols:['Order Date','Customer','Sales','RUNNING_SUM(SUM(Sales))'], rows, highlightLast:true};
+  },
+  exercise:{type:'fill', q:'Fill in the function: <code>____(SUM([Sales]))</code> to accumulate Sales over time',
+    answer:'running_sum', hint:'Two words joined with an underscore, starting with RUNNING.'}
+},
+{id:'tc-rank', track:'Table Calculations', title:'RANK',
+  concept:`<code>RANK(SUM([Sales]))</code> orders marks by value and assigns 1 to the highest. Add a <code>partition</code> (e.g. by Region) to restart the ranking within each group instead of across the whole table.`,
+  formula:'RANK(SUM([Sales]))\n// partitioned by Region',
+  anatomy:[
+    {tag:'SUM([Sales])', text:'The measure being ranked.'},
+    {tag:'RANK(...)', text:'1 = highest value. Ties share a rank and skip the next number (standard competition ranking).'},
+    {tag:'Partition: Region', text:'Ranking restarts at 1 for each Region instead of running across all rows.'},
+  ],
+  compute(){
+    const byRegion = groupBy(sampleData, r=>r.region);
+    let rows=[];
+    Object.entries(byRegion).forEach(([region,rs])=>{
+      const byCust = groupBy(rs, r=>r.customer);
+      const totals = Object.entries(byCust).map(([c,g])=>[c,sum(g,r=>r.sales)]).sort((a,b)=>b[1]-a[1]);
+      totals.forEach(([c,s],i)=>rows.push([region, c, money(s), i+1]));
+    });
+    return {cols:['Region (partition)','Customer','SUM(Sales)','RANK'], rows, highlightLast:true};
+  },
+  exercise:{type:'mc', q:'If you partition RANK by Region, what happens?', 
+    options:['Ranking ignores Region entirely','Ranking restarts at 1 within each Region','Only the top Region is ranked'], answer:1,
+    hint:'Partitioning creates separate groups for the calc.'}
+},
+{id:'tc-window', track:'Table Calculations', title:'Window Functions & % of Total',
+  concept:`<code>WINDOW_AVG(SUM([Sales]))</code> returns the same average across every mark in its window &mdash; handy for a reference line. <code>SUM([Sales]) / TOTAL(SUM([Sales]))</code> is the standard "percent of total" pattern: <code>TOTAL()</code> returns the grand sum regardless of partitioning, so dividing the row by it gives a share.`,
+  formula:'SUM([Sales]) / TOTAL(SUM([Sales]))',
+  anatomy:[
+    {tag:'SUM([Sales])', text:'This row/mark\'s value.'},
+    {tag:'TOTAL(SUM([Sales]))', text:'The grand total across the whole partition, unaffected by addressing.'},
+    {tag:'A / TOTAL(A)', text:'Row value divided by the whole gives percent of total.'},
+  ],
+  compute(){
+    const byCat = groupBy(sampleData, r=>r.category);
+    const totals = Object.entries(byCat).map(([c,rs])=>[c,sum(rs,r=>r.sales)]);
+    const grand = sum(sampleData, r=>r.sales);
+    const avg = grand/totals.length;
+    const rows = totals.map(([c,s])=>[c, money(s), money(avg), (s/grand*100).toFixed(1)+'%']);
+    return {cols:['Category','SUM(Sales)','WINDOW_AVG(SUM(Sales))','SUM(Sales)/TOTAL(SUM(Sales))'], rows, highlightLast:true};
+  },
+  exercise:{type:'fill', q:'Fill in the function: <code>SUM([Sales]) / ____(SUM([Sales]))</code> for percent of total',
+    answer:'total', hint:'Returns the grand total regardless of partitioning.'}
+},
+];
+
+/* ============================= STATE ============================= */
+const STORAGE_KEY = 'calcTutorProgress';
+let completed = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+let currentIdx = 0;
+
+function saveProgress(){ localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed])); }
+
+/* ============================= RENDER: SIDEBAR ============================= */
+function renderSidebar(){
+  const tracks = [...new Set(lessons.map(l=>l.track))];
+  const container = document.getElementById('trackList');
+  container.innerHTML = tracks.map(track=>{
+    const items = lessons.map((l,i)=> l.track===track ? {l,i} : null).filter(Boolean);
+    return `<div class="track">
+      <div class="track-header">${track}</div>
+      ${items.map(({l,i})=>`
+        <div class="lesson-item ${i===currentIdx?'active':''}" data-idx="${i}">
+          <span class="lesson-check ${completed.has(l.id)?'done':''}">${completed.has(l.id)?'\u2713':''}</span>
+          ${l.title}
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+  container.querySelectorAll('.lesson-item').forEach(el=>{
+    el.addEventListener('click', ()=>{ currentIdx = parseInt(el.dataset.idx,10); renderAll(); });
+  });
+  const pct = Math.round((completed.size/lessons.length)*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = `${completed.size} of ${lessons.length} lessons complete`;
+}
+
+/* ============================= RENDER: SYNTAX ANATOMY ============================= */
+function renderFormulaBox(formula){
+  return `<div class="formula-box">${formula.replace(/</g,'&lt;')}</div>`;
+}
+
+/* ============================= RENDER: DATA TABLE ============================= */
+function renderTable(result){
+  const {cols, rows, highlightLast} = result;
+  return `<div class="table-scroll"><table class="data">
+    <thead><tr>${cols.map((c,i)=>`<th class="${highlightLast && i===cols.length-1 ? 'highlight-col':''}">${c}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map((v,i)=>{
+      const isLast = highlightLast && i===r.length-1;
+      const isNum = typeof v==='number' || (typeof v==='string' && /^-?\$/.test(v));
+      return `<td class="${isNum?'num':''} ${isLast?'highlight-col':''} ${typeof v==='string'&&v.startsWith('-')?'neg':''}">${v}</td>`;
+    }).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ============================= RENDER: EXERCISE ============================= */
+function renderExercise(lesson){
+  const ex = lesson.exercise;
+  const done = completed.has(lesson.id);
+  if(ex.type==='mc'){
+    return `<div class="exercise" id="exerciseBox">
+      <h3>Knowledge Check</h3>
+      <div class="exercise-q">${ex.q}</div>
+      <div class="mc-options">
+        ${ex.options.map((opt,i)=>`<button class="mc-option" data-idx="${i}">${opt}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="hint-btn" id="hintBtn">Show hint</button>
+      <div class="hint-text" id="hintText">${ex.hint}</div>
+    </div>`;
+  } else {
+    return `<div class="exercise" id="exerciseBox">
+      <h3>Knowledge Check</h3>
+      <div class="exercise-q">${ex.q}</div>
+      <div class="fill-row">
+        <input type="text" id="fillInput" placeholder="Type your answer" autocomplete="off">
+        <button id="checkBtn">Check</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="hint-btn" id="hintBtn">Show hint</button>
+      <div class="hint-text" id="hintText">${ex.hint}</div>
+    </div>`;
+  }
+}
+
+function wireExercise(lesson){
+  const ex = lesson.exercise;
+  const feedback = document.getElementById('feedback');
+  const markDone = () => {
+    completed.add(lesson.id); saveProgress();
+    feedback.className='feedback show ok';
+    feedback.textContent = '\u2713 Correct! Lesson marked complete.';
+    renderSidebar();
+  };
+  const markWrong = (msg) => {
+    feedback.className='feedback show bad';
+    feedback.textContent = msg || '\u2717 Not quite \u2014 try again, or check the hint.';
+  };
+  if(ex.type==='mc'){
+    document.querySelectorAll('.mc-option').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const idx = parseInt(btn.dataset.idx,10);
+        document.querySelectorAll('.mc-option').forEach(b=>b.classList.remove('correct','incorrect'));
+        if(idx===ex.answer){ btn.classList.add('correct'); markDone(); }
+        else { btn.classList.add('incorrect'); markWrong(); }
+      });
+    });
+  } else {
+    document.getElementById('checkBtn').addEventListener('click', ()=>{
+      const val = document.getElementById('fillInput').value.trim().toLowerCase();
+      if(val === ex.answer){ markDone(); } else { markWrong(); }
+    });
+    document.getElementById('fillInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter') document.getElementById('checkBtn').click();
+    });
+  }
+  document.getElementById('hintBtn').addEventListener('click', ()=>{
+    document.getElementById('hintText').classList.toggle('show');
+  });
+}
+
+/* ============================= RENDER: MAIN ============================= */
+function renderMain(){
+  const lesson = lessons[currentIdx];
+  const result = lesson.compute();
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="lesson-eyebrow">${lesson.track}</div>
+    <h2 class="lesson-title">${lesson.title}</h2>
+    <div class="concept">${lesson.concept}</div>
+
+    <section class="block">
+      <h3>Syntax</h3>
+      ${renderFormulaBox(lesson.formula)}
+      <ul class="anatomy-list">
+        ${lesson.anatomy.map(a=>`<li><span class="anatomy-tag">${a.tag}</span><span>${a.text}</span></li>`).join('')}
+      </ul>
+    </section>
+
+    <section class="block">
+      <h3>Live Example &mdash; computed against the sample dataset</h3>
+      ${renderTable(result)}
+    </section>
+
+    ${renderExercise(lesson)}
+
+    <div class="nav-buttons">
+      <button id="prevBtn" ${currentIdx===0?'disabled':''}>&larr; Previous</button>
+      <button id="nextBtn" ${currentIdx===lessons.length-1?'disabled':''}>Next &rarr;</button>
+    </div>
+  `;
+  wireExercise(lesson);
+  document.getElementById('prevBtn').addEventListener('click', ()=>{ if(currentIdx>0){currentIdx--; renderAll();} });
+  document.getElementById('nextBtn').addEventListener('click', ()=>{ if(currentIdx<lessons.length-1){currentIdx++; renderAll();} });
+  main.scrollTop = 0;
+}
+
+function renderAll(){ renderSidebar(); renderMain(); }
+
+/* ============================= INIT ============================= */
+function boot(){ renderAll(); }
+
+if(typeof tableau !== 'undefined' && tableau.extensions){
+  tableau.extensions.initializeAsync().then(boot).catch(boot);
+} else {
+  // running standalone in a browser for dev/testing
+  boot();
+}
+</script>
+</body>
+</html>
