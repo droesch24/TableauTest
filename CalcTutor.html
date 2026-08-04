@@ -453,11 +453,11 @@ const lessons = [
     {title:'LOD FIXED', text:'compute an aggregation at a different granularity than the view'},
   ],
   build:{
-    prompt:'Build a calc that returns each region\'s average Profit.',
+    prompt:'Build a calc that returns each region\'s single largest Sale.',
     calcKind:'aggregate', viewDims:['region'],
     getMarks:(data)=>['East','West','Central'].map(reg=>({label:reg, rows:data.filter(r=>r.region===reg)})),
-    solution:"AVG([Profit])",
-    hint:'Wrap the Profit field in an aggregation function that averages it.',
+    solution:"MAX([Sales])",
+    hint:'The syntax box above shows SUM/AVG/COUNTD \u2014 this one needs a different aggregation entirely. Which function returns the biggest value in a group?',
     format: v => money(v),
     palette:{functions:['SUM','AVG','COUNTD','MIN','MAX'], keywords:[], operators:['+','-','*','/']}
   }
@@ -535,11 +535,11 @@ const lessons = [
     {title:'Row-Level vs. Aggregate', text:'what changes when you wrap an IF in SUM()'},
   ],
   build:{
-    prompt:'Build the IF/ELSEIF/ELSE calc that classifies each row into \'High\' (Profit > 100), \'Low\' (Profit > 0), or \'Loss\'.',
+    prompt:'Build the IF/ELSEIF/ELSE calc that classifies each row\'s Sales into \'Large\' (over $500), \'Medium\' (over $100), or \'Small\'.',
     calcKind:'row', viewDims:[],
     getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.subCategory}`, rows:[r]})),
-    solution:"IF [Profit] > 100 THEN 'High' ELSEIF [Profit] > 0 THEN 'Low' ELSE 'Loss' END",
-    hint:'Start with IF [Profit] > 100 THEN \'High\', then chain an ELSEIF, then ELSE, then close with END.',
+    solution:"IF [Sales] > 500 THEN 'Large' ELSEIF [Sales] > 100 THEN 'Medium' ELSE 'Small' END",
+    hint:'Same pattern as the syntax box above, but on a different field and with different thresholds/labels \u2014 start with IF [Sales] > 500 THEN \'Large\'.',
     format: v => String(v),
     palette:{functions:[], keywords:['IF','THEN','ELSEIF','ELSE','END'], operators:['>','<','>=','<=','=']}
   }
@@ -578,11 +578,11 @@ const lessons = [
     {title:'Aggregation Basics', text:'COUNTD a CASE result to count how many rows fall in each group'},
   ],
   build:{
-    prompt:'Build a CASE calc: East and West map to \'Coastal\', everything else maps to \'Inland\'.',
+    prompt:'Build a CASE calc: Office Supplies maps to \'Consumables\', everything else maps to \'Durable Goods\'.',
     calcKind:'row', viewDims:[],
-    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.region}`, rows:[r]})),
-    solution:"CASE [Region] WHEN 'East' THEN 'Coastal' WHEN 'West' THEN 'Coastal' ELSE 'Inland' END",
-    hint:'CASE [Region] WHEN \'East\' THEN ... WHEN \'West\' THEN ... ELSE ... END',
+    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.category}`, rows:[r]})),
+    solution:"CASE [Category] WHEN 'Office Supplies' THEN 'Consumables' ELSE 'Durable Goods' END",
+    hint:'Same shape as the syntax box above, but testing [Category] instead of [Region] with new labels.',
     format: v => String(v),
     palette:{functions:[], keywords:['CASE','WHEN','THEN','ELSE','END'], operators:[]}
   }
@@ -661,11 +661,11 @@ const lessons = [
     {title:'IF / ELSEIF', text:'refresher on the row-by-row checking step'},
   ],
   build:{
-    prompt:'Build a calc that sums Sales for Technology rows only (a single total across the whole dataset).',
+    prompt:'Build a calc that sums Sales for Furniture rows only (a single total across the whole dataset).',
     calcKind:'aggregate', viewDims:[],
-    getMarks:(data)=>[{label:'All rows (Technology-only total)', rows:data}],
-    solution:"SUM(IF [Category] = 'Technology' THEN [Sales] END)",
-    hint:'Check each row first (IF), then add up the matches (SUM) \u2014 the IF goes inside the SUM.',
+    getMarks:(data)=>[{label:'All rows (Furniture-only total)', rows:data}],
+    solution:"SUM(IF [Category] = 'Furniture' THEN [Sales] END)",
+    hint:'Same shape as the syntax box above, just a different Category value \u2014 check each row first (IF), then add up the matches (SUM).',
     format: v => money(v),
     palette:{functions:['SUM'], keywords:['IF','THEN','END'], operators:['=']}
   }
@@ -771,11 +771,11 @@ const lessons = [
     {title:'Row-Level vs. Aggregate', text:'why {FIXED...} can be used where a bare SUM() sometimes can\'t'},
   ],
   build:{
-    prompt:'Build a calc that returns each customer\'s total Sales across all their orders, fixed regardless of the view.',
+    prompt:'Build a calc that returns each category\'s total Sales across every order, fixed regardless of the view.',
     calcKind:'lod', viewDims:[],
-    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.subCategory}`, rows:[r]})),
-    solution:"{FIXED [Customer] : SUM([Sales])}",
-    hint:'{ FIXED [Customer] : SUM([Sales]) }',
+    getMarks:(data)=>data.slice(0,8).map(r=>({label:`${r.customer} \u2014 ${r.category}`, rows:[r]})),
+    solution:"{FIXED [Category] : SUM([Sales])}",
+    hint:'Same shape as the syntax box above, but FIXED on [Category] instead of [Customer].',
     format: v => money(v),
     palette:{functions:['SUM'], keywords:['FIXED'], operators:[]}
   }
@@ -822,13 +822,13 @@ const lessons = [
     {title:'EXCLUDE', text:'the mirror-image move in the other direction'},
   ],
   build:{
-    prompt:'At a Category-level view, build a calc that averages each sub-category\'s average Profit, rolled up to Category.',
+    prompt:'At a Category-level view, build a calc that SUMS each sub-category\'s average Profit, rolled up to Category (not AVERAGES them \u2014 SUM).',
     calcKind:'lod', viewDims:['category'],
     getMarks:(data)=>['Technology','Furniture','Office Supplies'].map(cat=>({label:cat, rows:data.filter(r=>r.category===cat)})),
-    solution:"AVG({INCLUDE [Sub-Category] : AVG([Profit])})",
-    hint:'Wrap an INCLUDE LOD (averaging Profit per sub-category) inside an outer AVG.',
+    solution:"SUM({INCLUDE [Sub-Category] : AVG([Profit])})",
+    hint:'Same INCLUDE LOD as the syntax box above, but wrapped in SUM instead of AVG on the outside \u2014 a different outer aggregation gives a different result.',
     format: v => money(v),
-    palette:{functions:['AVG'], keywords:['INCLUDE'], operators:[]}
+    palette:{functions:['SUM','AVG'], keywords:['INCLUDE'], operators:[]}
   }
 },
 {id:'lod-exclude', track:'LOD Expressions', title:'EXCLUDE',
@@ -879,14 +879,14 @@ const lessons = [
     {title:'TOTAL()', text:'a table-calc alternative for a similar % of total pattern'},
   ],
   build:{
-    prompt:'At a Sub-Category-level view, build a calc for % of the parent Category\'s total Sales.',
-    calcKind:'lod', viewDims:['category','subCategory'],
+    prompt:'At a Region + Customer view, build a calc for a customer\'s % of their region\'s total Sales.',
+    calcKind:'lod', viewDims:['region','customer'],
     getMarks:(data)=>{
-      const bySub = groupBy(data, r=>r.category+'|'+r.subCategory);
-      return Object.keys(bySub).map(key=>{ const [cat,sub]=key.split('|'); return {label:`${cat} \u2014 ${sub}`, rows:data.filter(r=>r.category===cat && r.subCategory===sub)}; });
+      const byRegCust = groupBy(data, r=>r.region+'|'+r.customer);
+      return Object.keys(byRegCust).map(key=>{ const [region,cust]=key.split('|'); return {label:`${region} \u2014 ${cust}`, rows:data.filter(r=>r.region===region && r.customer===cust)}; });
     },
-    solution:"[Sales] / {EXCLUDE [Sub-Category] : SUM([Sales])}",
-    hint:'Divide the row-level [Sales] by an EXCLUDE LOD that rolls Sales up to Category.',
+    solution:"[Sales] / {EXCLUDE [Customer] : SUM([Sales])}",
+    hint:'Same shape as the syntax box above, but EXCLUDE [Customer] instead of [Sub-Category] \u2014 that rolls up to Region instead of Category.',
     format: v => pct(v),
     palette:{functions:['SUM'], keywords:['EXCLUDE'], operators:['/']}
   }
@@ -964,11 +964,11 @@ const lessons = [
     {title:'WINDOW_SUM / TOTAL', text:'a fixed total across a window instead of a growing accumulation'},
   ],
   build:{
-    prompt:'Build a calc that accumulates Sales over time, ordered by Order Date.',
+    prompt:'Build a calc that accumulates Profit over time, ordered by Order Date.',
     calcKind:'tablecalc', viewDims:['id'], addressDim:'date', partitionDims:[],
     getMarks:(data)=>[...data].sort((a,b)=>a.date.localeCompare(b.date)).slice(0,10).map(r=>({label:`${r.date} \u2014 ${r.customer}`, rows:[r]})),
-    solution:"RUNNING_SUM(SUM([Sales]))",
-    hint:'RUNNING_SUM wraps an aggregated measure: RUNNING_SUM(SUM([Sales]))',
+    solution:"RUNNING_SUM(SUM([Profit]))",
+    hint:'Same shape as the syntax box above, but accumulating [Profit] instead of [Sales] \u2014 and Profit can go negative, so watch the running total dip.',
     format: v => money(v),
     palette:{functions:['SUM','RUNNING_SUM'], keywords:[], operators:[]}
   }
@@ -1011,7 +1011,7 @@ const lessons = [
     {title:'WINDOW_AVG / TOTAL', text:'compare a mark to a group average instead of a rank position'},
   ],
   build:{
-    prompt:'Build a calc that ranks each customer\'s total Sales, restarting at 1 within each Region.',
+    prompt:'Build a calc that ranks each customer\'s total Profit, restarting at 1 within each Region.',
     calcKind:'tablecalc', viewDims:['region','customer'], addressDim:null, partitionDims:['region'],
     getMarks:(data)=>{
       const byRegion = groupBy(data, r=>r.region);
@@ -1022,8 +1022,8 @@ const lessons = [
       });
       return marks;
     },
-    solution:"RANK(SUM([Sales]))",
-    hint:'RANK(SUM([Sales])) \u2014 partitioning by Region is handled by the exercise setup.',
+    solution:"RANK(SUM([Profit]))",
+    hint:'Same shape as the syntax box above, but ranking [Profit] instead of [Sales] \u2014 the ranking order may not match a Sales-based ranking, since a big Sales number doesn\'t always mean big Profit.',
     format: v => String(v),
     palette:{functions:['SUM','RANK'], keywords:[], operators:[]}
   }
@@ -1123,11 +1123,11 @@ const lessons = [
     {title:'RUNNING_SUM', text:'accumulates instead of comparing to a fixed window total'},
   ],
   build:{
-    prompt:'Build a calc for each Category\'s % of total Sales across the whole table.',
+    prompt:'Build a calc for each Category\'s % of total Profit across the whole table.',
     calcKind:'tablecalc', viewDims:['category'], addressDim:null, partitionDims:[],
     getMarks:(data)=>['Technology','Furniture','Office Supplies'].map(cat=>({label:cat, rows:data.filter(r=>r.category===cat)})),
-    solution:"SUM([Sales]) / TOTAL(SUM([Sales]))",
-    hint:'Divide SUM([Sales]) by TOTAL(SUM([Sales])).',
+    solution:"SUM([Profit]) / TOTAL(SUM([Profit]))",
+    hint:'Same shape as the syntax box above, but with [Profit] instead of [Sales]. Heads up: Furniture runs at an overall loss in this dataset, so don\'t be alarmed if a percentage comes out negative or another comes out over 100% \u2014 that\'s correct when the underlying measure can be negative.',
     format: v => pct(v),
     palette:{functions:['SUM','TOTAL','WINDOW_AVG'], keywords:[], operators:['/']}
   }
