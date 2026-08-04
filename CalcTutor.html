@@ -13,11 +13,7 @@
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
   #app{position:relative;height:100vh;min-height:600px;}
-  #modeRoot{position:relative;width:100%;height:100%;}
-  .tutorial-shell{display:flex;height:100%;}
-
-  .mode-toggle-btn{position:absolute;top:14px;right:16px;z-index:50;background:rgba(30,36,48,.9);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px 14px;font-size:12.5px;font-family:'Segoe UI',Arial;cursor:pointer;}
-  .mode-toggle-btn:hover{background:#1e2430;}
+  #modeRoot{display:flex;width:100%;height:100%;}
 
   /* Sidebar */
   #sidebar{width:270px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:16px 0;}
@@ -40,6 +36,38 @@
   .lesson-eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:700;margin-bottom:6px;}
   .lesson-title{font-size:24px;margin:0 0 14px;}
   .concept{font-size:14.5px;line-height:1.6;color:#333;margin-bottom:22px;max-width:760px;}
+  .concept p{margin:0 0 10px;}
+  .concept p:last-child{margin-bottom:0;}
+
+  .example-label{font-size:12.5px;font-weight:600;color:var(--text);margin:0 0 4px;}
+  .example-desc{font-size:12.5px;color:var(--muted);margin:0 0 12px;}
+  .example-divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+
+  .pitfalls-list{list-style:none;margin:0;padding:0;}
+  .pitfalls-list li{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:13px;}
+  .pitfalls-list li:first-child{border-top:none;padding-top:2px;}
+  .pitfall-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:var(--warn-light);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-top:1px;}
+  .pitfall-body b{display:block;color:var(--text);margin-bottom:2px;}
+  .pitfall-body span{color:var(--muted);}
+
+  .related-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .related-chip{background:var(--blue-light);color:var(--blue);border-radius:6px;padding:8px 12px;font-size:12.5px;max-width:100%;}
+  .related-chip b{display:inline;}
+
+  .deepdive-intro{font-size:13.5px;line-height:1.6;color:#333;margin-bottom:14px;}
+  .deepdive-intro p{margin:0 0 10px;}
+  .deepdive-intro p:last-child{margin-bottom:0;}
+  .deepdive-intro code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12px;}
+  .precedence-note{background:var(--blue-light);border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:10px 14px;font-size:12.5px;color:var(--text);margin:14px 0;}
+  .condition-legend{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;}
+  .condition-legend div{display:flex;gap:8px;padding:3px 0;align-items:baseline;}
+  .condition-legend .letter{font-family:'Consolas',monospace;font-weight:700;color:var(--blue);width:16px;flex-shrink:0;}
+  .condition-legend code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12px;}
+  .precedence-note code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12px;}
+  .truth-table{margin-bottom:16px;}
+  .bool-true{color:var(--accent);font-weight:600;}
+  .bool-false{color:var(--warn);font-weight:600;}
+
   .concept code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12.5px;}
 
   section.block{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin-bottom:20px;max-width:900px;}
@@ -104,62 +132,10 @@
   .mc-option.correct{background:var(--accent-light);border-color:var(--accent);}
   .mc-option.incorrect{background:var(--warn-light);border-color:var(--warn);}
 
-  /* ===== Presentation mode ===== */
-  #deck{position:absolute;inset:0;background:var(--bg);}
-  .pslide{position:absolute;inset:0;display:none;flex-direction:column;padding:5% 6%;overflow:auto;padding-bottom:70px;box-sizing:border-box;}
-  .pslide.active{display:flex;}
-  .pslide.dark{background:#1e2430;color:#fff;}
-  .pslide.light{background:var(--bg);color:var(--text);}
-  .p-eyebrow{font-size:.8em;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:#6fd7b5;margin:0 0 .4em;}
-  .pslide.light .p-eyebrow{color:var(--accent);}
-  h1.p-title{font-family:Cambria,Georgia,serif;font-size:2.6em;font-weight:700;margin:0 0 .3em;line-height:1.15;}
-  h2.p-title{font-family:Cambria,Georgia,serif;font-size:1.9em;font-weight:700;margin:0 0 .25em;line-height:1.2;}
-  .p-subtitle{font-size:1.05em;color:var(--muted);margin:0 0 .6em;max-width:44em;}
-  .pslide.dark .p-subtitle{color:#cadcfc;}
-  .p-lead{font-size:1.05em;line-height:1.5;max-width:34em;color:#cadcfc;}
-  .p-icon{width:1.5em;height:1.5em;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4em;color:#fff;}
-  .p-row{display:flex;gap:.7em;align-items:flex-start;margin-bottom:1.1em;max-width:52em;}
-  .p-row .p-row-body{padding-top:.05em;}
-  .p-row h3{margin:0 0 .25em;font-size:1.05em;}
-  .p-row p{margin:0;color:var(--muted);font-size:.92em;line-height:1.5;}
-  .p-cards{display:flex;gap:1.1em;flex:1;align-items:stretch;}
-  .p-card{background:var(--panel);border:1px solid var(--border);border-radius:.6em;padding:1.1em 1.2em;flex:1;box-shadow:0 4px 14px rgba(0,0,0,.05);display:flex;flex-direction:column;}
-  .p-card .p-icon{margin-bottom:.6em;}
-  .p-card h3{margin:0 0 .5em;font-size:1.05em;}
-  .p-card ul{margin:0;padding-left:1.1em;color:var(--muted);font-size:.88em;line-height:1.7;}
-  .p-card .p-step-num{align-self:flex-end;font-family:Cambria,Georgia,serif;font-size:1.3em;color:#d8dee6;font-weight:700;margin-top:-1.6em;}
-  .p-split{display:flex;gap:2em;flex:1;align-items:stretch;min-height:0;}
-  .p-split-text{flex:0 0 34%;display:flex;flex-direction:column;justify-content:center;}
-  .p-split-media{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;}
-  .p-frame{width:100%;height:100%;background:#151a22;border-radius:.5em;box-shadow:0 10px 40px rgba(0,0,0,.4);padding:.4em;min-height:0;display:flex;}
-  .p-frame-inner{flex:1;background:var(--bg);border-radius:.3em;overflow:auto;position:relative;}
-  .p-codebar{background:#1e2430;color:#dbe4ee;border-radius:.5em;padding:.8em 1em;font-family:Consolas,monospace;font-size:.85em;margin-top:auto;}
-  .p-codebar b{color:#8fe0c4;}
-  .p-two-col{display:flex;gap:2.2em;flex:1;}
-  .p-two-col .p-col{flex:1;}
-  .p-two-col h3{display:flex;align-items:center;gap:.5em;font-size:1.05em;margin:0 0 .7em;}
-  .p-two-col ul{margin:0;padding-left:1.1em;color:var(--muted);font-size:.9em;line-height:1.7;}
-  .p-two-col li{margin-bottom:.6em;}
-  .p-cta-link{font-family:Consolas,monospace;font-size:1.15em;color:#6fd7b5;margin:.3em 0 .8em;}
-  .p-foot{display:flex;justify-content:space-between;font-size:.7em;color:var(--muted);margin-top:auto;padding-top:1em;}
-  .pslide.dark .p-foot{color:#8b95a5;}
-  #pnavbar{position:absolute;left:0;right:0;bottom:0;height:52px;display:flex;align-items:center;justify-content:center;gap:16px;background:rgba(255,255,255,.9);backdrop-filter:blur(4px);border-top:1px solid var(--border);z-index:20;}
-  #pnavbar button{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text);}
-  #pnavbar button:hover{border-color:var(--accent);color:var(--accent);}
-  #pnavbar button:disabled{opacity:.35;cursor:default;}
-  #pdots{display:flex;gap:6px;}
-  .pdot{width:7px;height:7px;border-radius:50%;background:var(--border);cursor:pointer;}
-  .pdot.active{background:var(--accent);}
-  #pcounter{font-size:12px;color:var(--muted);min-width:48px;text-align:center;}
-  /* lesson content rendered inside the p-frame-inner reuses .lesson-* / .exercise etc. at a smaller scale */
-  .p-frame-inner .lesson-eyebrow, .p-frame-inner .lesson-title, .p-frame-inner .concept,
-  .p-frame-inner section.block, .p-frame-inner .exercise, .p-frame-inner .nav-buttons{margin-left:20px;margin-right:20px;}
-  .p-frame-inner .lesson-eyebrow{margin-top:20px;}
 </style>
 </head>
 <body>
 <div id="app">
-  <button id="modeToggle" class="mode-toggle-btn"></button>
   <div id="modeRoot"></div>
 </div>
 
@@ -444,7 +420,7 @@ const ALL_FIELDS = ['[Sales]','[Profit]','[Quantity]','[Category]','[Sub-Categor
 
 const lessons = [
 {id:'agg-basics', track:'Basics: Aggregation & Logic', title:'Aggregation Basics',
-  concept:`Every measure in Tableau is wrapped in an <b>aggregation function</b> by default &mdash; usually <code>SUM</code>. Aggregations collapse many rows down to one number per mark. The three you'll use constantly are <code>SUM</code>, <code>AVG</code>, and <code>COUNTD</code> (count distinct).`,
+  concept:`<p>Every measure in Tableau is wrapped in an <b>aggregation function</b> by default &mdash; usually <code>SUM</code>. Aggregations collapse many rows down to one number per mark. The three you'll use constantly are <code>SUM</code>, <code>AVG</code>, and <code>COUNTD</code> (count distinct).</p><p><code>MIN</code> and <code>MAX</code> round out the basic set &mdash; useful for things like "earliest order date" or "largest single sale." Which aggregation you pick isn't just a display choice: SUM and AVG of the same field tell very different stories, and picking the wrong one is one of the most common analysis mistakes.</p>`,
   formula:'SUM([Sales])   AVG([Profit])   COUNTD([Customer])',
   anatomy:[
     {tag:'SUM(...)', text:'Adds every row\'s value together within the current level of detail.'},
@@ -458,6 +434,24 @@ const lessons = [
     }));
     return {cols:['Region','SUM(Sales)','AVG(Profit)','COUNTD(Customer)'], rows: rows.map(r=>[r.region, money(r.sales), money(r.profit), r.cust])};
   },
+  secondExample:{
+    title:'Same aggregations, grouped by Category instead',
+    description:'The formulas don\'t change \u2014 only the grouping (the view\'s dimensions) does. This is what "level of detail" means in practice.',
+    compute(){
+      const byCat = groupBy(sampleData, r=>r.category);
+      const rows = Object.entries(byCat).map(([cat,rs])=>[cat, money(sum(rs,r=>r.sales)), money(sum(rs,r=>r.profit)/rs.length), uniq(rs.map(r=>r.customer)).length]);
+      return {cols:['Category','SUM(Sales)','AVG(Profit)','COUNTD(Customer)'], rows};
+    }
+  },
+  pitfalls:[
+    {title:'COUNT vs COUNTD', text:'COUNT counts every row, including repeat orders from the same customer. COUNTD counts unique values. "How many customers bought Furniture" almost always means COUNTD.'},
+    {title:'AVG hides outliers', text:'A single -$120.50 Tables order pulls the whole regional average down. Before trusting an AVG, glance at MIN/MAX or the row count behind it.'},
+    {title:'Aggregating the wrong field type', text:'SUM/AVG only make sense on measures (numbers). Applying them to a dimension like Region either errors or silently does something unhelpful \u2014 use COUNTD or MIN/MAX for dimensions instead.'},
+  ],
+  related:[
+    {title:'Row-Level vs. Aggregate', text:'see how aggregation interacts with IF logic'},
+    {title:'LOD FIXED', text:'compute an aggregation at a different granularity than the view'},
+  ],
   build:{
     prompt:'Build a calc that returns each region\'s average Profit.',
     calcKind:'aggregate', viewDims:['region'],
@@ -469,7 +463,7 @@ const lessons = [
   }
 },
 {id:'if-logic', track:'Basics: Aggregation & Logic', title:'IF / ELSEIF / END',
-  concept:`<code>IF</code> statements classify rows based on a condition. They're evaluated <b>row by row</b> before any aggregation happens, which is why this is called a row-level calculation.`,
+  concept:`<p><code>IF</code> statements classify rows based on a condition. They're evaluated <b>row by row</b> before any aggregation happens, which is why this is called a row-level calculation.</p><p>Branches are checked top to bottom, and the <b>first TRUE branch wins</b> &mdash; Tableau doesn't keep checking after it finds a match. You can chain as many ELSEIFs as you need, and conditions can combine with AND/OR/NOT, e.g. <code>IF [Profit] > 100 AND [Region] = 'East' THEN ...</code>.</p>`,
   formula:"IF [Profit] > 100 THEN 'High'\nELSEIF [Profit] > 0 THEN 'Low'\nELSE 'Loss'\nEND",
   anatomy:[
     {tag:'IF ... THEN', text:'Tests the first condition. If true, returns \'High\' and stops.'},
@@ -477,11 +471,69 @@ const lessons = [
     {tag:'ELSE', text:'Catches everything that didn\'t match &mdash; here, any profit &le; 0.'},
     {tag:'END', text:'Required to close every IF block in Tableau.'},
   ],
+  deepDive:{
+    title:'Deep Dive: Combining Conditions with AND / OR',
+    intro:`<p>A single IF condition rarely captures a real business rule on its own. <code>AND</code> requires <b>both</b> sides to be true; <code>OR</code> requires <b>at least one</b>; <code>NOT</code> flips a condition's truth value. All three combine with the comparisons you already know (<code>&gt;</code>, <code>&lt;</code>, <code>=</code>, etc.) to build up more precise conditions.</p><p>Tableau doesn't use symbols like <code>&&</code>, <code>||</code>, or <code>!</code> for this &mdash; it's always the words AND, OR, and NOT, and they're case-insensitive like every other keyword.</p>`,
+    truthTable:{
+      cols:['A','B','A AND B','A OR B'],
+      rows:[
+        ['<span class="bool-true">TRUE</span>','<span class="bool-true">TRUE</span>','<span class="bool-true">TRUE</span>','<span class="bool-true">TRUE</span>'],
+        ['<span class="bool-true">TRUE</span>','<span class="bool-false">FALSE</span>','<span class="bool-false">FALSE</span>','<span class="bool-true">TRUE</span>'],
+        ['<span class="bool-false">FALSE</span>','<span class="bool-true">TRUE</span>','<span class="bool-false">FALSE</span>','<span class="bool-true">TRUE</span>'],
+        ['<span class="bool-false">FALSE</span>','<span class="bool-false">FALSE</span>','<span class="bool-false">FALSE</span>','<span class="bool-false">FALSE</span>'],
+      ]
+    },
+    precedenceNote:`<b>Precedence rule:</b> just like multiplication happens before addition in math, <code>AND</code> binds tighter than <code>OR</code>. <code>A OR B AND C</code> is evaluated as <code>A OR (B AND C)</code> &mdash; <b>not</b> <code>(A OR B) AND C</code>. The two groupings can give completely different results, so when in doubt, add the parentheses yourself rather than relying on memorizing the rule.`,
+    liveExample:{
+      title:'Same three fields, two different groupings \u2014 computed live',
+      description:'All three formulas below run through the exact same engine as the rest of this tutorial. The first two (no parens vs. explicit matching parens) always agree \u2014 that\'s the precedence rule in action. The third, with different parens, disagrees on rows 1 and 5.',
+      legend:[
+        {letter:'A', expr:"[Profit] > 100"},
+        {letter:'B', expr:"[Region] = 'East'"},
+        {letter:'C', expr:"[Quantity] > 2"},
+      ],
+      compute(){
+        function evalRow(f, row){ return evalNode(parse(f), {mode:'row', row}); }
+        const f1 = "[Profit] > 100 OR [Region] = 'East' AND [Quantity] > 2";
+        const f2 = "[Profit] > 100 OR ([Region] = 'East' AND [Quantity] > 2)";
+        const f3 = "([Profit] > 100 OR [Region] = 'East') AND [Quantity] > 2";
+        const ids = [1,2,3,5,13,6];
+        const rows = ids.map(id=>{
+          const r = sampleData.find(x=>x.id===id);
+          const b = v => v ? '<span class="bool-true">TRUE</span>' : '<span class="bool-false">FALSE</span>';
+          return [r.customer, money(r.profit), r.region, r.qty, b(evalRow(f1,r)), b(evalRow(f2,r)), b(evalRow(f3,r))];
+        });
+        return {cols:['Customer','Profit','Region','Qty','A OR B AND C','A OR (B AND C)','(A OR B) AND C'], rows};
+      }
+    },
+    notes:[
+      {title:'Default precedence matches "A OR (B AND C)"', text:'If that\'s genuinely what you mean, the formula works fine without parentheses \u2014 but writing them anyway costs nothing and saves the next person from having to memorize the rule.'},
+      {title:'NOT only negates the very next condition', text:'NOT [Region] = \'East\' AND [Profit] > 0 negates just the region check, not the whole expression. To negate a combined condition, wrap it: NOT ([Region] = \'East\' AND [Profit] > 0).'},
+    ]
+  },
   compute(){
     const tier = p => p>100?'High':p>0?'Low':'Loss';
     const rows = sampleData.slice(0,8).map(r=>[r.customer, r.subCategory, money(r.profit), tier(r.profit)]);
     return {cols:['Customer','Sub-Category','Profit','Profit Tier'], rows};
   },
+  secondExample:{
+    title:'Nested condition: combine two fields with AND',
+    description:'IF conditions aren\'t limited to one field \u2014 this flags orders that are both high-profit AND from the East region.',
+    compute(){
+      const flag = r => (r.profit>100 && r.region==='East') ? 'High Profit \u00b7 East' : (r.profit>100 ? 'High Profit \u00b7 Other' : 'Not High Profit');
+      const rows = sampleData.slice(0,6).map(r=>[r.customer, r.region, money(r.profit), flag(r)]);
+      return {cols:['Customer','Region','Profit','Flag'], rows};
+    }
+  },
+  pitfalls:[
+    {title:'Order matters', text:'The first TRUE branch wins. IF [Profit]>0 THEN \'Low\' ELSEIF [Profit]>100 THEN \'High\' END would never return \'High\', since anything over 100 is also over 0 and gets caught first.'},
+    {title:'Forgetting ELSE', text:'Without an ELSE, rows that match none of the conditions return NULL \u2014 which can silently vanish from a viz or break downstream math.'},
+    {title:'Comparing mismatched types', text:'Comparing a number field to a text literal (e.g. [Profit] = \'100\') either errors or never matches. Keep types consistent on both sides of a comparison.'},
+  ],
+  related:[
+    {title:'CASE', text:'cleaner syntax when testing one field against several exact values'},
+    {title:'Row-Level vs. Aggregate', text:'what changes when you wrap an IF in SUM()'},
+  ],
   build:{
     prompt:'Build the IF/ELSEIF/ELSE calc that classifies each row into \'High\' (Profit > 100), \'Low\' (Profit > 0), or \'Loss\'.',
     calcKind:'row', viewDims:[],
@@ -493,7 +545,7 @@ const lessons = [
   }
 },
 {id:'case-stmt', track:'Basics: Aggregation & Logic', title:'CASE Statements',
-  concept:`<code>CASE</code> is a cleaner alternative to IF/ELSEIF when you're testing one field against several exact values, rather than a range condition.`,
+  concept:`<p><code>CASE</code> is a cleaner alternative to IF/ELSEIF when you're testing one field against several exact values, rather than a range condition.</p><p>Because CASE only tests equality against one named field, it can't express a range like "Profit > 100" &mdash; for that you're back to IF. But for anything shaped like "map this dimension's values to new labels," CASE reads more clearly and is harder to get wrong than a long ELSEIF chain.</p>`,
   formula:"CASE [Region]\nWHEN 'East' THEN 'Coastal'\nWHEN 'West' THEN 'Coastal'\nELSE 'Inland'\nEND",
   anatomy:[
     {tag:'CASE [field]', text:'Names the single field being tested &mdash; here, Region.'},
@@ -506,6 +558,25 @@ const lessons = [
     const rows = sampleData.slice(0,8).map(r=>[r.customer, r.region, grp(r)]);
     return {cols:['Customer','Region','Region Group'], rows};
   },
+  secondExample:{
+    title:'Grouping Sub-Category into broader buckets',
+    description:'The same pattern works for collapsing a long list of dimension values into a handful of meaningful groups for a cleaner viz.',
+    compute(){
+      const grp = sub => ['Chairs','Tables','Bookcases'].includes(sub) ? 'Big Furniture' : ['Binders','Paper','Storage'].includes(sub) ? 'Office Consumables' : 'Electronics';
+      const subs = uniq(sampleData.map(r=>r.subCategory));
+      const rows = subs.map(sub=>[sub, grp(sub)]);
+      return {cols:['Sub-Category','Group'], rows};
+    }
+  },
+  pitfalls:[
+    {title:'CASE only does equality', text:'CASE [Profit] WHEN > 100 THEN ... isn\'t valid syntax \u2014 CASE tests exact matches. Range conditions need IF/ELSEIF instead.'},
+    {title:'Missing ELSE', text:'Just like IF, an unmatched value with no ELSE returns NULL rather than the original value \u2014 easy to miss in a quick glance at the viz.'},
+    {title:'String matches are case-sensitive', text:'\'East\' and \'east\' are different values to CASE. If your data has inconsistent casing, normalize it first or use IF with UPPER()/LOWER().'},
+  ],
+  related:[
+    {title:'IF / ELSEIF', text:'use this instead for range or compound conditions'},
+    {title:'Aggregation Basics', text:'COUNTD a CASE result to count how many rows fall in each group'},
+  ],
   build:{
     prompt:'Build a CASE calc: East and West map to \'Coastal\', everything else maps to \'Inland\'.',
     calcKind:'row', viewDims:[],
@@ -517,7 +588,7 @@ const lessons = [
   }
 },
 {id:'row-vs-agg', track:'Basics: Aggregation & Logic', title:'Row-Level vs. Aggregate Calcs',
-  concept:`<code>SUM(IF [Category]='Technology' THEN [Sales] END)</code> and <code>IF SUM([Sales])... END</code> look similar but behave very differently. The first filters, then sums row values (correct for "sales of just Technology"). The second sums everything first, then tests one number &mdash; usually not what you want when the goal is a conditional total.`,
+  concept:`<p><code>SUM(IF [Category]='Technology' THEN [Sales] END)</code> and <code>IF SUM([Sales])... END</code> look similar but behave very differently. The first filters, then sums row values (correct for "sales of just Technology"). The second sums everything first, then tests one number &mdash; usually not what you want when the goal is a conditional total.</p><p>Tableau actually enforces a version of this distinction for you: mixing an aggregate function with a bare (non-aggregated) field reference in most contexts throws a "cannot mix aggregate and non-aggregate" error, which is Tableau's way of forcing you to be explicit about which level the calculation runs at.</p>`,
   formula:"SUM(\n  IF [Category] = 'Technology' THEN [Sales] END\n)",
   anatomy:[
     {tag:'IF ... THEN [Sales] END', text:'Runs once per row. Returns Sales when the row is Technology, otherwise NULL.'},
@@ -531,6 +602,28 @@ const lessons = [
       ['SUM([Sales])', money(allSales), 'Total Sales, every row'],
     ]};
   },
+  secondExample:{
+    title:'The same mistake with AVG',
+    description:'AVG(IF...) averages only the matching rows. IF AVG(...) THEN tests one already-averaged number against a condition \u2014 a completely different (and rarely useful) calculation.',
+    compute(){
+      const techRows = sampleData.filter(r=>r.category==='Technology');
+      const avgTechProfit = sum(techRows, r=>r.profit)/techRows.length;
+      const avgAllProfit = sum(sampleData, r=>r.profit)/sampleData.length;
+      return {cols:['Expression','Result','What it means'], rows:[
+        ["AVG(IF [Category]='Technology' THEN [Profit] END)", money(avgTechProfit), 'Average Profit, Technology rows only'],
+        ['AVG([Profit])', money(avgAllProfit), 'Average Profit, every row'],
+      ]};
+    }
+  },
+  pitfalls:[
+    {title:'The classic Tableau error', text:'"Cannot mix aggregate and non-aggregate arguments" almost always means an IF/CASE and a raw field are combined incorrectly \u2014 wrap the whole condition in the aggregation, not the other way around.'},
+    {title:'IF outside SUM tests the aggregate, not each row', text:'IF SUM([Sales]) > 1000 THEN ... END asks one question about the grand total, not one per row \u2014 it can\'t "filter" individual rows into the sum.'},
+    {title:'Filtering vs. conditional aggregation', text:'A dashboard filter removes rows from the whole view. SUM(IF...) keeps all rows in the view but only sums the ones matching the condition \u2014 useful when you need both the filtered and unfiltered totals side by side.'},
+  ],
+  related:[
+    {title:'LOD Expressions', text:'a more powerful way to control exactly which rows an aggregation sees'},
+    {title:'IF / ELSEIF', text:'refresher on row-level condition syntax'},
+  ],
   build:{
     prompt:'Build a calc that sums Sales for Technology rows only (a single total across the whole dataset).',
     calcKind:'aggregate', viewDims:[],
@@ -542,7 +635,7 @@ const lessons = [
   }
 },
 {id:'lod-why', track:'LOD Expressions', title:'Why Level of Detail?',
-  concept:`Every mark in a Tableau view is aggregated to whatever dimensions are in that view. Level of Detail (LOD) expressions let you compute at a <b>different granularity</b> than the view &mdash; coarser (<code>FIXED</code>, <code>EXCLUDE</code>) or finer (<code>INCLUDE</code>) &mdash; independent of filters and the marks card.`,
+  concept:`<p>Every mark in a Tableau view is aggregated to whatever dimensions are in that view. Level of Detail (LOD) expressions let you compute at a <b>different granularity</b> than the view &mdash; coarser (<code>FIXED</code>, <code>EXCLUDE</code>) or finer (<code>INCLUDE</code>) &mdash; independent of filters and the marks card.</p><p>LOD expressions run as part of the data source query, which is a key difference from table calculations (covered later): they're computed <i>before</i> the results reach the view, so they interact with filters differently, and they don't care what order the marks are sorted in.</p>`,
   formula:'{ FIXED [dimension] : AGG([measure]) }\n{ INCLUDE [dimension] : AGG([measure]) }\n{ EXCLUDE [dimension] : AGG([measure]) }',
   anatomy:[
     {tag:'{ ... }', text:'Curly braces mark the whole expression as an LOD calc.'},
@@ -557,12 +650,32 @@ const lessons = [
       ['EXCLUDE','Coarser than the view','Category total, repeated at sub-category grain, for % of total'],
     ]};
   },
+  secondExample:{
+    title:'The same question, three ways',
+    description:'"What\'s a customer\'s share of their region\'s total sales" needs a FIXED for the customer total and an EXCLUDE (or the view itself) for the region total \u2014 a good illustration of how the three types often combine.',
+    compute(){
+      return {cols:['Step','LOD used','Result'], rows:[
+        ['Customer\'s total Sales', "{FIXED [Customer] : SUM([Sales])}", 'A. Diaz: $1,833.15'],
+        ["Region's total Sales", "{FIXED [Region] : SUM([Sales])} or the view itself", 'East: $4,286.10'],
+        ["Customer's % of region", 'Divide the two', 'A. Diaz: 42.8% of East'],
+      ]};
+    }
+  },
+  pitfalls:[
+    {title:'LOD vs. table calc confusion', text:'They solve similar-sounding problems but run at different times \u2014 LOD during the query, table calc after. Mixing them up leads to formulas that are technically valid but produce surprising numbers.'},
+    {title:'FIXED ignores most filters by default', text:'A FIXED LOD is computed before dimension filters are applied, so filtering the view often won\'t change its result \u2014 which is a feature until it\'s a confusing bug.'},
+    {title:'Reaching for FIXED out of habit', text:'If EXCLUDE or INCLUDE would work relative to your current view, they\'re usually simpler to reason about than re-deriving the full FIXED dimension list.'},
+  ],
+  related:[
+    {title:'FIXED', text:'compute independent of the view'},
+    {title:'Table Calculations', text:'the other way to control what a number is computed against'},
+  ],
   exercise:{type:'concept', q:'What problem do LOD expressions primarily solve?',
     options:['Making charts render faster','Computing a measure at a granularity different from the view','Formatting numbers as currency'],
     answer:1, hint:'Think "granularity", not performance or formatting.'}
 },
 {id:'lod-fixed', track:'LOD Expressions', title:'FIXED',
-  concept:`<code>{FIXED [Customer] : SUM([Sales])}</code> computes each customer's total Sales across <i>all</i> their orders, then attaches that single number to every row for that customer &mdash; regardless of what else is in the view.`,
+  concept:`<p><code>{FIXED [Customer] : SUM([Sales])}</code> computes each customer's total Sales across <i>all</i> their orders, then attaches that single number to every row for that customer &mdash; regardless of what else is in the view.</p><p>You can list more than one dimension: <code>{FIXED [Region],[Customer] : SUM([Sales])}</code> computes a total per region-and-customer combination instead of per customer alone. The more dimensions you add, the finer the fixed grain gets \u2014 add enough and it converges on row-level detail.</p>`,
   formula:'{ FIXED [Customer] : SUM([Sales]) }',
   anatomy:[
     {tag:'FIXED [Customer]', text:'Locks the calculation to the Customer dimension only.'},
@@ -575,6 +688,28 @@ const lessons = [
     const rows = sampleData.slice(0,8).map(r=>[r.customer, money(r.sales), money(totals[r.customer])]);
     return {cols:['Customer','This Order Sales','FIXED [Customer]: SUM(Sales)'], rows, highlightLast:true};
   },
+  secondExample:{
+    title:'Fixing on two dimensions at once',
+    description:'{FIXED [Region],[Customer] : SUM([Sales])} \u2014 a finer grain than customer alone, since the same customer could in principle appear in more than one region.',
+    compute(){
+      const byRegCust = groupBy(sampleData, r=>r.region+'|'+r.customer);
+      const totals = {}; Object.entries(byRegCust).forEach(([k,rs])=>totals[k]=sum(rs,r=>r.sales));
+      const rows = sampleData.slice(0,6).map(r=>{
+        const key = r.region+'|'+r.customer;
+        return [r.region, r.customer, money(totals[key])];
+      });
+      return {cols:['Region','Customer','FIXED [Region],[Customer]: SUM(Sales)'], rows, highlightLast:true};
+    }
+  },
+  pitfalls:[
+    {title:'FIXED ignores dimension filters by default', text:'Filter the view down to one region and a FIXED [Customer] total will often still show that customer\'s sales from every region \u2014 add the field to Context Filters if you need FIXED to respect it.'},
+    {title:'Too many dimensions defeats the purpose', text:'{FIXED [Region],[Category],[Sub-Category],[Customer],[Order Date] : SUM([Sales])} is so fine-grained it barely aggregates anything \u2014 keep the dimension list to just what the question actually needs.'},
+    {title:'Looks identical to a plain SUM at matching granularity', text:'If Customer is the only dimension in the view, {FIXED [Customer]:SUM([Sales])} and plain SUM([Sales]) return the same numbers \u2014 the difference only becomes visible once you add more dimensions or filters to the view.'},
+  ],
+  related:[
+    {title:'EXCLUDE', text:'the opposite move \u2014 compute a coarser total than the view'},
+    {title:'Row-Level vs. Aggregate', text:'why {FIXED...} can be used where a bare SUM() sometimes can\'t'},
+  ],
   build:{
     prompt:'Build a calc that returns each customer\'s total Sales across all their orders, fixed regardless of the view.',
     calcKind:'lod', viewDims:[],
@@ -586,7 +721,7 @@ const lessons = [
   }
 },
 {id:'lod-include', track:'LOD Expressions', title:'INCLUDE',
-  concept:`<code>{INCLUDE [Sub-Category] : AVG([Profit])}</code> first averages Profit at the Sub-Category grain (finer than Category), then that result gets re-aggregated up to whatever the view shows &mdash; e.g. Category. It's useful when you need a calculation to respect a dimension that isn't in your view.`,
+  concept:`<p><code>{INCLUDE [Sub-Category] : AVG([Profit])}</code> first averages Profit at the Sub-Category grain (finer than Category), then that result gets re-aggregated up to whatever the view shows &mdash; e.g. Category. It's useful when you need a calculation to respect a dimension that isn't in your view.</p><p>INCLUDE is relative, not absolute: the same formula produces different numbers depending on what dimensions are already in the view. That's different from FIXED, whose dimension list is the whole story regardless of the view \u2014 worth remembering when a number changes unexpectedly after you add a field to the view.</p>`,
   formula:'{ INCLUDE [Sub-Category] : AVG([Profit]) }',
   anatomy:[
     {tag:'INCLUDE [Sub-Category]', text:'Adds Sub-Category to the computation even though the view is only at Category level.'},
@@ -603,6 +738,29 @@ const lessons = [
     });
     return {cols:['Category','Sub-Categories included','AVG of sub-category AVG(Profit)'], rows};
   },
+  secondExample:{
+    title:'INCLUDE at a Region-level view instead',
+    description:'{INCLUDE [Customer] : SUM([Sales])} averaged up to Region \u2014 the average customer\'s total spend within each region.',
+    compute(){
+      const byRegion = groupBy(sampleData, r=>r.region);
+      const rows = Object.entries(byRegion).map(([region,rs])=>{
+        const byCust = groupBy(rs, r=>r.customer);
+        const custTotals = Object.values(byCust).map(g=>sum(g,r=>r.sales));
+        const avg = custTotals.reduce((a,b)=>a+b,0)/custTotals.length;
+        return [region, uniq(rs.map(r=>r.customer)).length, money(avg)];
+      });
+      return {cols:['Region','Customers included','AVG of per-customer SUM(Sales)'], rows};
+    }
+  },
+  pitfalls:[
+    {title:'The result depends on the view', text:'Unlike FIXED, an INCLUDE\'s result changes if you add or remove dimensions from the view \u2014 that\'s the point, but it means the "same" calculation can show different numbers on different sheets.'},
+    {title:'The outer aggregation changes the meaning', text:'AVG({INCLUDE...}) and SUM({INCLUDE...}) roll the sub-category values up completely differently \u2014 pick the outer aggregation deliberately, not by default.'},
+    {title:'Meaningless at the same grain as the view', text:'If Sub-Category is already the only dimension in the view, INCLUDE [Sub-Category] adds nothing \u2014 INCLUDE only does something useful when the view is coarser than the included dimension.'},
+  ],
+  related:[
+    {title:'FIXED', text:'an absolute grain that doesn\'t depend on the view'},
+    {title:'EXCLUDE', text:'the mirror-image move in the other direction'},
+  ],
   build:{
     prompt:'At a Category-level view, build a calc that averages each sub-category\'s average Profit, rolled up to Category.',
     calcKind:'lod', viewDims:['category'],
@@ -614,7 +772,7 @@ const lessons = [
   }
 },
 {id:'lod-exclude', track:'LOD Expressions', title:'EXCLUDE',
-  concept:`<code>{EXCLUDE [Sub-Category] : SUM([Sales])}</code> removes Sub-Category from the calc, producing the Category total &mdash; then repeats that total on every Sub-Category row. This is the classic pattern for "% of parent total".`,
+  concept:`<p><code>{EXCLUDE [Sub-Category] : SUM([Sales])}</code> removes Sub-Category from the calc, producing the Category total &mdash; then repeats that total on every Sub-Category row. This is the classic pattern for "% of parent total".</p><p>EXCLUDE only removes dimensions that are actually in the view. If Sub-Category isn't present, <code>{EXCLUDE [Sub-Category] : ...}</code> has nothing to exclude and just behaves like a normal aggregation at the view's grain \u2014 a common source of "why didn't this do anything?" confusion.</p>`,
   formula:"[Sales] / { EXCLUDE [Sub-Category] : SUM([Sales]) }",
   anatomy:[
     {tag:'EXCLUDE [Sub-Category]', text:'Removes Sub-Category from the calc, rolling up to Category (the next dimension up in the view).'},
@@ -633,6 +791,31 @@ const lessons = [
     });
     return {cols:['Category','Sub-Category','Sub-Cat Sales','EXCLUDE: Category Sales','% of Category'], rows};
   },
+  secondExample:{
+    title:'Excluding Region: a customer\'s share of their own total',
+    description:'At a Region + Customer view, {EXCLUDE [Region] : SUM([Sales])} rolls up to Customer \u2014 answering "what % of this customer\'s overall spend happened in this region."',
+    compute(){
+      const byCust = groupBy(sampleData, r=>r.customer);
+      const custTotals = {}; Object.entries(byCust).forEach(([c,rs])=>custTotals[c]=sum(rs,r=>r.sales));
+      const byRegCust = groupBy(sampleData, r=>r.region+'|'+r.customer);
+      const rows = Object.entries(byRegCust).slice(0,6).map(([key,rs])=>{
+        const [region,cust] = key.split('|');
+        const regCustTotal = sum(rs,r=>r.sales);
+        const pctVal = (regCustTotal/custTotals[cust]*100).toFixed(1)+'%';
+        return [region, cust, money(regCustTotal), money(custTotals[cust]), pctVal];
+      });
+      return {cols:['Region','Customer','Region Sales (this cust.)','EXCLUDE: Customer Total','% of Customer Total'], rows};
+    }
+  },
+  pitfalls:[
+    {title:'Excluding a dimension not in the view does nothing', text:'{EXCLUDE [Region] : SUM([Sales])} at a Category-only view has no Region to remove \u2014 it just becomes an ordinary SUM at the Category grain.'},
+    {title:'Divide-by-zero returns NULL, not an error', text:'If the EXCLUDE total happens to be zero for some slice, the division silently returns NULL \u2014 worth a ZN() or IFNULL() guard in a production calc.'},
+    {title:'EXCLUDE computes before row-level math around it', text:'In [Sales] / {EXCLUDE...}, the EXCLUDE resolves to its own total first, independent of the surrounding division \u2014 it doesn\'t "see" the rest of the formula.'},
+  ],
+  related:[
+    {title:'INCLUDE', text:'the mirror-image move \u2014 add detail instead of removing it'},
+    {title:'TOTAL()', text:'a table-calc alternative for a similar % of total pattern'},
+  ],
   build:{
     prompt:'At a Sub-Category-level view, build a calc for % of the parent Category\'s total Sales.',
     calcKind:'lod', viewDims:['category','subCategory'],
@@ -647,7 +830,7 @@ const lessons = [
   }
 },
 {id:'tc-basics', track:'Table Calculations', title:'What Makes Table Calcs Different',
-  concept:`Table calculations run <b>after</b> the data has already been queried and aggregated &mdash; they operate on the numbers already shown in the view. That's the opposite order from LOD expressions, which run as part of the query itself. Table calcs need two settings: <b>addressing</b> (which direction to compute across, e.g. down a Date axis) and <b>partitioning</b> (which dimensions restart the calculation).`,
+  concept:`<p>Table calculations run <b>after</b> the data has already been queried and aggregated &mdash; they operate on the numbers already shown in the view. That's the opposite order from LOD expressions, which run as part of the query itself. Table calcs need two settings: <b>addressing</b> (which direction to compute across, e.g. down a Date axis) and <b>partitioning</b> (which dimensions restart the calculation).</p><p>In the actual Tableau UI these settings live in the "Edit Table Calculation" dialog on the field's context menu, not in the formula text itself. In this tutorial, each table-calc lesson sets addressing/partitioning for you so you can focus purely on the formula syntax.</p>`,
   formula:'Query runs \u2192 aggregated marks appear in view \u2192 table calc runs on those marks',
   anatomy:[
     {tag:'Addressing', text:'The dimension(s) the calc moves across, e.g. Order Date for a running total over time.'},
@@ -660,10 +843,30 @@ const lessons = [
       ['Typical use', 'Custom granularity (customer totals, % of parent)', 'Running totals, ranks, moving averages'],
     ]};
   },
+  secondExample:{
+    title:'Quick decision guide',
+    description:'A rough rule of thumb for choosing between the two approaches.',
+    compute(){
+      return {cols:['If you need\u2026', 'Reach for'], rows:[
+        ['A number that stays the same no matter how the view is sliced', 'LOD: FIXED'],
+        ['A running/cumulative total in a specific sort order', 'Table calc: RUNNING_SUM'],
+        ['Each row\u2019s rank among its peers', 'Table calc: RANK'],
+        ['A subtotal at a coarser or finer grain than the view', 'LOD: EXCLUDE / INCLUDE'],
+      ]};
+    }
+  },
+  pitfalls:[
+    {title:'The view\'s structure IS the calc\'s input', text:'Add, remove, sort, or filter a field in the view and a table calc\'s addressing/partitioning can silently shift with it \u2014 unlike a FIXED LOD, which doesn\'t care about the view.'},
+    {title:'Filters change history', text:'Filtering out early dates and re-running a RUNNING_SUM changes every subsequent cumulative value, since it now starts counting later \u2014 usually intended, but easy to forget when explaining a dashboard.'},
+    {title:'Nesting rules are strict', text:'Table calculations can\'t be nested directly inside another table calculation, and mixing them with LODs has specific rules \u2014 if a formula won\'t validate, check whether you\'re trying to nest two table calcs.'},
+  ],
+  related:[
+    {title:'FIXED / INCLUDE / EXCLUDE', text:'the query-time alternative to table calcs'},
+  ],
   exercise:{type:'concept', q:'Table calculations run:', options:['Before the data is aggregated','After the data is aggregated into the view','Inside the SQL query'], answer:1, hint:'They operate on the marks already showing.'}
 },
 {id:'tc-running', track:'Table Calculations', title:'Running Total',
-  concept:`<code>RUNNING_SUM(SUM([Sales]))</code> adds each mark's value to the running sum of everything before it, in whatever order the view is sorted &mdash; here, by Order Date.`,
+  concept:`<p><code>RUNNING_SUM(SUM([Sales]))</code> adds each mark's value to the running sum of everything before it, in whatever order the view is sorted &mdash; here, by Order Date.</p><p><code>RUNNING_AVG</code> and <code>RUNNING_COUNT</code> follow the identical pattern for a running average or running count instead of a running total. All three depend entirely on the addressing (sort order) being what you expect \u2014 the formula itself has no idea what "before" means without it.</p>`,
   formula:'RUNNING_SUM(SUM([Sales]))',
   anatomy:[
     {tag:'SUM([Sales])', text:'The aggregated value being accumulated &mdash; total Sales per date in the view.'},
@@ -675,6 +878,29 @@ const lessons = [
     const rows = sorted.slice(0,10).map(r=>{running+=r.sales; return [r.date, r.customer, money(r.sales), money(running)];});
     return {cols:['Order Date','Customer','Sales','RUNNING_SUM(SUM(Sales))'], rows, highlightLast:true};
   },
+  secondExample:{
+    title:'Partitioned by Region: a separate running total per region',
+    description:'Adding Region as a partition resets the running sum back to zero every time the region changes, instead of accumulating across the whole table.',
+    compute(){
+      const sorted = [...sampleData].sort((a,b)=> a.region===b.region ? a.date.localeCompare(b.date) : a.region.localeCompare(b.region));
+      let running=0, lastRegion=null;
+      const rows = sorted.slice(0,9).map(r=>{
+        if(r.region!==lastRegion){ running=0; lastRegion=r.region; }
+        running += r.sales;
+        return [r.region, r.date, money(r.sales), money(running)];
+      });
+      return {cols:['Region (partition)','Order Date','Sales','RUNNING_SUM(SUM(Sales))'], rows, highlightLast:true};
+    }
+  },
+  pitfalls:[
+    {title:'Wrong sort order breaks everything silently', text:'RUNNING_SUM doesn\'t validate that your sort makes sense \u2014 sort by Customer name instead of Date and you\'ll get a perfectly computed running total that means nothing.'},
+    {title:'Forgetting to partition', text:'Without a partition, a running total accumulates across the entire table, which is rarely what you want if the view has more than one region, category, or other grouping dimension.'},
+    {title:'Filtering changes history', text:'Trim the date range and every downstream cumulative value shifts, since the running total now starts counting from a later point.'},
+  ],
+  related:[
+    {title:'RANK', text:'another table calc, ordering marks by value instead of accumulating them'},
+    {title:'WINDOW_SUM / TOTAL', text:'a fixed total across a window instead of a growing accumulation'},
+  ],
   build:{
     prompt:'Build a calc that accumulates Sales over time, ordered by Order Date.',
     calcKind:'tablecalc', viewDims:['id'], addressDim:'date', partitionDims:[],
@@ -686,7 +912,7 @@ const lessons = [
   }
 },
 {id:'tc-rank', track:'Table Calculations', title:'RANK',
-  concept:`<code>RANK(SUM([Sales]))</code> orders marks by value and assigns 1 to the highest. Add a <code>partition</code> (e.g. by Region) to restart the ranking within each group instead of across the whole table.`,
+  concept:`<p><code>RANK(SUM([Sales]))</code> orders marks by value and assigns 1 to the highest. Add a <code>partition</code> (e.g. by Region) to restart the ranking within each group instead of across the whole table.</p><p>Tableau actually offers several RANK variants: plain <code>RANK</code> leaves gaps after ties (1, 1, 3), <code>RANK_DENSE</code> doesn't (1, 1, 2), and <code>RANK_UNIQUE</code> never ties at all, breaking ties by row order (1, 2, 3). This tutorial focuses on plain RANK since it's the one you'll reach for most often.</p>`,
   formula:'RANK(SUM([Sales]))\n// partitioned by Region',
   anatomy:[
     {tag:'SUM([Sales])', text:'The measure being ranked.'},
@@ -703,6 +929,25 @@ const lessons = [
     });
     return {cols:['Region (partition)','Customer','SUM(Sales)','RANK'], rows, highlightLast:true};
   },
+  secondExample:{
+    title:'No partition: ranking Categories across the whole table',
+    description:'Drop the partition entirely and RANK compares every mark in the view against every other mark, not just within a group.',
+    compute(){
+      const byCat = groupBy(sampleData, r=>r.category);
+      const totals = Object.entries(byCat).map(([c,rs])=>[c,sum(rs,r=>r.sales)]).sort((a,b)=>b[1]-a[1]);
+      const rows = totals.map(([c,s],i)=>[c, money(s), i+1]);
+      return {cols:['Category','SUM(Sales)','RANK (whole table)'], rows, highlightLast:true};
+    }
+  },
+  pitfalls:[
+    {title:'Forgetting which direction is "best"', text:'RANK defaults to highest-value-first. For something like "rank by lowest cost," you\'ll need to negate the value or otherwise flip the comparison.'},
+    {title:'Wrong or missing partition', text:'No partition ranks everything against everything; too broad a partition can silently exclude the comparison you actually wanted (e.g. partitioning by Customer when you meant to rank customers against each other).'},
+    {title:'Ties produce gaps', text:'Plain RANK skips numbers after a tie (1, 1, 3) \u2014 if you need consecutive ranks instead, that\'s RANK_DENSE, not RANK.'},
+  ],
+  related:[
+    {title:'RUNNING_SUM', text:'accumulates values in order rather than ranking them'},
+    {title:'WINDOW_AVG / TOTAL', text:'compare a mark to a group average instead of a rank position'},
+  ],
   build:{
     prompt:'Build a calc that ranks each customer\'s total Sales, restarting at 1 within each Region.',
     calcKind:'tablecalc', viewDims:['region','customer'], addressDim:null, partitionDims:['region'],
@@ -722,7 +967,7 @@ const lessons = [
   }
 },
 {id:'tc-window', track:'Table Calculations', title:'Window Functions & % of Total',
-  concept:`<code>WINDOW_AVG(SUM([Sales]))</code> returns the same average across every mark in its window &mdash; handy for a reference line. <code>SUM([Sales]) / TOTAL(SUM([Sales]))</code> is the standard "percent of total" pattern: <code>TOTAL()</code> returns the grand sum regardless of partitioning, so dividing the row by it gives a share.`,
+  concept:`<p><code>WINDOW_AVG(SUM([Sales]))</code> returns the same average across every mark in its window &mdash; handy for a reference line. <code>SUM([Sales]) / TOTAL(SUM([Sales]))</code> is the standard "percent of total" pattern: <code>TOTAL()</code> returns the grand sum regardless of partitioning, so dividing the row by it gives a share.</p><p><code>TOTAL()</code> always sums the <i>whole</i> partition, regardless of any narrower window you might set on WINDOW_SUM elsewhere in the same view. If a partition is defined (e.g. by Region), TOTAL() respects that partition boundary \u2014 "% of total" then means "% of this region's total," not "% of the grand total." Whether that's what you want depends entirely on how the partition is set up.</p>`,
   formula:'SUM([Sales]) / TOTAL(SUM([Sales]))',
   anatomy:[
     {tag:'SUM([Sales])', text:'This row/mark\'s value.'},
@@ -737,6 +982,33 @@ const lessons = [
     const rows = totals.map(([c,s])=>[c, money(s), money(avg), (s/grand*100).toFixed(1)+'%']);
     return {cols:['Category','SUM(Sales)','WINDOW_AVG(SUM(Sales))','SUM(Sales)/TOTAL(SUM(Sales))'], rows, highlightLast:true};
   },
+  secondExample:{
+    title:'Partitioned by Region: % of the region, not the grand total',
+    description:'Same formula, but with Region as a partition \u2014 each category\'s share now adds up to 100% within its own region, not across the whole table.',
+    compute(){
+      const byRegion = groupBy(sampleData, r=>r.region);
+      let rows = [];
+      ['East','West','Central'].forEach(region=>{
+        const rs = byRegion[region]||[];
+        const regionTotal = sum(rs, r=>r.sales);
+        const byCat = groupBy(rs, r=>r.category);
+        Object.entries(byCat).forEach(([cat,crs])=>{
+          const catTotal = sum(crs, r=>r.sales);
+          rows.push([region, cat, money(catTotal), (catTotal/regionTotal*100).toFixed(1)+'%']);
+        });
+      });
+      return {cols:['Region (partition)','Category','SUM(Sales)','SUM(Sales)/TOTAL(SUM(Sales))'], rows, highlightLast:true};
+    }
+  },
+  pitfalls:[
+    {title:'TOTAL() respects partitioning, not addressing', text:'If a partition is set, TOTAL() sums only within that partition \u2014 "% of total" silently becomes "% of this partition\'s total," which is easy to miss if you were expecting the grand total.'},
+    {title:'WINDOW functions include the current mark', text:'WINDOW_AVG(SUM([Sales])) averages the whole window including the row it\'s displayed on \u2014 it\'s not automatically "everyone else\'s average excluding me."'},
+    {title:'Division by zero returns NULL', text:'If TOTAL(SUM([Sales])) happens to be zero for an empty partition, the percentage silently comes back NULL rather than erroring \u2014 worth guarding with ZN() in a real dashboard.'},
+  ],
+  related:[
+    {title:'EXCLUDE', text:'an LOD-based way to compute a similar percent-of-parent number'},
+    {title:'RUNNING_SUM', text:'accumulates instead of comparing to a fixed window total'},
+  ],
   build:{
     prompt:'Build a calc for each Category\'s % of total Sales across the whole table.',
     calcKind:'tablecalc', viewDims:['category'], addressDim:null, partitionDims:[],
@@ -772,7 +1044,7 @@ function renderSidebar(){
     </div>`;
   }).join('');
   container.querySelectorAll('.lesson-item').forEach(el=>{
-    el.addEventListener('click', ()=>{ currentIdx = parseInt(el.dataset.idx,10); renderTutorial(); });
+    el.addEventListener('click', ()=>{ currentIdx = parseInt(el.dataset.idx,10); renderApp(); });
   });
   const pctDone = Math.round((completed.size/lessons.length)*100);
   document.getElementById('progressFill').style.width = pctDone+'%';
@@ -791,6 +1063,25 @@ function renderTable(result){
       return `<td class="${isNum?'num':''} ${isLast?'highlight-col':''} ${typeof v==='string'&&v.startsWith('-')?'neg':''}">${v}</td>`;
     }).join('')}</tr>`).join('')}</tbody>
   </table></div>`;
+}
+function renderDeepDive(dd){
+  return `<section class="block">
+    <h3>${dd.title}</h3>
+    <div class="deepdive-intro">${dd.intro}</div>
+    ${dd.truthTable ? `<div class="truth-table">${renderTable(dd.truthTable)}</div>` : ''}
+    ${dd.precedenceNote ? `<div class="precedence-note">${dd.precedenceNote}</div>` : ''}
+    ${dd.liveExample ? `
+      <div class="example-label">${dd.liveExample.title}</div>
+      <div class="example-desc">${dd.liveExample.description}</div>
+      ${dd.liveExample.legend ? `<div class="condition-legend">${dd.liveExample.legend.map(l=>`<div><span class="letter">${l.letter} =</span><code>${l.expr}</code></div>`).join('')}</div>` : ''}
+      ${renderTable(dd.liveExample.compute())}
+    ` : ''}
+    ${dd.notes ? `
+      <ul class="pitfalls-list" style="margin-top:16px;">
+        ${dd.notes.map(n=>`<li><span class="pitfall-icon">!</span><span class="pitfall-body"><b>${n.title}</b><span>${n.text}</span></span></li>`).join('')}
+      </ul>
+    ` : ''}
+  </section>`;
 }
 
 /* ============================= RENDER: EXERCISE ============================= */
@@ -946,10 +1237,34 @@ function renderMain(idx, container, onNav){
       <ul class="anatomy-list">${lesson.anatomy.map(a=>`<li><span class="anatomy-tag">${a.tag}</span><span>${a.text}</span></li>`).join('')}</ul>
     </section>
 
+    ${lesson.deepDive ? renderDeepDive(lesson.deepDive) : ''}
+
     <section class="block">
       <h3>Live Example &mdash; computed against the sample dataset</h3>
       ${renderTable(result)}
+      ${lesson.secondExample ? `
+        <hr class="example-divider">
+        <div class="example-label">${lesson.secondExample.title}</div>
+        <div class="example-desc">${lesson.secondExample.description}</div>
+        ${renderTable(lesson.secondExample.compute())}
+      ` : ''}
     </section>
+
+    ${lesson.pitfalls ? `
+    <section class="block">
+      <h3>Common Mistakes</h3>
+      <ul class="pitfalls-list">
+        ${lesson.pitfalls.map(p=>`<li><span class="pitfall-icon">!</span><span class="pitfall-body"><b>${p.title}</b><span>${p.text}</span></span></li>`).join('')}
+      </ul>
+    </section>` : ''}
+
+    ${lesson.related ? `
+    <section class="block">
+      <h3>Related Concepts</h3>
+      <div class="related-chips">
+        ${lesson.related.map(r=>`<div class="related-chip"><b>${r.title}:</b> ${r.text}</div>`).join('')}
+      </div>
+    </section>` : ''}
 
     ${renderExercise(lesson)}
 
@@ -964,195 +1279,29 @@ function renderMain(idx, container, onNav){
   container.scrollTop = 0;
 }
 
-/* ============================= MODE: TUTORIAL ============================= */
-function renderTutorial(){
+
+/* ============================= RENDER: APP SHELL ============================= */
+function renderApp(){
   const root = document.getElementById('modeRoot');
   root.innerHTML = `
-    <div class="tutorial-shell">
-      <nav id="sidebar">
-        <h1>Calculation Tutor</h1>
-        <div class="subtitle">Learn Tableau calc syntax by building real formulas against a live sample dataset</div>
-        <div class="progress-wrap">
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
-          <div class="progress-label" id="progressLabel">0 of 0 lessons complete</div>
-        </div>
-        <div id="trackList"></div>
-      </nav>
-      <main id="main"></main>
-    </div>`;
+    <nav id="sidebar">
+      <h1>Calculation Tutor</h1>
+      <div class="subtitle">Learn Tableau calc syntax by building real formulas against a live sample dataset</div>
+      <div class="progress-wrap">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="progress-label" id="progressLabel">0 of 0 lessons complete</div>
+      </div>
+      <div id="trackList"></div>
+    </nav>
+    <main id="main"></main>`;
   renderSidebar();
-  renderMain(currentIdx, document.getElementById('main'), (i)=>{ currentIdx = i; renderTutorial(); });
-}
-
-/* ============================= MODE: PRESENTATION ============================= */
-const ICON = (glyph) => `<div class="p-icon">${glyph}</div>`;
-const pSlides = [
-{cls:'dark', html:`
-  ${ICON('\u2699')}
-  <h1 class="p-title" style="font-size:1.7em;margin-top:.5em;">CALCULATION TUTOR</h1>
-  <div class="p-lead" style="font-size:1.05em;">An interactive tutorial, built into this same extension, for learning calc syntax by building real formulas</div>
-  <div class="p-foot"><span>Growmark \u00b7 Tableau Cloud Dashboard Extension \u00b7 Devyn Roesch</span><span></span></div>
-`},
-{cls:'light', html:`
-  <h2 class="p-title">New Tableau users and onboarding analysts both stall on the same thing: calc syntax</h2>
-  <div style="margin-top:.6em;">
-    <div class="p-row">${ICON('\u{1F465}')}<div class="p-row-body"><h3>Two audiences, one gap</h3><p>New Tableau users at Growmark and analysts onboarding onto a specific workbook both need to internalize IF/CASE logic, LOD expressions, and table calcs \u2014 syntax that's easy to explain but hard to really learn without trying it.</p></div></div>
-    <div class="p-row">${ICON('\u{1F4D6}')}<div class="p-row-body"><h3>Reading isn't doing</h3><p>Documentation and static examples explain what FIXED or RUNNING_SUM do in theory. They don't tell you whether the formula you just typed actually produces the right number.</p></div></div>
-    <div class="p-row">${ICON('\u{1F3AF}')}<div class="p-row-body"><h3>What was needed</h3><p>A tutorial that runs real formulas against real data, tells you immediately whether you got it right, and shows exactly where it diverged when you didn't.</p></div></div>
-  </div>
-  <div class="p-foot"><span>Context</span><span>Calculation Tutor</span></div>
-`},
-{cls:'light', html:`
-  <h2 class="p-title">12 lessons across three tracks, each backed by a live sample dataset</h2>
-  <div class="p-subtitle">The same dashboard extension you're looking at right now \u2014 this presentation is a mode inside it, not a separate file</div>
-  <div class="p-cards">
-    <div class="p-card">${ICON('\u{1F522}')}<h3>Basics: Aggregation &amp; Logic</h3><ul><li>Aggregation Basics (SUM/AVG/COUNTD)</li><li>IF / ELSEIF / END</li><li>CASE Statements</li><li>Row-Level vs. Aggregate Calcs</li></ul></div>
-    <div class="p-card">${ICON('\u{1F4DA}')}<h3>LOD Expressions</h3><ul><li>Why Level of Detail?</li><li>FIXED</li><li>INCLUDE</li><li>EXCLUDE</li></ul></div>
-    <div class="p-card">${ICON('\u{1F4C8}')}<h3>Table Calculations</h3><ul><li>What Makes Table Calcs Different</li><li>Running Total (RUNNING_SUM)</li><li>RANK</li><li>Window Functions &amp; % of Total</li></ul></div>
-  </div>
-  <div class="p-foot"><span>Product overview</span><span>Calculation Tutor</span></div>
-`},
-{cls:'dark', demoLessonId:'lod-fixed', demoOpts:{}, html:`
-  <div class="p-eyebrow">Show it in action \u2014 1 of 3</div>
-  <div class="p-split">
-    <div class="p-split-text">
-      <h2 class="p-title">Every lesson pairs the concept with a real computed example</h2>
-      <p class="p-lead">The syntax anatomy breaks the formula into labeled parts. The Live Example table below it is computed on the fly against the sample dataset \u2014 this is the actual tutorial rendered live, right here, not a screenshot.</p>
-    </div>
-    <div class="p-split-media"><div class="p-frame"><div class="p-frame-inner" id="demoFrame"></div></div></div>
-  </div>
-  <div class="p-foot"><span></span><span>Calculation Tutor</span></div>
-`},
-{cls:'dark', demoLessonId:'lod-fixed', demoOpts:{scrollToBuild:true}, html:`
-  <div class="p-eyebrow">Show it in action \u2014 2 of 3</div>
-  <div class="p-split">
-    <div class="p-split-text">
-      <h2 class="p-title">Build It: construct the formula yourself</h2>
-      <p class="p-lead">A token palette (fields, functions, keywords) inserts at the cursor, or you can just type. The palette is scoped per lesson \u2014 this view only shows FIXED, not INCLUDE/EXCLUDE \u2014 so the surface area matches what's being taught.</p>
-    </div>
-    <div class="p-split-media"><div class="p-frame"><div class="p-frame-inner" id="demoFrame"></div></div></div>
-  </div>
-  <div class="p-foot"><span></span><span>Calculation Tutor</span></div>
-`},
-{cls:'dark', demoLessonId:'tc-running', demoOpts:{scrollToBuild:true, autoDemo:true}, html:`
-  <div class="p-eyebrow">Show it in action \u2014 3 of 3</div>
-  <div class="p-split">
-    <div class="p-split-text">
-      <h2 class="p-title">Check Formula runs it for real, mark by mark</h2>
-      <p class="p-lead">Clicking Check Formula parses the input, evaluates it against the sample data using the lesson's grouping/addressing/partitioning, and shows a row-by-row diff against the target. This frame auto-fills the reference solution and checks it live.</p>
-    </div>
-    <div class="p-split-media"><div class="p-frame"><div class="p-frame-inner" id="demoFrame"></div></div></div>
-  </div>
-  <div class="p-foot"><span></span><span>Calculation Tutor</span></div>
-`},
-{cls:'light', html:`
-  <h2 class="p-title">Under the hood: a real calc engine, not pattern matching</h2>
-  <div class="p-subtitle">Formulas are tokenized, parsed into an AST, and evaluated \u2014 the same way a real calculation engine works</div>
-  <div class="p-cards">
-    <div class="p-card"><div class="p-step-num">1</div>${ICON('\u2194')}<h3>Tokenizer</h3><p style="font-size:.88em;color:var(--muted);">Splits [Fields], 'strings', numbers, keywords (IF/CASE/FIXED\u2026), and operators out of the raw formula text.</p></div>
-    <div class="p-card"><div class="p-step-num">2</div>${ICON('\u{1F500}')}<h3>Parser</h3><p style="font-size:.88em;color:var(--muted);">Recursive-descent parser builds an AST \u2014 handles operator precedence, nested IF/CASE, and LOD braces {}.</p></div>
-    <div class="p-card"><div class="p-step-num">3</div>${ICON('\u2699')}<h3>Evaluator</h3><p style="font-size:.88em;color:var(--muted);">Walks the AST against sample rows, grouping into marks per the lesson's view, LOD grain, or table-calc partition.</p></div>
-    <div class="p-card"><div class="p-step-num">4</div>${ICON('\u2713')}<h3>Grading</h3><p style="font-size:.88em;color:var(--muted);">Compares the result to a reference solution mark-by-mark, with numeric tolerance and case-insensitive text matching.</p></div>
-  </div>
-  <div class="p-codebar"><b>Supports:</b> SUM / AVG / COUNTD / COUNT / MIN / MAX &middot; IF/ELSEIF/ELSE &middot; CASE/WHEN &middot; {FIXED/INCLUDE/EXCLUDE} &middot; RUNNING_SUM &middot; RANK &middot; WINDOW_AVG &middot; TOTAL</div>
-  <div class="p-foot"><span>Architecture</span><span>Calculation Tutor</span></div>
-`},
-{cls:'light', html:`
-  <h2 class="p-title">Checking is honest \u2014 syntax first, then real computed results</h2>
-  <div class="p-two-col" style="margin-top:.6em;">
-    <div class="p-col">
-      <h3>${ICON('\u2194')} Catches real mistakes</h3>
-      <ul>
-        <li>Unbalanced parens, missing END, or an unrecognized keyword surface as a specific parse error \u2014 not a generic "wrong answer."</li>
-        <li>Referencing an unknown field (e.g. [Discount]) lists the real available fields, the same way Tableau's own calc editor would.</li>
-        <li>Using a table-calc function (RANK, RUNNING_SUM\u2026) outside a table-calc lesson is caught and explained, not silently miscalculated.</li>
-      </ul>
-    </div>
-    <div class="p-col">
-      <h3>${ICON('\u2713')} Forgives cosmetic differences</h3>
-      <ul>
-        <li>A correct-but-differently-written formula (extra spaces, lowercase keywords, reordered ELSEIFs) still passes \u2014 grading compares computed output, not formula text.</li>
-        <li>A wrong formula still runs \u2014 you see your actual (wrong) numbers next to the target, mark by mark, so you can see exactly where the logic diverged.</li>
-        <li>Numeric comparisons use a small tolerance; text comparisons are case-insensitive and trimmed \u2014 no failing on cosmetic mismatches.</li>
-      </ul>
-    </div>
-  </div>
-  <div class="p-foot"><span>Grading logic</span><span>Calculation Tutor</span></div>
-`},
-{cls:'light', html:`
-  <h2 class="p-title">Self-contained, tracked, and deployed as one extension</h2>
-  <div style="margin-top:.6em;">
-    <div class="p-row">${ICON('\u{1F3AF}')}<div class="p-row-body"><h3>No backend needed</h3><p>Progress is tracked client-side via localStorage \u2014 no Power Automate flow, since there's no write-back requirement, unlike workbook-docs or EntitlementsManager.</p></div></div>
-    <div class="p-row">${ICON('\u{1F4DA}')}<div class="p-row-body"><h3>One .trex, one URL</h3><p>The tutorial and this presentation live in the same HTML file and ship as a single .trex dashboard extension \u2014 nothing to keep in sync across files, same GitHub Pages hosting pattern as the rest of the suite.</p></div></div>
-    <div class="p-row">${ICON('\u{1F465}')}<div class="p-row-body"><h3>Team-wide rollout, optional</h3><p>If completion needs to be visible across a team rather than per-browser, the same SharePoint write-back pattern used elsewhere in the suite can be added as a save_progress action.</p></div></div>
-  </div>
-  <div class="p-foot"><span>Delivery</span><span>Calculation Tutor</span></div>
-`},
-{cls:'dark', html:`
-  ${ICON('\u25B6')}
-  <h1 class="p-title" style="margin-top:.5em;">Try it</h1>
-  <div class="p-cta-link">droesch24.github.io/TableauTest/CalcTutor.html</div>
-  <div class="p-lead">Drag CalcTutor.trex onto any dashboard. Use the button in the top-right corner to switch between the tutorial and this presentation at any time.</div>
-  <div class="p-foot"><span>Next: migrate source-location to github.com/growmark/tableau-extensions once org Pages policy resolves.</span><span></span></div>
-`},
-];
-
-function renderPresentationView(){
-  const root = document.getElementById('modeRoot');
-  root.innerHTML = `<div id="deck">
-    ${pSlides.map((s,i)=>`<div class="pslide ${s.cls} ${i===slideIdx?'active':''}">${s.html}</div>`).join('')}
-    <div id="pnavbar">
-      <button id="pPrev" ${slideIdx===0?'disabled':''}>&larr; Prev</button>
-      <div id="pdots">${pSlides.map((_,i)=>`<div class="pdot ${i===slideIdx?'active':''}" data-idx="${i}"></div>`).join('')}</div>
-      <span id="pcounter">${slideIdx+1} / ${pSlides.length}</span>
-      <button id="pNext" ${slideIdx===pSlides.length-1?'disabled':''}>Next &rarr;</button>
-    </div>
-  </div>`;
-  document.getElementById('pPrev').addEventListener('click', ()=>{ if(slideIdx>0){ slideIdx--; renderPresentationView(); } });
-  document.getElementById('pNext').addEventListener('click', ()=>{ if(slideIdx<pSlides.length-1){ slideIdx++; renderPresentationView(); } });
-  document.querySelectorAll('.pdot').forEach(d=>{
-    d.addEventListener('click', ()=>{ slideIdx = parseInt(d.dataset.idx,10); renderPresentationView(); });
-  });
-
-  const active = pSlides[slideIdx];
-  if(active.demoLessonId){
-    const frameEl = document.getElementById('demoFrame');
-    if(frameEl){
-      const startIdx = lessons.findIndex(l=>l.id===active.demoLessonId);
-      const renderDemo = (i, isInitial) => {
-        renderMain(i, frameEl, (ni)=>renderDemo(ni, false));
-        if(isInitial && active.demoOpts && active.demoOpts.scrollToBuild){
-          const el = document.getElementById('exerciseBox');
-          if(el && typeof el.scrollIntoView === 'function') el.scrollIntoView({behavior:'instant', block:'start'});
-        }
-        if(isInitial && active.demoOpts && active.demoOpts.autoDemo && lessons[i].build){
-          const input = document.getElementById('formulaInput');
-          const btn = document.getElementById('checkFormulaBtn');
-          if(input && btn){
-            input.value = lessons[i].build.solution;
-            setTimeout(()=>btn.click(), 200);
-          }
-        }
-      };
-      if(startIdx !== -1) renderDemo(startIdx, true);
-    }
-  }
-}
-
-/* ============================= MODE SWITCHING ============================= */
-let viewMode = 'tutorial';
-let slideIdx = 0;
-function renderApp(){
-  const toggle = document.getElementById('modeToggle');
-  toggle.textContent = viewMode==='tutorial' ? '\u25B6 View Presentation' : '\u25C0 Back to Tutorial';
-  if(viewMode==='tutorial') renderTutorial(); else renderPresentationView();
+  renderMain(currentIdx, document.getElementById('main'), (i)=>{ currentIdx = i; renderApp(); });
 }
 
 /* ============================= DEEP LINKING =============================
-   #lesson=<id>&scroll=build&demo=1   jump the tutorial to a lesson (optionally scroll to / auto-run the exercise)
-   #presentation=1&slide=<n>           open straight into the presentation at a given slide
+   #lesson=<id>&scroll=build&demo=1   jump straight to a lesson (optionally scroll to / auto-run the exercise)
    ============================================================================ */
-function applyTutorialHash(){
+function applyHashParams(){
   const hash = (location.hash || '').replace(/^#/, '');
   if(!hash) return;
   const params = new URLSearchParams(hash);
@@ -1161,7 +1310,7 @@ function applyTutorialHash(){
     const idx = lessons.findIndex(l=>l.id===lessonId);
     if(idx !== -1) currentIdx = idx;
   }
-  renderTutorial();
+  renderApp();
   if(params.get('scroll')==='build'){
     const el = document.getElementById('exerciseBox');
     if(el && typeof el.scrollIntoView === 'function') el.scrollIntoView({behavior:'instant', block:'start'});
@@ -1177,30 +1326,7 @@ function applyTutorialHash(){
 }
 
 /* ============================= INIT ============================= */
-function boot(){
-  document.getElementById('modeToggle').addEventListener('click', ()=>{
-    viewMode = viewMode==='tutorial' ? 'presentation' : 'tutorial';
-    if(viewMode==='presentation') slideIdx = 0;
-    renderApp();
-  });
-  document.addEventListener('keydown', e=>{
-    if(viewMode!=='presentation') return;
-    if(e.key==='ArrowRight' || e.key===' '){ if(slideIdx<pSlides.length-1){ slideIdx++; renderPresentationView(); } }
-    if(e.key==='ArrowLeft'){ if(slideIdx>0){ slideIdx--; renderPresentationView(); } }
-  });
-
-  const hash = (location.hash || '').replace(/^#/, '');
-  const params = new URLSearchParams(hash);
-  if(params.get('presentation')==='1'){
-    viewMode = 'presentation';
-    const s = parseInt(params.get('slide')||'0', 10);
-    if(!isNaN(s) && s>=0 && s<pSlides.length) slideIdx = s;
-    renderApp();
-  } else {
-    renderApp();
-    applyTutorialHash();
-  }
-}
+function boot(){ renderApp(); applyHashParams(); }
 if(typeof tableau !== 'undefined' && tableau.extensions){
   tableau.extensions.initializeAsync().then(boot).catch(boot);
 } else {
