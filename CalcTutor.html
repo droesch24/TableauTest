@@ -60,8 +60,8 @@
   .deepdive-intro code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12px;}
   .precedence-note{background:var(--blue-light);border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:10px 14px;font-size:12.5px;color:var(--text);margin:14px 0;}
   .condition-legend{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;}
-  .condition-legend div{display:flex;gap:8px;padding:3px 0;align-items:baseline;}
-  .condition-legend .letter{font-family:'Consolas',monospace;font-weight:700;color:var(--blue);width:16px;flex-shrink:0;}
+  .condition-legend div{display:flex;gap:8px;padding:3px 0;align-items:center;}
+  .condition-legend .letter{font-family:'Consolas',monospace;font-weight:700;color:var(--blue);white-space:nowrap;flex-shrink:0;min-width:22px;}
   .condition-legend code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12px;}
   .precedence-note code{background:var(--code-bg);color:var(--code-text);padding:1px 6px;border-radius:4px;font-family:'Consolas',monospace;font-size:12px;}
   .truth-table{margin-bottom:16px;}
@@ -588,12 +588,48 @@ const lessons = [
   }
 },
 {id:'row-vs-agg', track:'Basics: Aggregation & Logic', title:'Row-Level vs. Aggregate Calcs',
-  concept:`<p><code>SUM(IF [Category]='Technology' THEN [Sales] END)</code> and <code>IF SUM([Sales])... END</code> look similar but behave very differently. The first filters, then sums row values (correct for "sales of just Technology"). The second sums everything first, then tests one number &mdash; usually not what you want when the goal is a conditional total.</p><p>Tableau actually enforces a version of this distinction for you: mixing an aggregate function with a bare (non-aggregated) field reference in most contexts throws a "cannot mix aggregate and non-aggregate" error, which is Tableau's way of forcing you to be explicit about which level the calculation runs at.</p>`,
+  concept:`<p>You have a stack of receipts, and you want one number: how much you spent on Technology, specifically.</p><p><b>The right way is to sort first, then add.</b> Go through the receipts one at a time, checking each one &mdash; "is this Technology?" &mdash; and only add the ones that say yes to your total. That's <code>SUM(IF [Category]='Technology' THEN [Sales] END)</code>: the IF checks each row, and SUM only adds up what passed the check.</p><p><b>The wrong way adds first, then tries to sort.</b> Add every receipt &mdash; Technology and everything else &mdash; into one grand total before checking anything. But once they're combined, that single number doesn't belong to any category anymore, so there's nothing left to sort. All you can ask about it is something like "is this bigger than $1,000?" &mdash; never "was this Technology?" That's exactly the trap in <code>IF SUM([Sales]) > 1000 THEN ... END</code>: by the time IF runs, the category information is already gone.</p>`,
   formula:"SUM(\n  IF [Category] = 'Technology' THEN [Sales] END\n)",
   anatomy:[
-    {tag:'IF ... THEN [Sales] END', text:'Runs once per row. Returns Sales when the row is Technology, otherwise NULL.'},
-    {tag:'SUM( ... )', text:'Aggregates only the non-NULL results &mdash; i.e. only Technology rows get added.'},
+    {tag:'IF ... THEN [Sales] END', text:'The "check each receipt" step. For every row, ask: is this Technology? If yes, use its Sales value; if no, use nothing (NULL).'},
+    {tag:'SUM( ... )', text:'The "add up the pile" step \u2014 happens last, and only adds the rows that passed the check.'},
   ],
+  deepDive:{
+    title:'Deep Dive: Tracing It Row by Row',
+    intro:`<p>Explanations only go so far &mdash; here's the actual mechanics, one row at a time. The first table shows the <b>correct</b> way working through real rows. The second shows what the <b>wrong</b> way actually computes, step by step, so you can see exactly where it goes off the rails.</p>`,
+    examples:[
+      {
+        title:"The correct way: SUM(IF [Category]='Technology' THEN [Sales] END)",
+        description:'Tableau checks every single row first. Only after all 20 checks are done does it add up the ones that said "yes."',
+        compute(){
+          const rows = sampleData.slice(0,8).map(r=>{
+            const passes = r.category==='Technology';
+            return [r.customer, r.category, money(r.sales), passes ? money(r.sales) : 'NULL (skipped)'];
+          });
+          const techTotal = sum(sampleData.filter(r=>r.category==='Technology'), r=>r.sales);
+          rows.push(['\u2026', '(12 more rows, same process)', '', '']);
+          rows.push(['SUM of every "yes" above', '', '', money(techTotal)]);
+          return {cols:['Customer','Category','Sales','IF result (this is what gets added up)'], rows, highlightLast:true};
+        }
+      },
+      {
+        title:"The wrong way: IF SUM([Sales]) > 1000 THEN 'Big' END",
+        description:'Here, SUM runs FIRST \u2014 before IF ever sees the data, all 20 rows have already been mashed into one number. There\'s no way to ask "which rows were Technology?" anymore; that information is gone.',
+        compute(){
+          const grandTotal = sum(sampleData, r=>r.sales);
+          const label = grandTotal > 1000 ? "'Big'" : "'Small'";
+          return {cols:['Step','What actually happens'], rows:[
+            ['1. SUM([Sales]) runs first', `Every row \u2014 Technology, Furniture, Office Supplies, all of it \u2014 gets added into one number: ${money(grandTotal)}`],
+            ['2. IF finally runs', `IF ${money(grandTotal)} > 1000 THEN ${label} END \u2014 one single test, on one single number`],
+            ['Result', `Just the label ${label}, the same for every row. Not a Technology-only total \u2014 that information was already lost in step 1.`],
+          ]};
+        }
+      }
+    ],
+    notes:[
+      {title:'Same input, different order, different answer', text:'Both formulas mention IF, SUM, [Category], and [Sales] \u2014 the only difference is which one runs first. That single ordering decision is the whole ballgame.'},
+    ]
+  },
   compute(){
     const techSales = sum(sampleData.filter(r=>r.category==='Technology'), r=>r.sales);
     const allSales = sum(sampleData, r=>r.sales);
@@ -603,8 +639,8 @@ const lessons = [
     ]};
   },
   secondExample:{
-    title:'The same mistake with AVG',
-    description:'AVG(IF...) averages only the matching rows. IF AVG(...) THEN tests one already-averaged number against a condition \u2014 a completely different (and rarely useful) calculation.',
+    title:'The same idea with AVG',
+    description:'Same two ways of doing things, this time averaging instead of summing. "Check each row, then average the matches" vs. "average everything, then ask one question about that number."',
     compute(){
       const techRows = sampleData.filter(r=>r.category==='Technology');
       const avgTechProfit = sum(techRows, r=>r.profit)/techRows.length;
@@ -616,66 +652,84 @@ const lessons = [
     }
   },
   pitfalls:[
-    {title:'The classic Tableau error', text:'"Cannot mix aggregate and non-aggregate arguments" almost always means an IF/CASE and a raw field are combined incorrectly \u2014 wrap the whole condition in the aggregation, not the other way around.'},
-    {title:'IF outside SUM tests the aggregate, not each row', text:'IF SUM([Sales]) > 1000 THEN ... END asks one question about the grand total, not one per row \u2014 it can\'t "filter" individual rows into the sum.'},
-    {title:'Filtering vs. conditional aggregation', text:'A dashboard filter removes rows from the whole view. SUM(IF...) keeps all rows in the view but only sums the ones matching the condition \u2014 useful when you need both the filtered and unfiltered totals side by side.'},
+    {title:'Tableau will actually stop you here', text:'If you try to mix these up, Tableau shows an error like "cannot mix aggregate and non-aggregate arguments." That error is a hint, not a punishment \u2014 it means: decide whether you\'re checking each row first, or checking one summed-up number. Put the IF inside the SUM to fix it.'},
+    {title:'IF outside SUM asks about the total, not each row', text:'IF SUM([Sales]) > 1000 THEN ... END is asking one question about the grand total. It can\'t reach back and "un-mix" the rows that already got added together.'},
+    {title:'This isn\'t the same as a filter', text:'A dashboard filter removes rows from view entirely. SUM(IF...) keeps every row in view but only adds up the ones that match \u2014 handy when you want to show a filtered total right next to the unfiltered one.'},
   ],
   related:[
     {title:'LOD Expressions', text:'a more powerful way to control exactly which rows an aggregation sees'},
-    {title:'IF / ELSEIF', text:'refresher on row-level condition syntax'},
+    {title:'IF / ELSEIF', text:'refresher on the row-by-row checking step'},
   ],
   build:{
     prompt:'Build a calc that sums Sales for Technology rows only (a single total across the whole dataset).',
     calcKind:'aggregate', viewDims:[],
     getMarks:(data)=>[{label:'All rows (Technology-only total)', rows:data}],
     solution:"SUM(IF [Category] = 'Technology' THEN [Sales] END)",
-    hint:'Put the IF condition inside the SUM so it filters row by row before adding.',
+    hint:'Check each row first (IF), then add up the matches (SUM) \u2014 the IF goes inside the SUM.',
     format: v => money(v),
     palette:{functions:['SUM'], keywords:['IF','THEN','END'], operators:['=']}
   }
 },
 {id:'lod-why', track:'LOD Expressions', title:'Why Level of Detail?',
-  concept:`<p>Every mark in a Tableau view is aggregated to whatever dimensions are in that view. Level of Detail (LOD) expressions let you compute at a <b>different granularity</b> than the view &mdash; coarser (<code>FIXED</code>, <code>EXCLUDE</code>) or finer (<code>INCLUDE</code>) &mdash; independent of filters and the marks card.</p><p>LOD expressions run as part of the data source query, which is a key difference from table calculations (covered later): they're computed <i>before</i> the results reach the view, so they interact with filters differently, and they don't care what order the marks are sorted in.</p>`,
+  concept:`<p>Normally, Tableau groups numbers by whatever fields are on the view &mdash; completely automatically, no formula required. Put Region on the view, and <code>SUM(Sales)</code> becomes "total sales per region." Swap in Customer instead, and that exact same <code>SUM(Sales)</code> becomes "total sales per customer." The formula never changes &mdash; only the grouping does, based on what's sitting in the view.</p><p>Here's the problem LOD solves: sometimes you want a number that uses <i>different</i> grouping than the rest of the view. Say the view is grouped by Region, and you also want to show "this customer's all-time total" on every row &mdash; even though Customer isn't one of the fields in the view. A plain <code>SUM(Sales)</code> can't do that; it only knows how to follow the view's grouping. That's the wall Level of Detail (LOD) expressions break through.</p><p>An LOD expression is a formula that says: "for this one number, use different grouping than the view &mdash; here's exactly what I want instead." There are three ways to say that, and the next three lessons cover each one in full. This lesson is just about the core idea, so don't worry about memorizing FIXED/INCLUDE/EXCLUDE yet &mdash; just get comfortable with <i>why</i> you'd ever need any of them.</p>`,
   formula:'{ FIXED [dimension] : AGG([measure]) }\n{ INCLUDE [dimension] : AGG([measure]) }\n{ EXCLUDE [dimension] : AGG([measure]) }',
   anatomy:[
-    {tag:'{ ... }', text:'Curly braces mark the whole expression as an LOD calc.'},
-    {tag:'FIXED', text:'Compute at exactly the dimension(s) listed, ignoring the view\'s other dimensions and (usually) filters.'},
-    {tag:'INCLUDE', text:'Compute at the view\'s dimensions PLUS the one(s) listed &mdash; a finer grain.'},
-    {tag:'EXCLUDE', text:'Compute at the view\'s dimensions MINUS the one(s) listed &mdash; a coarser grain.'},
+    {tag:'{ ... }', text:'The curly braces are how Tableau recognizes this as one LOD expression, rather than a regular formula.'},
+    {tag:'FIXED', text:'"Use exactly these fields, no matter what\'s on the view." The most absolute of the three \u2014 covered in the next lesson.'},
+    {tag:'INCLUDE', text:'"Use the view\'s fields, PLUS these extra ones." Makes the grouping more specific (finer) than the view.'},
+    {tag:'EXCLUDE', text:'"Use the view\'s fields, MINUS these ones." Makes the grouping less specific (coarser) than the view.'},
   ],
+  deepDive:{
+    title:'Deep Dive: What "Level of Detail" Actually Means',
+    intro:`<p>"Level of detail" sounds technical, but it's just a fancy way of asking: <b>how many rows get lumped together into one number?</b> A view grouped by Region lumps every row in the East together into one East number \u2014 that's a fairly zoomed-out "level of detail." A view grouped by Customer lumps far fewer rows together \u2014 a more zoomed-in level of detail.</p><p>Every LOD expression is just picking a different zoom level than the view, on purpose, for one specific number:</p>`,
+    examples:[
+      {
+        title:'The same idea, laid out side by side',
+        description:'"Ignore the view" (FIXED), "zoom in past the view" (INCLUDE), and "zoom out past the view" (EXCLUDE) are the only three moves available. Everything else in this track is just applying them.',
+        compute(){
+          return {cols:['What you write','What grouping it actually uses','In plain words'], rows:[
+            ['SUM([Sales])  (no LOD)', 'Whatever the view already groups by', 'Automatic \u2014 no decision to make'],
+            ["{FIXED [Customer]:SUM([Sales])}", 'Customer only, always', 'Ignores the view completely'],
+            ["{INCLUDE [Customer]:SUM([Sales])}", "The view's grouping PLUS Customer", 'Zooms in \u2014 smaller groups than the view'],
+            ["{EXCLUDE [Region]:SUM([Sales])}", "The view's grouping MINUS Region", 'Zooms out \u2014 bigger groups than the view'],
+          ]};
+        }
+      }
+    ],
+    notes:[
+      {title:'You don\'t need to memorize this yet', text:'Every time you reach for an LOD, ask yourself one question: does this number need to completely ignore the view (FIXED), zoom in past it (INCLUDE), or zoom out past it (EXCLUDE)? The next three lessons are just that one question, answered three different ways.'},
+    ]
+  },
   compute(){
-    return {cols:['Type','Granularity vs. the view','Typical use'], rows:[
-      ['FIXED','Independent of the view entirely','Customer lifetime sales shown on every row'],
-      ['INCLUDE','Finer than the view','Avg sub-category profit, rolled up to category'],
-      ['EXCLUDE','Coarser than the view','Category total, repeated at sub-category grain, for % of total'],
-    ]};
+    const byRegion = groupBy(sampleData, r=>r.region);
+    const rows = Object.entries(byRegion).map(([region,rs])=>[region, money(sum(rs,r=>r.sales))]);
+    return {cols:['Region','SUM(Sales)  \u2014  this is all a normal view can do'], rows};
   },
   secondExample:{
-    title:'The same question, three ways',
-    description:'"What\'s a customer\'s share of their region\'s total sales" needs a FIXED for the customer total and an EXCLUDE (or the view itself) for the region total \u2014 a good illustration of how the three types often combine.',
+    title:'Now watch a normal SUM hit its limit',
+    description:'Say you also want to show each customer\'s all-time total next to their region \u2014 not just this region\'s total, their overall total across every region. A plain SUM(Sales) literally cannot produce the last column below; it always follows the view. That\'s exactly the gap {FIXED [Customer] : SUM([Sales])} fills, which the next lesson covers in detail.',
     compute(){
-      return {cols:['Step','LOD used','Result'], rows:[
-        ['Customer\'s total Sales', "{FIXED [Customer] : SUM([Sales])}", 'A. Diaz: $1,833.15'],
-        ["Region's total Sales", "{FIXED [Region] : SUM([Sales])} or the view itself", 'East: $4,286.10'],
-        ["Customer's % of region", 'Divide the two', 'A. Diaz: 42.8% of East'],
-      ]};
+      const byCust = groupBy(sampleData, r=>r.customer);
+      const custTotals = {}; Object.entries(byCust).forEach(([c,rs])=>custTotals[c]=sum(rs,r=>r.sales));
+      const rows = sampleData.slice(0,6).map(r=>[r.region, r.customer, money(r.sales), money(custTotals[r.customer])]);
+      return {cols:['Region','Customer','This Order\'s Sales','Customer\'s All-Time Total (needs LOD)'], rows, highlightLast:true};
     }
   },
   pitfalls:[
-    {title:'LOD vs. table calc confusion', text:'They solve similar-sounding problems but run at different times \u2014 LOD during the query, table calc after. Mixing them up leads to formulas that are technically valid but produce surprising numbers.'},
-    {title:'FIXED ignores most filters by default', text:'A FIXED LOD is computed before dimension filters are applied, so filtering the view often won\'t change its result \u2014 which is a feature until it\'s a confusing bug.'},
-    {title:'Reaching for FIXED out of habit', text:'If EXCLUDE or INCLUDE would work relative to your current view, they\'re usually simpler to reason about than re-deriving the full FIXED dimension list.'},
+    {title:'LOD vs. table calc mix-up', text:'They sound similar but run at different times \u2014 LOD while the data is first being gathered, table calcs after. If a formula won\'t validate, check you\'re not accidentally trying to use table-calc syntax (covered later) inside an LOD, or vice versa.'},
+    {title:'FIXED ignores most filters by default', text:'Because FIXED is computed before dimension filters are applied, filtering the view often won\'t change its result. Surprising the first time you see it \u2014 covered more in the FIXED lesson.'},
+    {title:'Reaching for FIXED out of habit', text:'If INCLUDE or EXCLUDE would work relative to your current view, they\'re usually easier to reason about than working out the full FIXED field list from scratch.'},
   ],
   related:[
-    {title:'FIXED', text:'compute independent of the view'},
-    {title:'Table Calculations', text:'the other way to control what a number is computed against'},
+    {title:'FIXED', text:'the "ignore the view" option, covered next'},
+    {title:'Table Calculations', text:'a different tool for a similar-sounding problem'},
   ],
-  exercise:{type:'concept', q:'What problem do LOD expressions primarily solve?',
-    options:['Making charts render faster','Computing a measure at a granularity different from the view','Formatting numbers as currency'],
-    answer:1, hint:'Think "granularity", not performance or formatting.'}
+  exercise:{type:'concept', q:'In plain terms, what does an LOD expression let you do?',
+    options:['Make a number use different grouping than the rest of the view','Make a chart load faster','Format a number as currency'],
+    answer:0, hint:'Think back to the Region/Customer example \u2014 it\'s about grouping, not speed or formatting.'}
 },
 {id:'lod-fixed', track:'LOD Expressions', title:'FIXED',
-  concept:`<p><code>{FIXED [Customer] : SUM([Sales])}</code> computes each customer's total Sales across <i>all</i> their orders, then attaches that single number to every row for that customer &mdash; regardless of what else is in the view.</p><p>You can list more than one dimension: <code>{FIXED [Region],[Customer] : SUM([Sales])}</code> computes a total per region-and-customer combination instead of per customer alone. The more dimensions you add, the finer the fixed grain gets \u2014 add enough and it converges on row-level detail.</p>`,
+  concept:`<p><code>{FIXED [Customer] : SUM([Sales])}</code> computes each customer's total Sales across <i>all</i> their orders, then attaches that single number to every row for that customer &mdash; regardless of what else is in the view.</p><p>You can list more than one dimension: <code>{FIXED [Customer],[Category] : SUM([Sales])}</code> computes a total per customer-and-category combination instead of per customer alone &mdash; so the same customer gets a different number for their Technology purchases than their Furniture purchases. The more dimensions you add, the finer the fixed grain gets \u2014 add enough and it converges on row-level detail.</p>`,
   formula:'{ FIXED [Customer] : SUM([Sales]) }',
   anatomy:[
     {tag:'FIXED [Customer]', text:'Locks the calculation to the Customer dimension only.'},
@@ -690,15 +744,21 @@ const lessons = [
   },
   secondExample:{
     title:'Fixing on two dimensions at once',
-    description:'{FIXED [Region],[Customer] : SUM([Sales])} \u2014 a finer grain than customer alone, since the same customer could in principle appear in more than one region.',
+    description:'{FIXED [Customer],[Category] : SUM([Sales])} \u2014 a finer grain than customer alone. Every one of A. Diaz\'s and B. Chen\'s orders is listed below, grouped by category. Where a customer has more than one order in the same category, the FIXED total repeats across those rows (it\'s their sum) \u2014 where there\'s only one order, the FIXED total just equals that order.',
     compute(){
-      const byRegCust = groupBy(sampleData, r=>r.region+'|'+r.customer);
-      const totals = {}; Object.entries(byRegCust).forEach(([k,rs])=>totals[k]=sum(rs,r=>r.sales));
-      const rows = sampleData.slice(0,6).map(r=>{
-        const key = r.region+'|'+r.customer;
-        return [r.region, r.customer, money(totals[key])];
+      const rows = [];
+      ['A. Diaz','B. Chen'].forEach(cust=>{
+        const custRows = sampleData.filter(r=>r.customer===cust);
+        const cats = uniq(custRows.map(r=>r.category));
+        cats.forEach(cat=>{
+          const comboRows = custRows.filter(r=>r.category===cat);
+          const total = sum(comboRows, r=>r.sales);
+          comboRows.forEach(r=>{
+            rows.push([cust, cat, money(r.sales), money(total)]);
+          });
+        });
       });
-      return {cols:['Region','Customer','FIXED [Region],[Customer]: SUM(Sales)'], rows, highlightLast:true};
+      return {cols:['Customer','Category','This Order Sales','FIXED [Customer],[Category]: SUM(Sales)'], rows, highlightLast:true};
     }
   },
   pitfalls:[
@@ -792,19 +852,21 @@ const lessons = [
     return {cols:['Category','Sub-Category','Sub-Cat Sales','EXCLUDE: Category Sales','% of Category'], rows};
   },
   secondExample:{
-    title:'Excluding Region: a customer\'s share of their own total',
-    description:'At a Region + Customer view, {EXCLUDE [Region] : SUM([Sales])} rolls up to Customer \u2014 answering "what % of this customer\'s overall spend happened in this region."',
+    title:'Excluding Category: a customer\'s share of their own total, by category',
+    description:'At a Customer + Category view, {EXCLUDE [Category] : SUM([Sales])} rolls up to Customer \u2014 answering "what % of this customer\'s overall spend happened in each category." Each customer\'s percentages add up to 100%, since together their categories cover every one of their orders.',
     compute(){
-      const byCust = groupBy(sampleData, r=>r.customer);
-      const custTotals = {}; Object.entries(byCust).forEach(([c,rs])=>custTotals[c]=sum(rs,r=>r.sales));
-      const byRegCust = groupBy(sampleData, r=>r.region+'|'+r.customer);
-      const rows = Object.entries(byRegCust).slice(0,6).map(([key,rs])=>{
-        const [region,cust] = key.split('|');
-        const regCustTotal = sum(rs,r=>r.sales);
-        const pctVal = (regCustTotal/custTotals[cust]*100).toFixed(1)+'%';
-        return [region, cust, money(regCustTotal), money(custTotals[cust]), pctVal];
+      const rows = [];
+      ['A. Diaz','B. Chen'].forEach(cust=>{
+        const custRows = sampleData.filter(r=>r.customer===cust);
+        const custTotal = sum(custRows, r=>r.sales);
+        const cats = uniq(custRows.map(r=>r.category));
+        cats.forEach(cat=>{
+          const catTotal = sum(custRows.filter(r=>r.category===cat), r=>r.sales);
+          const pctVal = (catTotal/custTotal*100).toFixed(1)+'%';
+          rows.push([cust, cat, money(catTotal), money(custTotal), pctVal]);
+        });
       });
-      return {cols:['Region','Customer','Region Sales (this cust.)','EXCLUDE: Customer Total','% of Customer Total'], rows};
+      return {cols:['Customer','Category','Category Sales (this cust.)','EXCLUDE: Customer Total','% of Customer Total'], rows, highlightLast:true};
     }
   },
   pitfalls:[
@@ -967,13 +1029,64 @@ const lessons = [
   }
 },
 {id:'tc-window', track:'Table Calculations', title:'Window Functions & % of Total',
-  concept:`<p><code>WINDOW_AVG(SUM([Sales]))</code> returns the same average across every mark in its window &mdash; handy for a reference line. <code>SUM([Sales]) / TOTAL(SUM([Sales]))</code> is the standard "percent of total" pattern: <code>TOTAL()</code> returns the grand sum regardless of partitioning, so dividing the row by it gives a share.</p><p><code>TOTAL()</code> always sums the <i>whole</i> partition, regardless of any narrower window you might set on WINDOW_SUM elsewhere in the same view. If a partition is defined (e.g. by Region), TOTAL() respects that partition boundary \u2014 "% of total" then means "% of this region's total," not "% of the grand total." Whether that's what you want depends entirely on how the partition is set up.</p>`,
+  concept:`<p>RUNNING_SUM and RANK both look beyond just their own row \u2014 they compare against other marks in the view. "Window functions" is the general name for that whole family: any table calc that looks across a group of marks (a <b>window</b>) instead of computing something purely from its own row.</p><p>By default, the window is "every mark sharing the same partition." <code>TOTAL()</code> is the simplest window function there is: it just adds up every mark in the window, full stop. <code>WINDOW_AVG()</code> averages them instead of summing. Neither one cares about sort order (addressing) the way RUNNING_SUM does \u2014 they just pool the window together.</p><p>Once you know that, <code>SUM([Sales]) / TOTAL(SUM([Sales]))</code> reads naturally: "my value, divided by everyone in my window added together" &mdash; which is exactly what a percent-of-total means. The only thing to keep straight is that "everyone" means "everyone in the same partition," which might be the whole table or a narrower slice, depending on how partitioning is set up.</p>`,
   formula:'SUM([Sales]) / TOTAL(SUM([Sales]))',
   anatomy:[
     {tag:'SUM([Sales])', text:'This row/mark\'s value.'},
-    {tag:'TOTAL(SUM([Sales]))', text:'The grand total across the whole partition, unaffected by addressing.'},
-    {tag:'A / TOTAL(A)', text:'Row value divided by the whole gives percent of total.'},
+    {tag:'TOTAL(SUM([Sales]))', text:'Every mark in this row\'s window, added together \u2014 unaffected by sort order.'},
+    {tag:'A / TOTAL(A)', text:'Row value divided by the whole window gives percent of total.'},
   ],
+  deepDive:{
+    title:'Deep Dive: What Is a "Window," Really?',
+    intro:`<p>The easiest way to actually see a window is to list out which marks are in it. A "window" is nothing more than: which other marks get pooled together with this one? Change the partition, and you change who\'s in the window \u2014 that\'s the whole mechanic.</p>`,
+    examples:[
+      {
+        title:'No partition: one big window, shared by everyone',
+        description:'With no partition set, "the same partition" just means "the whole table." All three categories share one window, which is exactly why TOTAL(SUM(Sales)) comes out identical on every single row.',
+        compute(){
+          const byCat = groupBy(sampleData, r=>r.category);
+          const cats = Object.keys(byCat);
+          const grand = sum(sampleData, r=>r.sales);
+          const rows = cats.map(cat=>[cat, cats.join(', '), money(grand)]);
+          return {cols:['This mark','Every mark in its window','TOTAL(SUM(Sales))'], rows, highlightLast:true};
+        }
+      },
+      {
+        title:'Partitioned by Region: smaller, separate windows',
+        description:'Add Region as a partition and each mark\'s window shrinks to just the categories within its own region \u2014 three separate windows instead of one shared one. TOTAL(SUM(Sales)) now differs by region, because it\'s only adding up what\'s inside each smaller window.',
+        compute(){
+          const byRegion = groupBy(sampleData, r=>r.region);
+          let rows = [];
+          ['East','West','Central'].forEach(region=>{
+            const rs = byRegion[region]||[];
+            const cats = uniq(rs.map(r=>r.category));
+            const regionTotal = sum(rs, r=>r.sales);
+            cats.forEach(cat=>rows.push([`${region} \u2014 ${cat}`, `${cats.join(', ')} (${region} only)`, money(regionTotal)]));
+          });
+          return {cols:['This mark','Every mark in its window','TOTAL(SUM(Sales))'], rows, highlightLast:true};
+        }
+      },
+      {
+        title:'Proof: WINDOW_AVG includes the current mark',
+        description:'If WINDOW_AVG meant "average of everyone else," it would give a different number for each category (since each one excludes something different). Instead, watch it stay exactly the same for all three \u2014 that\'s only possible if the current mark is counted every time.',
+        compute(){
+          const byCat = groupBy(sampleData, r=>r.category);
+          const cats = Object.keys(byCat);
+          const totals = cats.map(c=>[c, sum(byCat[c], r=>r.sales)]);
+          const grand = sum(sampleData, r=>r.sales);
+          const rows = totals.map(([cat,t])=>{
+            const windowAvg = grand/cats.length;
+            const excludingSelf = (grand - t)/(cats.length-1);
+            return [cat, money(windowAvg), money(excludingSelf)];
+          });
+          return {cols:['Category','WINDOW_AVG(SUM(Sales))  \u2014  actually happens','If it excluded this row  \u2014  hypothetical'], rows};
+        }
+      }
+    ],
+    notes:[
+      {title:'Same question either way: who\'s in the window?', text:'RUNNING_SUM, RANK, WINDOW_AVG, and TOTAL are all just different things to do once you know the window\'s membership. Figuring out the partition (who\'s in the window) is 90% of getting a table calc right \u2014 the function you pick is the easy part.'},
+    ]
+  },
   compute(){
     const byCat = groupBy(sampleData, r=>r.category);
     const totals = Object.entries(byCat).map(([c,rs])=>[c,sum(rs,r=>r.sales)]);
@@ -1002,7 +1115,7 @@ const lessons = [
   },
   pitfalls:[
     {title:'TOTAL() respects partitioning, not addressing', text:'If a partition is set, TOTAL() sums only within that partition \u2014 "% of total" silently becomes "% of this partition\'s total," which is easy to miss if you were expecting the grand total.'},
-    {title:'WINDOW functions include the current mark', text:'WINDOW_AVG(SUM([Sales])) averages the whole window including the row it\'s displayed on \u2014 it\'s not automatically "everyone else\'s average excluding me."'},
+    {title:'WINDOW functions include the current mark', text:'WINDOW_AVG(SUM([Sales])) averages the whole window including the row it\'s displayed on \u2014 it\'s not automatically "everyone else\'s average excluding me." See the Deep Dive above for a live proof.'},
     {title:'Division by zero returns NULL', text:'If TOTAL(SUM([Sales])) happens to be zero for an empty partition, the percentage silently comes back NULL rather than erroring \u2014 worth guarding with ZN() in a real dashboard.'},
   ],
   related:[
@@ -1076,6 +1189,12 @@ function renderDeepDive(dd){
       ${dd.liveExample.legend ? `<div class="condition-legend">${dd.liveExample.legend.map(l=>`<div><span class="letter">${l.letter} =</span><code>${l.expr}</code></div>`).join('')}</div>` : ''}
       ${renderTable(dd.liveExample.compute())}
     ` : ''}
+    ${dd.examples ? dd.examples.map((ex,i)=>`
+      ${i>0 ? '<hr class="example-divider">' : ''}
+      <div class="example-label">${ex.title}</div>
+      <div class="example-desc">${ex.description}</div>
+      ${renderTable(ex.compute())}
+    `).join('') : ''}
     ${dd.notes ? `
       <ul class="pitfalls-list" style="margin-top:16px;">
         ${dd.notes.map(n=>`<li><span class="pitfall-icon">!</span><span class="pitfall-body"><b>${n.title}</b><span>${n.text}</span></span></li>`).join('')}
