@@ -1252,16 +1252,20 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       setStatus('Checking docs\u2026');
       try {
         var res = await callFlow({ action: 'list' });
-        var rawLuids=(res&&res.luids)?res.luids:[];
-        var flat=[].concat.apply([],rawLuids);
-        flat.forEach(function(x){
-          var filename=(x.luid||x).replace('.json','');
-          // filename is either "{luid}" or "{luid}_{status}" e.g. "abc-123_Active"
-          // luids contain hyphens but not underscores, so split on first underscore after the luid
-          // luid format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars)
-          var luid = filename.substring(0, 36);
-          var status = filename.length > 36 ? filename.substring(37) : 'Documented';
-          if (luid) docCache[luid] = status || 'Documented';
+        // Support both old filename format and new Excel index format {luid, status}
+        var rows = (res && res.luids) ? [].concat.apply([], res.luids) : [];
+        console.log('list rows sample:', JSON.stringify(rows.slice(0,3)));
+        rows.forEach(function(x) {
+          if (x && typeof x === 'object' && x.luid) {
+            // New Excel format: { luid, status }
+            docCache[x.luid] = x.status || 'Documented';
+          } else {
+            // Legacy filename format: "40990dfa-..._Active"
+            var filename = (x.luid || x).replace('.json', '');
+            var luid = filename.substring(0, 36);
+            var status = filename.length > 36 ? filename.substring(37) : 'Documented';
+            if (luid) docCache[luid] = status || 'Documented';
+          }
         });
         setStatus('Ready');
       } catch(e) { setStatus('Ready'); }
