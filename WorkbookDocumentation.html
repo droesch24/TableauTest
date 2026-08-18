@@ -1253,7 +1253,8 @@ if (new URLSearchParams(window.location.search).get('config') === '1') {
       try {
         var res = await callFlow({ action: 'list' });
         // Support both old filename format and new Excel index format {luid, status}
-        var rows = (res && res.luids) ? [].concat.apply([], res.luids) : [];
+        console.log('list res:', JSON.stringify(res).substring(0, 500));
+        var rows = (res && res.luids) ? res.luids : [];
         console.log('list rows sample:', JSON.stringify(rows.slice(0,3)));
         rows.forEach(function(x) {
           if (x && typeof x === 'object' && x.luid) {
