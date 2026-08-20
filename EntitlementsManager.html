@@ -117,6 +117,23 @@
     #list-view   { flex: 1; display: none; flex-direction: column; overflow: hidden; }
     #detail-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
 
+    /* ── Mode toggle ── */
+    #mode-toggle {
+      display: flex; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px 0; gap: 4px; flex-shrink: 0;
+    }
+    .mode-tab {
+      flex: 1; text-align: center;
+      padding: 7px 10px; cursor: pointer;
+      font-size: 11px; font-weight: 600; letter-spacing: .03em;
+      color: var(--text-dim); background: none; border: none;
+      border-bottom: 2px solid transparent;
+      transition: color .12s, border-color .12s;
+    }
+    .mode-tab:hover { color: var(--text-sec); }
+    .mode-tab.active { color: var(--slate); border-bottom-color: var(--amber); }
+
     /* ── Search bar ── */
     .search-bar {
       padding: 8px 12px; background: var(--surface);
@@ -267,6 +284,106 @@
     .member-del:hover { color: var(--danger); background: var(--danger-lt); }
     .member-del:disabled { opacity: .3; cursor: not-allowed; }
 
+    /* ── Person view ── */
+    #person-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+    #person-detail-view { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+
+    /* person list reuses cc-item styling via .person-item */
+    #person-scroll { flex: 1; overflow-y: auto; }
+    #person-scroll::-webkit-scrollbar { width: 5px; }
+    #person-scroll::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+    .person-item {
+      display: flex; align-items: center;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--surface); cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: border-left-color .12s, background .12s; gap: 10px;
+    }
+    .person-item:nth-child(even) { background: var(--stripe); }
+    .person-item:last-child { border-bottom: none; }
+    .person-item:hover { border-left-color: var(--amber); background: #fffbf0 !important; }
+    .person-item-name { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--text-sec); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .person-item-badge { background: var(--slate); color: var(--amber-dim); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 12px; flex-shrink: 0; }
+    .person-item-chevron { color: var(--text-dim); flex-shrink: 0; }
+    .person-item-chevron svg { width: 13px; height: 13px; display: block; }
+
+    /* person's cost-center list in detail */
+    #pcc-scroll { flex: 1; overflow-y: auto; }
+    #pcc-scroll::-webkit-scrollbar { width: 5px; }
+    #pcc-scroll::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+    .pcc-row {
+      display: flex; align-items: center;
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      background: var(--surface); border-left: 3px solid transparent;
+      transition: border-left-color .12s, background .12s; gap: 10px;
+    }
+    .pcc-row:nth-child(even) { background: var(--stripe); }
+    .pcc-row:last-child { border-bottom: none; }
+    .pcc-row:hover { border-left-color: var(--amber); background: #fffbf0 !important; }
+    .pcc-name { flex: 1; font-size: 12px; color: var(--text-pri); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pcc-del {
+      background: none; border: none; cursor: pointer;
+      padding: 4px; border-radius: var(--radius);
+      display: flex; align-items: center; color: var(--text-dim);
+      opacity: 0; transition: opacity .12s, color .1s, background .1s;
+    }
+    .pcc-del svg { width: 13px; height: 13px; }
+    .pcc-row:hover .pcc-del { opacity: 1; }
+    .pcc-del:hover { color: var(--danger); background: var(--danger-lt); }
+    .pcc-del:disabled { opacity: .3; cursor: not-allowed; }
+
+    /* cost-center picker in person detail (mirrors user-picker) */
+    #pcc-picker { flex: 1; position: relative; }
+    #pcc-search-input {
+      width: 100%; padding: 6px 28px 6px 10px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-family: var(--sans);
+      color: var(--text-pri); background: var(--stripe); outline: none;
+      transition: border-color .12s;
+    }
+    #pcc-search-input:focus { border-color: var(--slate-soft); background: var(--surface); }
+    #pcc-search-input::placeholder { color: var(--text-dim); }
+    #pcc-clear-btn {
+      position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--text-dim); padding: 2px;
+      display: none; align-items: center;
+    }
+    #pcc-clear-btn svg { width: 12px; height: 12px; }
+    #pcc-clear-btn.visible { display: flex; }
+    #pcc-dropdown {
+      display: none;
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface); border: 1.5px solid var(--border-mid);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 6px 24px rgba(10,14,26,.14);
+      max-height: 220px; overflow-y: auto; z-index: 50;
+    }
+    #pcc-dropdown.open { display: block; }
+    #pcc-dropdown::-webkit-scrollbar { width: 5px; }
+    #pcc-dropdown::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+    .pcc-option {
+      padding: 8px 12px; font-size: 12px; color: var(--text-sec);
+      cursor: pointer; border-bottom: 1px solid var(--border);
+      transition: background .1s, color .1s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pcc-option:last-child { border-bottom: none; }
+    .pcc-option:hover { background: var(--amber); color: var(--slate); }
+    .pcc-option.no-results { color: var(--text-dim); cursor: default; }
+    .pcc-option.no-results:hover { background: none; color: var(--text-dim); }
+    #pcc-selected-chip {
+      display: none; align-items: center; gap: 6px;
+      background: var(--slate); color: var(--amber-dim);
+      border-radius: 20px; padding: 4px 10px 4px 12px;
+      font-size: 11px; white-space: nowrap; max-width: 100%; overflow: hidden;
+    }
+    #pcc-selected-chip.visible { display: flex; }
+    #pcc-selected-chip span { overflow: hidden; text-overflow: ellipsis; }
+    #pcc-chip-clear { background: none; border: none; cursor: pointer; color: rgba(252,211,77,.6); padding: 0; display: flex; align-items: center; flex-shrink: 0; transition: color .1s; }
+    #pcc-chip-clear:hover { color: var(--amber-dim); }
+    #pcc-chip-clear svg { width: 12px; height: 12px; }
+
     /* ── Settings ── */
     .overlay { display: none; position: fixed; inset: 0; background: rgba(10,14,26,.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
     .overlay.open { display: flex; }
@@ -308,6 +425,12 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Mode toggle -->
+<div id="mode-toggle" style="display:none;">
+  <button class="mode-tab active" id="tab-cc">By Cost Center</button>
+  <button class="mode-tab" id="tab-person">By Person</button>
+</div>
 
 <div id="empty-view">
   <div id="empty-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
@@ -352,6 +475,43 @@
     </button>
   </div>
   <div id="members-scroll"><div id="members-list"></div></div>
+</div>
+
+<!-- Person list view -->
+<div id="person-view">
+  <div class="search-bar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="person-search" placeholder="Search people with access…" />
+    </div>
+  </div>
+  <div id="person-scroll"><div id="person-list"></div></div>
+</div>
+
+<!-- Person detail view: a person's cost centers -->
+<div id="person-detail-view">
+  <div id="detail-toolbar">
+    <div id="pcc-picker">
+      <div id="pcc-search-wrap" style="position:relative;">
+        <input type="text" id="pcc-search-input" placeholder="Add to a cost center…" autocomplete="off" />
+        <button id="pcc-clear-btn" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="pcc-selected-chip">
+        <span id="pcc-chip-label"></span>
+        <button id="pcc-chip-clear" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="pcc-dropdown"></div>
+    </div>
+    <button class="add-btn" id="pcc-add-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add
+    </button>
+  </div>
+  <div id="pcc-scroll"><div id="pcc-list"></div></div>
 </div>
 
 <!-- Settings -->
@@ -416,6 +576,12 @@ var allUsers   = []; // all Tableau-licensed user emails from encoding tile 3
 var selectedCC   = null;
 var selectedUser = null; // currently picked user email
 
+var byPerson       = {}; // { "email": ["CC Name", …] } — reverse index
+var personKeys     = [];
+var mode           = 'cc'; // 'cc' or 'person'
+var selectedPerson = null;
+var selectedPccAdd = null; // cost center picked in person-detail add box
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 (async function() {
   try {
@@ -466,17 +632,34 @@ async function loadData(ws) {
     });
     ccKeys = Object.keys(grouped).sort(function(a,b){ return a.localeCompare(b); });
 
+    // Build reverse index: person -> [cost centers]
+    rebuildByPerson();
+
     // Load full Tableau users list from flow (independent of worksheet data)
     await loadAllUsers();
 
-    if (selectedCC && grouped[selectedCC]) {
-      renderMembers(selectedCC);
-    } else if (selectedCC) {
-      goBack();
-    }
+    document.getElementById('mode-toggle').style.display = 'flex';
 
-    renderCCList('');
-    showListView();
+    // Refresh whichever view is active
+    if (mode === 'cc') {
+      if (selectedCC && grouped[selectedCC]) {
+        renderMembers(selectedCC);
+      } else if (selectedCC) {
+        goBack();
+      } else {
+        renderCCList(document.getElementById('cc-search').value);
+        showListView();
+      }
+    } else {
+      if (selectedPerson && byPerson[selectedPerson]) {
+        renderPersonDetail(selectedPerson);
+      } else if (selectedPerson) {
+        goBackPerson();
+      } else {
+        renderPersonList(document.getElementById('person-search').value);
+        showPersonView();
+      }
+    }
   } catch(e) {
     setEmptyMsg('Failed to load data: ' + e.message);
   }
@@ -596,6 +779,7 @@ function deleteMember(email) {
   callFlow(delFlowUrl, { key: selectedCC, value: email })
     .then(function() {
       if (grouped[selectedCC]) grouped[selectedCC] = grouped[selectedCC].filter(function(e){ return e !== email; });
+      rebuildByPerson();
       renderMembers(selectedCC);
       showToast('Removed.', 'success');
     })
@@ -716,6 +900,7 @@ function addMember() {
     .then(function() {
       if (!grouped[selectedCC]) grouped[selectedCC] = [];
       grouped[selectedCC].push(email);
+      rebuildByPerson();
       clearUserPicker();
       renderMembers(selectedCC);
       showToast(email + ' added.', 'success');
@@ -724,16 +909,276 @@ function addMember() {
     .finally(function()  { btn.disabled = false; });
 }
 
-// ─── Back ─────────────────────────────────────────────────────────────────────
-document.getElementById('back-btn').addEventListener('click', goBack);
+// ─── Back (cost center mode) ──────────────────────────────────────────────────
+document.getElementById('back-btn').addEventListener('click', function() {
+  if (mode === 'person') goBackPerson(); else goBack();
+});
 function goBack() {
   selectedCC = null; selectedUser = null;
   document.getElementById('app-header-title').textContent = 'Entitlements Manager';
   document.getElementById('back-btn').classList.remove('visible');
   document.getElementById('header-divider').classList.remove('visible');
+  document.getElementById('mode-toggle').style.display = 'flex';
   renderCCList(document.getElementById('cc-search').value);
   document.getElementById('detail-view').style.display = 'none';
   document.getElementById('list-view').style.display   = 'flex';
+}
+
+// ─── Reverse index ────────────────────────────────────────────────────────────
+function rebuildByPerson() {
+  byPerson = {};
+  Object.keys(grouped).forEach(function(cc) {
+    grouped[cc].forEach(function(email) {
+      if (!byPerson[email]) byPerson[email] = [];
+      if (byPerson[email].indexOf(cc) === -1) byPerson[email].push(cc);
+    });
+  });
+  personKeys = Object.keys(byPerson).sort(function(a,b){ return a.localeCompare(b); });
+}
+
+// ─── Mode toggle ──────────────────────────────────────────────────────────────
+document.getElementById('tab-cc').addEventListener('click', function() { switchMode('cc'); });
+document.getElementById('tab-person').addEventListener('click', function() { switchMode('person'); });
+
+function switchMode(m) {
+  if (mode === m) return;
+  mode = m;
+  selectedCC = null; selectedUser = null;
+  selectedPerson = null; selectedPccAdd = null;
+  document.getElementById('back-btn').classList.remove('visible');
+  document.getElementById('header-divider').classList.remove('visible');
+  document.getElementById('app-header-title').textContent = 'Entitlements Manager';
+
+  document.getElementById('tab-cc').classList.toggle('active', m === 'cc');
+  document.getElementById('tab-person').classList.toggle('active', m === 'person');
+
+  document.getElementById('detail-view').style.display        = 'none';
+  document.getElementById('person-detail-view').style.display = 'none';
+
+  if (m === 'cc') {
+    document.getElementById('person-view').style.display = 'none';
+    renderCCList(document.getElementById('cc-search').value);
+    document.getElementById('list-view').style.display = 'flex';
+  } else {
+    document.getElementById('list-view').style.display = 'none';
+    rebuildByPerson();
+    renderPersonList(document.getElementById('person-search').value);
+    document.getElementById('person-view').style.display = 'flex';
+  }
+}
+
+// ─── Person list ──────────────────────────────────────────────────────────────
+function renderPersonList(filter) {
+  var list   = document.getElementById('person-list');
+  var search = (filter || '').toLowerCase().trim();
+  var keys   = search ? personKeys.filter(function(p){ return p.toLowerCase().indexOf(search) !== -1; }) : personKeys;
+
+  document.getElementById('count-pill').textContent = personKeys.length + ' ' + (personKeys.length === 1 ? 'person' : 'people');
+  list.innerHTML = '';
+
+  if (keys.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12px;">' + (search ? 'No matching people.' : 'No people have access yet.') + '</div>';
+    return;
+  }
+
+  var frag = document.createDocumentFragment();
+  keys.forEach(function(email) {
+    var item = document.createElement('div');
+    item.className = 'person-item';
+    item.innerHTML =
+      '<div class="person-item-name">' + escHtml(email) + '</div>' +
+      '<div class="person-item-badge">' + byPerson[email].length + '</div>' +
+      '<div class="person-item-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>';
+    item.addEventListener('click', function() { openPersonDetail(email); });
+    frag.appendChild(item);
+  });
+  list.appendChild(frag);
+}
+
+document.getElementById('person-search').addEventListener('input', function(e) { renderPersonList(e.target.value); });
+
+// ─── Person detail ────────────────────────────────────────────────────────────
+function openPersonDetail(email) {
+  selectedPerson = email;
+  selectedPccAdd = null;
+  document.getElementById('app-header-title').textContent = email;
+  document.getElementById('back-btn').classList.add('visible');
+  document.getElementById('header-divider').classList.add('visible');
+  document.getElementById('mode-toggle').style.display = 'none';
+  clearPccPicker();
+  renderPersonDetail(email);
+  document.getElementById('person-view').style.display        = 'none';
+  document.getElementById('person-detail-view').style.display = 'flex';
+}
+
+function renderPersonDetail(email) {
+  var ccs = (byPerson[email] || []).slice().sort(function(a,b){ return a.localeCompare(b); });
+  document.getElementById('count-pill').textContent = ccs.length + ' cost center' + (ccs.length === 1 ? '' : 's');
+
+  var list = document.getElementById('pcc-list');
+  list.innerHTML = '';
+
+  if (ccs.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12px;">No cost center access. Add one above.</div>';
+    return;
+  }
+
+  ccs.forEach(function(cc) {
+    var row = document.createElement('div');
+    row.className = 'pcc-row';
+    row.setAttribute('data-cc', cc);
+    row.innerHTML =
+      '<div class="pcc-name">' + escHtml(cc) + '</div>' +
+      '<button class="pcc-del" data-cc="' + escAttr(cc) + '" title="Remove access">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+      '</button>';
+    list.appendChild(row);
+  });
+}
+
+// Remove person from a cost center
+document.getElementById('pcc-list').addEventListener('click', function(e) {
+  var btn = e.target.closest('.pcc-del');
+  if (!btn || btn.disabled) return;
+  removePersonFromCC(btn.getAttribute('data-cc'));
+});
+
+function removePersonFromCC(cc) {
+  if (!delFlowUrl) { showToast('Delete Flow URL not configured.', 'error'); return; }
+  var email = selectedPerson;
+  var row = document.querySelector('.pcc-row[data-cc="' + escAttr(cc) + '"]');
+  if (row) { row.style.opacity = '.4'; row.querySelector('.pcc-del').disabled = true; }
+
+  callFlow(delFlowUrl, { key: cc, value: email })
+    .then(function() {
+      if (grouped[cc]) grouped[cc] = grouped[cc].filter(function(e){ return e !== email; });
+      rebuildByPerson();
+      if (byPerson[email]) {
+        renderPersonDetail(email);
+      } else {
+        // person no longer has any access — go back to list
+        goBackPerson();
+      }
+      showToast('Removed from ' + cc + '.', 'success');
+    })
+    .catch(function(err) {
+      if (row) { row.style.opacity = '1'; row.querySelector('.pcc-del').disabled = false; }
+      showToast('Delete failed: ' + err.message, 'error');
+    });
+}
+
+// ─── Cost center picker (person detail) ───────────────────────────────────────
+document.getElementById('pcc-search-input').addEventListener('input', function(e) {
+  var q = e.target.value.trim();
+  document.getElementById('pcc-clear-btn').classList.toggle('visible', q.length > 0);
+  renderPccDropdown(q);
+  document.getElementById('pcc-dropdown').classList.add('open');
+});
+document.getElementById('pcc-search-input').addEventListener('focus', function() {
+  renderPccDropdown(document.getElementById('pcc-search-input').value.trim());
+  document.getElementById('pcc-dropdown').classList.add('open');
+});
+document.getElementById('pcc-clear-btn').addEventListener('click', function() {
+  document.getElementById('pcc-search-input').value = '';
+  document.getElementById('pcc-clear-btn').classList.remove('visible');
+  document.getElementById('pcc-dropdown').classList.remove('open');
+  document.getElementById('pcc-search-input').focus();
+});
+document.getElementById('pcc-chip-clear').addEventListener('click', function() {
+  clearPccPicker();
+  document.getElementById('pcc-search-input').focus();
+});
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('pcc-picker').contains(e.target)) {
+    document.getElementById('pcc-dropdown').classList.remove('open');
+  }
+});
+
+function renderPccDropdown(q) {
+  var dd = document.getElementById('pcc-dropdown');
+  var current = byPerson[selectedPerson] || [];
+  var filtered = ccKeys.filter(function(cc) {
+    if (current.indexOf(cc) !== -1) return false; // already has this CC
+    if (!q) return true;
+    return cc.toLowerCase().indexOf(q.toLowerCase()) !== -1;
+  });
+
+  dd.innerHTML = '';
+  if (filtered.length === 0) {
+    var none = document.createElement('div');
+    none.className = 'pcc-option no-results';
+    none.textContent = q ? 'No matching cost centers.' : 'Already in every cost center.';
+    dd.appendChild(none);
+    return;
+  }
+
+  var frag = document.createDocumentFragment();
+  filtered.forEach(function(cc) {
+    var opt = document.createElement('div');
+    opt.className = 'pcc-option';
+    opt.textContent = cc;
+    opt.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      selectPcc(cc);
+    });
+    frag.appendChild(opt);
+  });
+  dd.appendChild(frag);
+}
+
+function selectPcc(cc) {
+  selectedPccAdd = cc;
+  document.getElementById('pcc-search-wrap').style.display = 'none';
+  document.getElementById('pcc-chip-label').textContent = cc;
+  document.getElementById('pcc-selected-chip').classList.add('visible');
+  document.getElementById('pcc-dropdown').classList.remove('open');
+}
+
+function clearPccPicker() {
+  selectedPccAdd = null;
+  document.getElementById('pcc-search-input').value = '';
+  document.getElementById('pcc-clear-btn').classList.remove('visible');
+  document.getElementById('pcc-search-wrap').style.display = '';
+  document.getElementById('pcc-selected-chip').classList.remove('visible');
+  document.getElementById('pcc-dropdown').classList.remove('open');
+}
+
+// Add person to selected cost center
+document.getElementById('pcc-add-btn').addEventListener('click', function() {
+  if (!selectedPccAdd) { showToast('Select a cost center first.', 'error'); return; }
+  if (!addFlowUrl)     { showToast('Add Flow URL not configured.', 'error'); return; }
+
+  var email = selectedPerson;
+  var cc    = selectedPccAdd;
+  var current = byPerson[email] || [];
+  if (current.indexOf(cc) !== -1) { showToast('Already has access.', 'error'); return; }
+
+  var btn = document.getElementById('pcc-add-btn');
+  btn.disabled = true;
+
+  callFlow(addFlowUrl, { key: cc, value: email })
+    .then(function() {
+      if (!grouped[cc]) grouped[cc] = [];
+      if (grouped[cc].indexOf(email) === -1) grouped[cc].push(email);
+      rebuildByPerson();
+      clearPccPicker();
+      renderPersonDetail(email);
+      showToast('Added to ' + cc + '.', 'success');
+    })
+    .catch(function(err) { showToast('Add failed: ' + err.message, 'error'); })
+    .finally(function()  { btn.disabled = false; });
+});
+
+// ─── Back (person mode) ───────────────────────────────────────────────────────
+function goBackPerson() {
+  selectedPerson = null; selectedPccAdd = null;
+  document.getElementById('app-header-title').textContent = 'Entitlements Manager';
+  document.getElementById('back-btn').classList.remove('visible');
+  document.getElementById('header-divider').classList.remove('visible');
+  document.getElementById('mode-toggle').style.display = 'flex';
+  renderPersonList(document.getElementById('person-search').value);
+  document.getElementById('person-detail-view').style.display = 'none';
+  document.getElementById('person-view').style.display        = 'flex';
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -773,14 +1218,26 @@ function callFlow(url, body) {
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json().catch(function(){ return {}; }); });
 }
 function showListView() {
-  document.getElementById('empty-view').style.display  = 'none';
-  document.getElementById('detail-view').style.display = 'none';
-  document.getElementById('list-view').style.display   = 'flex';
+  document.getElementById('empty-view').style.display          = 'none';
+  document.getElementById('detail-view').style.display         = 'none';
+  document.getElementById('person-view').style.display         = 'none';
+  document.getElementById('person-detail-view').style.display  = 'none';
+  document.getElementById('list-view').style.display           = 'flex';
+}
+function showPersonView() {
+  document.getElementById('empty-view').style.display          = 'none';
+  document.getElementById('list-view').style.display           = 'none';
+  document.getElementById('detail-view').style.display         = 'none';
+  document.getElementById('person-detail-view').style.display  = 'none';
+  document.getElementById('person-view').style.display         = 'flex';
 }
 function setEmptyMsg(msg) {
-  document.getElementById('empty-view').style.display  = 'flex';
-  document.getElementById('list-view').style.display   = 'none';
-  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('empty-view').style.display          = 'flex';
+  document.getElementById('list-view').style.display           = 'none';
+  document.getElementById('detail-view').style.display         = 'none';
+  document.getElementById('person-view').style.display         = 'none';
+  document.getElementById('person-detail-view').style.display  = 'none';
+  document.getElementById('mode-toggle').style.display         = 'none';
   document.getElementById('empty-msg').textContent = msg;
 }
 var toastTimer;
