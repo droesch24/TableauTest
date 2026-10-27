@@ -622,7 +622,7 @@ async function loadCommentsFromAPI() {
     comments={};
     data.forEach(function(c){
       if (!comments[c.row_id]) comments[c.row_id]=[];
-      comments[c.row_id].push({ id:c.id, author:c.author, text:c.comment_text, time:new Date(c.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
+      var _d=new Date(c.created_at); comments[c.row_id].push({ id:c.id, author:c.author, text:c.comment_text, time:_d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+_d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
     });
   } catch(e){ console.warn('Could not load comments:',e.message); }
 }
