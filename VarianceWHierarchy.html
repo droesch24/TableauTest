@@ -622,7 +622,7 @@ async function loadCommentsFromAPI() {
     comments={};
     data.forEach(function(c){
       if (!comments[c.row_id]) comments[c.row_id]=[];
-      var _d=new Date(c.created_at); comments[c.row_id].push({ id:c.id, author:c.author, text:c.comment_text, time:_d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})+' '+_d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
+      var _d=new Date(c.created_at); comments[c.row_id].push({ id:c.id, author:c.author, created_at:c.created_at, row_id:c.row_id, text:c.comment_text, time:_d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})+' '+_d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
     });
   } catch(e){ console.warn('Could not load comments:',e.message); }
 }
@@ -653,7 +653,7 @@ function renderSidebarComments() {
           '<span class="comment-author">'+escHtml(c.author)+(c._pending?' <span class="comment-tag">not pushed</span>':'')+' </span>'+
           '<span style="display:flex;align-items:center;gap:4px">'+
             '<span class="comment-time">'+c.time+'</span>'+
-            (!c._pending?'<button class="comment-delete" onclick="deleteComment(\''+c.id+'\',\''+escAttr(activeRowId)+'\')" title="Delete">✕</button>':'')+
+            (!c._pending&&c.id?'<button class="comment-delete" onclick="deleteComment(\''+escAttr(c.id)+'\',\''+escAttr(c.row_id)+'\',\''+escAttr(c.created_at)+'\')" title="Delete">✕</button>':'')+
           '</span>'+
         '</div>'+
         '<div class="comment-body">'+escHtml(c.text)+'</div>'+
@@ -677,22 +677,22 @@ function stageComment() {
 }
 async function pushComment() {
   if (!pendingComment) return;
-  var rowId=pendingComment.rowId, author=pendingComment.author, text=pendingComment.text;
+  var rowId=pendingComment.rowId, author=pendingComment.author, text=pendingComment.text, createdAt=new Date().toISOString();
   try {
-    var res=await fetch(CFG.postUrl,{ method:'POST', headers:paHeaders(), body:JSON.stringify({ source_id:CFG.sourceId, row_id:rowId, author:author, comment_text:text, created_at:new Date().toISOString() }) });
+    var res=await fetch(CFG.postUrl,{ method:'POST', headers:paHeaders(), body:JSON.stringify({ source_id:CFG.sourceId, row_id:rowId, author:author, comment_text:text, created_at:createdAt }) });
     if (!res.ok) throw new Error('Push failed ('+res.status+')');
     var created={}; try{ created=await res.json(); }catch(_){}
     if (!comments[rowId]) comments[rowId]=[];
-    comments[rowId].push({id:created.id||String(Date.now()),author:author,text:text,time:pendingComment.time});
+    comments[rowId].push({id:created.id||null,author:author,text:text,time:pendingComment.time,row_id:rowId,created_at:created.created_at||createdAt});
     pendingComment=null;
     renderSidebarComments();
     renderHier(lastRows);
   } catch(e){ alert('Could not push comment:\n'+e.message); }
 }
-async function deleteComment(id,rowId) {
+async function deleteComment(id,rowId,createdAt) {
   if (!confirm('Delete this comment?')) return;
   try {
-    var res=await fetch(CFG.deleteUrl,{ method:'POST', headers:paHeaders(), body:JSON.stringify({id:id,source_id:CFG.sourceId}) });
+    var res=await fetch(CFG.deleteUrl,{ method:'POST', headers:paHeaders(), body:JSON.stringify({source_id:CFG.sourceId, created_at:createdAt}) });
     if (!res.ok) throw new Error('Delete failed ('+res.status+')');
     if (comments[rowId]) comments[rowId]=comments[rowId].filter(function(c){ return String(c.id)!==String(id); });
     renderSidebarComments(); renderHier(lastRows);
