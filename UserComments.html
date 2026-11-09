@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Comments</title>
+<style>
+:root { --red:#CD0E13; --black:#000; --white:#fff; --gray-light:#E0E0E0; --gray-mid:#9E9E9E;
+  --gray-dark:#616161; --gray-darkest:#404040; --bg-soft:#F5F5F5; --font:'acumin-pro',Arial,sans-serif; }
+* { box-sizing:border-box; }
+html,body { height:100%; margin:0; font-family:var(--font); color:var(--black); background:var(--white); }
+.panel { display:flex; flex-direction:column; height:100%; }
+.hdr { padding:12px 16px; border-top:3px solid var(--red); border-bottom:1px solid var(--gray-light); }
+.hdr-title { font-weight:700; font-size:15px; }
+.hdr-sub { font-size:12px; color:var(--gray-dark); margin-top:2px; }
+.chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; max-height:72px; overflow-y:auto; }
+.chip { background:var(--bg-soft); border:1px solid var(--gray-light); border-radius:12px; padding:2px 8px; font-size:11px; }
+.list { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.empty { color:var(--gray-mid); font-size:13px; text-align:center; margin-top:24px; }
+.card { background:var(--bg-soft); border:1px solid var(--gray-light); border-radius:8px; padding:8px 10px; }
+.card.staged { border-color:var(--red); border-style:dashed; }
+.card-top { display:flex; align-items:center; gap:8px; font-size:12px; }
+.card-who { font-weight:700; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tag { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--red); }
+.tag.ok { color:var(--gray-dark); }
+.card-x { border:0; background:none; cursor:pointer; color:var(--gray-mid); font-size:14px; }
+.card-x:hover { color:var(--red); }
+.card-text { margin-top:4px; font-size:13px; line-height:1.35; white-space:pre-wrap; word-break:break-word; }
+.statusbar { display:flex; align-items:center; justify-content:space-between; padding:8px 16px;
+  background:var(--bg-soft); border-top:1px solid var(--gray-light); font-size:12px; color:var(--gray-dark); }
+.statusbar.dirty #status { color:var(--red); font-weight:700; }
+.btn-push { border:1px solid var(--red); background:var(--red); color:#fff; border-radius:6px;
+  padding:5px 14px; font-size:12px; font-weight:700; cursor:pointer; }
+.btn-push:disabled { background:#fff; color:var(--gray-mid); border-color:var(--gray-light); cursor:default; }
+.composer { display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--gray-light); }
+textarea { flex:1; resize:none; border:1px solid var(--gray-mid); border-radius:8px; padding:8px; font:inherit; font-size:13px; }
+textarea:focus { outline:2px solid var(--red); outline-offset:-1px; }
+textarea:disabled { background:var(--bg-soft); }
+.btn-send { width:42px; height:42px; align-self:flex-end; border:1px solid var(--gray-darkest);
+  background:var(--gray-darkest); color:#fff; border-radius:8px; cursor:pointer; font-size:16px; }
+.btn-send:disabled { background:var(--bg-soft); color:var(--gray-mid); border-color:var(--gray-light); cursor:default; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <header class="hdr">
+    <div class="hdr-title">Add Comment</div>
+    <div class="hdr-sub" id="selSummary">Select one or more users in the table</div>
+    <div class="chips" id="chips"></div>
+  </header>
+  <main class="list" id="list"></main>
+  <div class="statusbar"><span id="status">Starting...</span><button id="pushBtn" class="btn-push" disabled>Push</button></div>
+  <footer class="composer">
+    <textarea id="input" rows="2" disabled placeholder="Add a comment... (Enter to send, Shift+Enter for newline)"></textarea>
+    <button id="sendBtn" class="btn-send" title="Send" disabled>&#10148;</button>
+  </footer>
+</div>
+
+<script src="tableau.extensions.1.latest.js"></script>
+<script>
+// ============================================================
+// EDIT THIS BLOCK ONLY
+// ============================================================
+window.COMMENTS_CONFIG = {
+  FLOW_URL: "PASTE_FLOW_HTTP_URL_HERE",
+  SHARED_SECRET: "CHANGE_ME",
+
+  // Worksheet the user clicks, and the exact field names on it
+  TARGET_SHEET: "YOUR_SHEET_NAME",
+  USER_NAME_FIELD: "User Name",
+  LICENSE_FIELD: "User License Type",   // set to "" if the sheet does not have it
+
+  // Hidden worksheet containing a calculated field USERNAME()
+  USER_SHEET: "UserInfo",
+  USER_FIELD: "Username",
+
+  // Prefix each comment with who wrote it, e.g. "jvaughn: Sent inactive notice"
+  PREFIX_WITH_COMMENTER: true,
+
+  MAX_USERS_PER_COMMENT: 100,
+  MAX_COMMENT_LENGTH: 1000
+};
+</script>
+<script>
+(function () {
+  const C = window.COMMENTS_CONFIG;
+  const $ = (id) => document.getElementById(id);
+  const state = { commenter: null, selected: [], staged: [], sent: [], busy: false, error: null };
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    $("sendBtn").onclick = stage;
+    $("pushBtn").onclick = push;
+    $("input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); stage(); }
+    });
+    render();
+    try {
+      await tableau.extensions.initializeAsync();
+      const dash = tableau.extensions.dashboardContent.dashboard;
+      state.commenter = await readCommenter(dash);
+      const ws = dash.worksheets.find((w) => w.name === C.TARGET_SHEET);
+      if (!ws) throw new Error('Worksheet "' + C.TARGET_SHEET + '" not found.');
+      ws.addEventListener(tableau.TableauEventType.MarkSelectionChanged, () => onSelection(ws));
+      state.error = null; render();
+    } catch (e) { state.error = e.message; render(); }
+  });
+
+  async function readCommenter(dash) {
+    const ws = dash.worksheets.find((w) => w.name === C.USER_SHEET);
+    if (!ws) throw new Error('User worksheet "' + C.USER_SHEET + '" not found.');
+    const data = await ws.getSummaryDataAsync({ ignoreSelection: true });
+    const i = data.columns.findIndex((c) => c.fieldName === C.USER_FIELD);
+    if (i < 0 || !data.data.length) throw new Error("Could not read field " + C.USER_FIELD + ".");
+    return String(data.data[0][i].formattedValue).toLowerCase();
+  }
+
+  async function onSelection(ws) {
+    try {
+      const marks = await ws.getSelectedMarksAsync();
+      const t = marks.data[0];
+      state.selected = [];
+      if (t && t.data.length) {
+        const cols = t.columns.map((c) => c.fieldName);
+        const iName = cols.indexOf(C.USER_NAME_FIELD);
+        const iLic = C.LICENSE_FIELD ? cols.indexOf(C.LICENSE_FIELD) : -1;
+        if (iName < 0) throw new Error('Field "' + C.USER_NAME_FIELD + '" is not on the sheet. Add it to the view or Detail.');
+        if (C.LICENSE_FIELD && iLic < 0) throw new Error('Field "' + C.LICENSE_FIELD + '" is not on the sheet. Add it to Detail.');
+        const seen = {};
+        t.data.forEach((r) => {
+          const name = String(r[iName].formattedValue);
+          if (!seen[name]) { seen[name] = 1; state.selected.push({ userName: name, licenseType: iLic < 0 ? "" : String(r[iLic].formattedValue) }); }
+        });
+      }
+      state.error = null;
+    } catch (e) { state.error = e.message; state.selected = []; }
+    render();
+  }
+
+  function stage() {
+    let text = $("input").value.trim();
+    if (!text || !state.selected.length) return;
+    if (state.selected.length > C.MAX_USERS_PER_COMMENT) { state.error = "Too many users selected (max " + C.MAX_USERS_PER_COMMENT + ")."; render(); return; }
+    text = text.slice(0, C.MAX_COMMENT_LENGTH);
+    if (C.PREFIX_WITH_COMMENTER && state.commenter) text = state.commenter.split("@")[0] + ": " + text;
+    state.staged.push({ id: Date.now() + "-" + Math.random().toString(16).slice(2), users: state.selected.slice(), text: text });
+    $("input").value = ""; state.error = null; render();
+  }
+
+  async function push() {
+    if (!state.staged.length || state.busy) return;
+    state.busy = true; state.error = null; render();
+    try {
+      const rows = [];
+      state.staged.forEach((s) => s.users.forEach((u) => rows.push({ userName: u.userName, licenseType: u.licenseType, comment: s.text })));
+      const res = await fetch(C.FLOW_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },   // avoids CORS preflight
+        body: JSON.stringify({ secret: C.SHARED_SECRET, action: "add", commenter: state.commenter, rows: rows })
+      });
+      if (!res.ok) throw new Error("Server returned " + res.status);
+      const out = await res.json();
+      if (!out.ok) throw new Error(out.error || "Flow reported a failure");
+      const now = new Date();
+      state.staged.forEach((s) => state.sent.unshift({ users: s.users, text: s.text, time: now }));
+      state.staged = [];
+    } catch (e) { state.error = "Push failed: " + e.message; }
+    state.busy = false; render();
+  }
+
+  function unstage(id) { state.staged = state.staged.filter((s) => s.id !== id); render(); }
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  const who = (users) => users.length === 1 ? users[0].userName : users.length + " users";
+  const fmt = (d) => d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+  function render() {
+    const n = state.selected.length;
+    $("selSummary").textContent = n === 0 ? "Select one or more users in the table" :
+      n === 1 ? state.selected[0].userName + (state.selected[0].licenseType ? "  \u2022  " + state.selected[0].licenseType : "") :
+      n + " users selected";
+    const chips = $("chips"); chips.textContent = "";
+    if (n > 1) state.selected.slice(0, 50).forEach((u) => chips.appendChild(el("span", "chip", u.userName)));
+
+    const list = $("list"); list.textContent = "";
+    if (!state.staged.length && !state.sent.length) list.appendChild(el("div", "empty", "Comments you add appear here until you push them."));
+    state.staged.forEach((s) => {
+      const c = el("div", "card staged"), top = el("div", "card-top");
+      top.appendChild(el("span", "card-who", who(s.users))); top.appendChild(el("span", "tag", "Not pushed"));
+      const x = el("button", "card-x", "\u2715"); x.title = "Remove"; x.onclick = () => unstage(s.id); top.appendChild(x);
+      c.appendChild(top); c.appendChild(el("div", "card-text", s.text)); list.appendChild(c);
+    });
+    state.sent.forEach((s) => {
+      const c = el("div", "card"), top = el("div", "card-top");
+      top.appendChild(el("span", "card-who", who(s.users))); top.appendChild(el("span", "tag ok", "Pushed " + fmt(s.time)));
+      c.appendChild(top); c.appendChild(el("div", "card-text", s.text)); list.appendChild(c);
+    });
+
+    const bar = document.querySelector(".statusbar");
+    const dirty = state.staged.length > 0 || !!state.error;
+    bar.classList.toggle("dirty", dirty);
+    $("status").textContent = state.error ? "Error: " + state.error :
+      state.busy ? "Pushing..." :
+      state.staged.length ? state.staged.length + " comment" + (state.staged.length > 1 ? "s" : "") + " not pushed" : "All saved";
+    $("pushBtn").disabled = !state.staged.length || state.busy;
+    $("input").disabled = !n || state.busy;
+    $("sendBtn").disabled = !n || state.busy;
+  }
+})();
+</script>
+</body>
+</html>
