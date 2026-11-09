@@ -66,13 +66,13 @@ window.COMMENTS_CONFIG = {
   SHARED_SECRET: "CHANGE_ME",
 
   // Worksheet the user clicks, and the exact field names on it
-  TARGET_SHEET: "YOUR_SHEET_NAME",
-  USER_NAME_FIELD: "User Name",
-  LICENSE_FIELD: "User License Type",   // set to "" if the sheet does not have it
+  TARGET_SHEET: "User 45-detail",
+  USER_NAME_FIELD: ["User Name", "Username"],   // any of these names will match (spaces/case ignored)
+  LICENSE_FIELD: ["License Type", "User License Type"],   // set to [] if the sheet does not have it
 
   // Hidden worksheet containing a calculated field USERNAME()
   USER_SHEET: "UserInfo",
-  USER_FIELD: "Username",
+  USER_FIELD: "CurrentUser",
 
   // Prefix each comment with who wrote it, e.g. "jvaughn: Sent inactive notice"
   PREFIX_WITH_COMMENTER: true,
@@ -85,11 +85,12 @@ window.COMMENTS_CONFIG = {
 (function () {
   const C = window.COMMENTS_CONFIG;
   const $ = (id) => document.getElementById(id);
-  const state = { commenter: null, selected: [], staged: [], sent: [], busy: false, error: null };
+  const state = { commenter: null, selected: [], staged: [], sent: [], busy: false, error: null, warning: null, ws: null, seq: 0 };
 
   document.addEventListener("DOMContentLoaded", async () => {
     $("sendBtn").onclick = stage;
     $("pushBtn").onclick = push;
+    $("input").addEventListener("focus", () => { if (state.ws) onSelection(state.ws); });
     $("input").addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); stage(); }
     });
@@ -97,48 +98,73 @@ window.COMMENTS_CONFIG = {
     try {
       await tableau.extensions.initializeAsync();
       const dash = tableau.extensions.dashboardContent.dashboard;
-      state.commenter = await readCommenter(dash);
       const ws = dash.worksheets.find((w) => w.name === C.TARGET_SHEET);
       if (!ws) throw new Error('Worksheet "' + C.TARGET_SHEET + '" not found.');
+      state.ws = ws;
       ws.addEventListener(tableau.TableauEventType.MarkSelectionChanged, () => onSelection(ws));
-      state.error = null; render();
+      // Who is commenting is optional (only used for the comment prefix). A failure here must not block selection.
+      try { state.commenter = await readCommenter(dash); }
+      catch (e) { state.commenter = null; state.warning = "Commenter not detected (" + e.message + ") - comments will have no name prefix."; }
+      await onSelection(ws);   // pick up a user that is already highlighted
+      render();
     } catch (e) { state.error = e.message; render(); }
   });
 
   async function readCommenter(dash) {
     const ws = dash.worksheets.find((w) => w.name === C.USER_SHEET);
-    if (!ws) throw new Error('User worksheet "' + C.USER_SHEET + '" not found.');
+    if (!ws) throw new Error('User worksheet "' + C.USER_SHEET + '" not found on the dashboard.');
     const data = await ws.getSummaryDataAsync({ ignoreSelection: true });
-    const i = data.columns.findIndex((c) => c.fieldName === C.USER_FIELD);
-    if (i < 0 || !data.data.length) throw new Error("Could not read field " + C.USER_FIELD + ".");
+    const names = data.columns.map((c) => c.fieldName);
+    let i = names.indexOf(C.USER_FIELD);
+    if (i < 0) i = names.findIndex((n) => norm(n) === norm(C.USER_FIELD));
+    if (i < 0 && names.length === 1) i = 0;   // UserInfo has a single column: use it whatever it is called
+    if (i < 0) throw new Error('Field "' + C.USER_FIELD + '" not found on ' + C.USER_SHEET + '. Columns found: ' + (names.join(", ") || "none") + '.');
+    if (!data.data.length) throw new Error(C.USER_SHEET + " returned no rows. Check that the field is on Text and that no filter removes it.");
     return String(data.data[0][i].formattedValue).toLowerCase();
   }
 
+  // Matching ignores case, spaces and aggregation wrappers like ATTR(...)
+  const norm = (n) => String(n).toLowerCase().replace(/^(attr|agg|sum|min|max)\(|\)$/g, "").replace(/[^a-z0-9]/g, "");
+  function findCol(cols, wanted) {
+    const list = Array.isArray(wanted) ? wanted : (wanted ? [wanted] : []);
+    for (const w of list) { const i = cols.findIndex((c) => norm(c) === norm(w)); if (i >= 0) return i; }
+    return -1;
+  }
+  const label = (w) => (Array.isArray(w) ? w.join(" / ") : w);
+
+  // Reads whatever is highlighted right now. Newer calls win over older, slower ones.
   async function onSelection(ws) {
+    const mySeq = ++state.seq;
     try {
       const marks = await ws.getSelectedMarksAsync();
+      if (mySeq !== state.seq) return;            // a newer click already happened
       const t = marks.data[0];
-      state.selected = [];
+      const found = [];
       if (t && t.data.length) {
         const cols = t.columns.map((c) => c.fieldName);
-        const iName = cols.indexOf(C.USER_NAME_FIELD);
-        const iLic = C.LICENSE_FIELD ? cols.indexOf(C.LICENSE_FIELD) : -1;
-        if (iName < 0) throw new Error('Field "' + C.USER_NAME_FIELD + '" is not on the sheet. Add it to the view or Detail.');
-        if (C.LICENSE_FIELD && iLic < 0) throw new Error('Field "' + C.LICENSE_FIELD + '" is not on the sheet. Add it to Detail.');
+        const iName = findCol(cols, C.USER_NAME_FIELD);
+        const iLic = findCol(cols, C.LICENSE_FIELD);
+        if (iName < 0) throw new Error('Field "' + label(C.USER_NAME_FIELD) + '" is not on the sheet. Columns found: ' + cols.join(", ") + '.');
         const seen = {};
         t.data.forEach((r) => {
           const name = String(r[iName].formattedValue);
-          if (!seen[name]) { seen[name] = 1; state.selected.push({ userName: name, licenseType: iLic < 0 ? "" : String(r[iLic].formattedValue) }); }
+          if (!seen[name]) { seen[name] = 1; found.push({ userName: name, licenseType: iLic < 0 ? "" : String(r[iLic].formattedValue) }); }
         });
       }
+      state.selected = found;
       state.error = null;
-    } catch (e) { state.error = e.message; state.selected = []; }
+    } catch (e) {
+      if (mySeq !== state.seq) return;
+      state.error = e.message; state.selected = [];
+    }
     render();
   }
 
-  function stage() {
+  async function stage() {
     let text = $("input").value.trim();
-    if (!text || !state.selected.length) return;
+    if (!text) return;
+    if (state.ws) await onSelection(state.ws);     // use whoever is highlighted right now
+    if (!state.selected.length) { state.error = "Highlight a user in the table first."; render(); return; }
     if (state.selected.length > C.MAX_USERS_PER_COMMENT) { state.error = "Too many users selected (max " + C.MAX_USERS_PER_COMMENT + ")."; render(); return; }
     text = text.slice(0, C.MAX_COMMENT_LENGTH);
     if (C.PREFIX_WITH_COMMENTER && state.commenter) text = state.commenter.split("@")[0] + ": " + text;
@@ -199,6 +225,7 @@ window.COMMENTS_CONFIG = {
     const dirty = state.staged.length > 0 || !!state.error;
     bar.classList.toggle("dirty", dirty);
     $("status").textContent = state.error ? "Error: " + state.error :
+      (state.warning && !state.staged.length && !state.busy) ? state.warning :
       state.busy ? "Pushing..." :
       state.staged.length ? state.staged.length + " comment" + (state.staged.length > 1 ? "s" : "") + " not pushed" : "All saved";
     $("pushBtn").disabled = !state.staged.length || state.busy;
